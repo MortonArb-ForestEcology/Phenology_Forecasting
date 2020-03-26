@@ -45,9 +45,7 @@ dat.burst$Latitude <- 41.8164
 dat.burst$Longitude <- -88.0549
 
 #Retrieving npn data
-path.doc <- "C:/Users/lucie/Documents/"
-
-dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_macrocarpa (2).csv")
+dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_macrocarpa_IL.csv")
 
 dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", "First_Yes_DOY"], 
                      by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year")], 
@@ -66,10 +64,15 @@ dat.burst <- dat.burst[,c("Latitude", "Longitude", "PlantNumber", "Year", "Yday"
 
 dat.comb <- rbind(dat.burst, dat.npn)
 
+dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
+
+dat.comb <- dat.comb[dat.comb$Location =="42.011166 -88.503304",]
+
 
 #Setting the points to download the daymet data from
+path.doc <- "C:/Users/lucie/Documents/"
 species <- "Q_macrocarpa"
-ystart <- 2017
+ystart <- 2009
 
 #make sure the yend of the data matches what you enter. Sometimes daymet truncates and this varibale will become wrong later in the script
 yend <- 2019
@@ -104,12 +107,12 @@ pb <- txtProgressBar(min=0, max=length(lat.list)*((yend-ystart)+1), style=3)
 pb.ind=0
 
 #Creating a dataframe to hold weather summary statistics
-df.loc <- data.frame(latitude=rep(lat.list[[i]]$latitude, ((yend-ystart)+1)) ,
-                        longitude=rep(lat.list[[i]]$longitude, ((yend-ystart)+1)))
+df.loc <- data.frame(latitude=rep(lat.list[[1]]$latitude, ((yend-ystart)+1)) ,
+                        longitude=rep(lat.list[[1]]$longitude, ((yend-ystart)+1)))
 
 
 #Looping to pull out the GDD5.cum of the bud burst date fore every tree and location
-count <- 0
+count <- 1
 i <- 1
 YR <- ystart
 for(i in seq_along(lat.list)){
@@ -169,13 +172,11 @@ for(i in seq_along(lat.list)){
 }
 
 mat.yr <- array(dim=c(nrow(df.loc), 1000))
-dimnames(mat.yr)[[1]] <- df.loc$YEAR
+dimnames(mat.yr)[[1]] <- df.loc$year
 
-
-dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
-dat.comb[dat.comb$Yday>=250, c("Yday", "GDD5.cum")] <- NA
+dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum")] <- NA
 
 # Testing whether GDD5 is a good predictor of day 
 dat.gdd5.lm <- lm(Yday ~ GDD5.cum, data=dat.comb)
@@ -203,7 +204,7 @@ library(nlme); library(lme4)
 dat.gdd5.mean <- mean(dat.comb[,"GDD5.cum"], na.rm=T); 
 dat.gdd5.sd <- sd(dat.comb[,"GDD5.cum"], na.rm=T)
 
-mac.cue <- lme(GDD5.cum ~ 1, random=list(Location=~1, PlantNumber=~1), data=dat.comb, na.action=na.omit)
+mac.cue <- lme(GDD5.cum ~ 1, random=list(Year=~1, PlantNumber=~1), data=dat.comb, na.action=na.omit)
 mac.summ <- summary(mac.cue)
 MuMIn::r.squaredGLMM(mac.cue)
 mod.cue.est <- mac.summ$tTable[,"Value"] # Hierarchical mean
@@ -215,15 +216,10 @@ mod.cue.est; mod.cue.sd
 dat.gdd5.mean; dat.gdd5.sd 
 
 
-# prior <- runif(1000, min=0, max=1000)
-# GDD5 ~ dnorm(mu, sigma)
-
 dat.gdd5.vec <- rnorm(1000, dat.gdd5.mean, dat.gdd5.sd)
 
-dat.yr$bud.oak <- NA
-
 calc.bud <- function(x){min(df.yr[which(df.yr$GDD5.cum >= x),"yday"])}
-k <- 0
+k <- 1
 
 for(i in seq_along(lat.list)){
   df.tmp <- lat.list[[i]]$data
@@ -254,45 +250,43 @@ for(i in seq_along(lat.list)){
     bud.vec[bud.vec==Inf] <- NA
     
     # par(mfrow=c(2,1))
-    # hist(ceca.gdd5.vec); hist(bloom.vec)
+    # hist(dat.gdd5.vec); hist(bud.vec)
     # par(mfrow=c(1,1))
     
     mat.yr[k,] <- bud.vec
     k <- k +1
   }
   
-  df.loc$bud.mean <- apply(mat.yr, 1, mean, na.rm=T)
-  df.loc$bud.sd   <- apply(mat.yr, 1, sd, na.rm=T)
-  df.loc$bud.lb   <- apply(mat.yr, 1, quantile, 0.025, na.rm=T)
-  df.loc$bud.ub   <- apply(mat.yr, 1, quantile, 0.975, na.rm=T)
 }
 
+df.loc$bud.mean <- apply(mat.yr, 1, mean, na.rm=T)
+df.loc$bud.sd   <- apply(mat.yr, 1, sd, na.rm=T)
+df.loc$bud.lb   <- apply(mat.yr, 1, quantile, 0.025, na.rm=T)
+df.loc$bud.ub   <- apply(mat.yr, 1, quantile, 0.975, na.rm=T)
 
-lm.ceca.bloom <- lm(bud.oak ~ year, data=df.loc)
-summary(lm.ceca.bloom)
-
-yr.df <- stack(data.frame(mat.yr))
-yr.df$year <- as.numeric(row.names(mat.yr))
-bloom.trend2 <- lm(values ~ year, data=yr.df)
-summary(bloom.trend2)
 
 dat.comb <- na.omit(dat.comb)
 
+
+#For just year
 oak.bud <- aggregate(dat.comb[,c("Yday", "GDD5.cum")],
-                        by=dat.comb[,c("Location", "Year")],
+                        by=list(dat.comb$Year),
                         FUN=mean, na.rm=F)
 
+
 oak.bud[,c("Yday.sd", "GDD5.cum.sd")]  <- aggregate(dat.comb[,c("Yday", "GDD5.cum")],
-                                                       by=dat.comb[,c("Location", "Year")],
+                                                       by=list(dat.comb$Year),
                                                        FUN=sd, na.rm=F)[,c("Yday", "GDD5.cum")]
 
 
+
 ggplot(data=df.loc[,]) +
-  facet_wrap(~Location)+
   geom_ribbon(data=df.loc[,], aes(x=year, ymin=bud.lb, ymax=bud.ub, fill="Modeled"), alpha=0.5) +
   geom_point(data=df.loc[,], aes(x=year, y=bud.mean, color="Modeled"), alpha=0.8) +
   geom_line(data=df.loc[,], aes(x=year, y=bud.mean, color="Modeled"), alpha=0.8) + 
-  geom_point(data=oak.bud, aes(x=Year, y=Yday, color="Observed"), size=1)
+  geom_point(data=oak.bud, aes(x=Group.1, y=Yday, color="Observed"))
+
+
 
 
 
