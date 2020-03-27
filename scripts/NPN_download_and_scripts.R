@@ -1,5 +1,8 @@
 #Script for the integration of historical npn data into our model
 
+#dplyr for the summarise function
+library(dplyr)
+
 #Retrieving npn data
 dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_macrocarpa_IL.csv")
 
