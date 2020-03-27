@@ -70,7 +70,6 @@ acfplot(burst.burn)
 #Checking effective size
 effectiveSize(burst.burn)
 
-
 summary(burst.burn)
 
 #Matrix for visualizing
