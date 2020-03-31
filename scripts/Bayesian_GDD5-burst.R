@@ -59,7 +59,7 @@ for(i in 1:nchain){
 #This section actually runs the model and then provides ways to check the output and clean it
 #---------------------------------------------------------#
 #running the model
-burst.model   <- jags.model (file = textConnection(univariate_regression),
+burst.model   <- jags.model (file = textConnection(hierarchical_regression),
                             data = burst.list,
                             inits = inits,
                             n.chains = 3)
@@ -82,7 +82,7 @@ gelman.diag(burst.out)
 GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 4000                                ## determine convergence from TBR output
+burnin = 750                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)                             ## check diagnostics post burn-in
 
@@ -99,7 +99,132 @@ summary(burst.burn)
 #This section is for taking the model output and visualizing it
 #----------------------------------------------------------------------------#
 
-#Matrix for visualizing
+#Converting it into a matrix so we can work with it
 burst.mat <- as.matrix(burst.burn)
+
+#Creating samples for making credible interval and prediction interval tests
+nsamp <- 5000
+samp <- sample.int(nrow(burst.mat),nsamp)
+xpred <- 0:450  					## sequence of x values we're going to test for
+npred <- length(xpred)				##      make predictions for
+ypred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for predictive interval
+ycred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for credible interval
+
+
+#Loop that creates the credible interval from rows in our matrix and the prediction interval by calculating the sd from precision
+for(g in seq_len(nsamp)){
+  theta = burst.mat[samp[g],]
+  ycred[g,] <- theta["b[1]"] + theta["b[2]"]*xpred
+  ypred[g,] <- rnorm(npred,ycred[g,],1/sqrt(theta["S"]))
+}
+
+#Filling out the actual intervals for visualizations
+ci <- apply(ycred,2,quantile,c(0.025,0.5,0.975))  ## credible interval and median
+pi <- apply(ypred,2,quantile,c(0.025,0.975))		## prediction interval
+
+#Plotting our observed data with our median, CI's and PI's of our linear model
+plot(dat.comb$GDD5.cum,dat.comb$Yday,xlim=c(0,480),ylim=c(80,150))
+lines(xpred,ci[1,],col=3,lty=2)	## lower CI
+lines(xpred,ci[2,],col=3,lwd=3)	## median
+lines(xpred,ci[3,],col=3,lty=2)	## upper CI
+lines(xpred,pi[1,],col=4,lty=2)	## lower PI
+lines(xpred,pi[2,],col=4,lty=2)	## upper PI
+
+
+ggplot(mosq, aes(x=time, y=density))+
+  facet_wrap(~replicate)+
+  geom_point()
+
+
+
+
+
+#--------------------------------------------------------#
+#Everything below here is a work in progress on making the hierarchicial model. DOES NOT WORK RIGHT NOW :(
+#--------------------------------------------------------#
+
+#Subsetting out any trees that don't have multiple years of observations
+dat.comb$PlantNumber <- factor(dat.comb$PlantNumber)
+tab <- table(dat.comb$PlantNumber)
+dat.comb <- dat.comb[dat.comb$PlantNumber %in% names(tab)[tab>=2],]
+
+
+#Currently these priors are uniformative and identical to univariate regression model. Not sure what changes needed if any.
+hierarchical_regression <- "
+model{
+  
+  S ~ dgamma(s1,s2)    ## prior precision for all individuals
+
+  for(i in 1:p) {
+    a[i]  ~ dmnorm(b0, Vb0) #random individual effect on slope
+    b[i] ~  dmnorm(b1, Vb0) #random individual effect on intercept
+  }
+  for(k in 1:n) {
+    mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
+    y[k] ~ dnorm(mu[k], S)
+  }
+}
+"
+
+burst.list <- list(x = dat.comb$GDD5.cum, y = dat.comb$Yday, individual = dat.comb$PlantNumber, p = length(dat.comb$PlantNumber), n = length(dat.comb$Yday))
+
+#Setting our uniformative priors
+burst.list$b0 <- as.vector(c(0,0))      ## regression random individual effect on intercept mean
+burst.list$Vb0 <- solve(diag(10000,2))   ## regression random individual effect on intercept precisions
+burst.list$b1 <- as.vector(c(0,0))      ## regression random individual effect on slope mean
+burst.list$s1 <- 0.1                    ## error prior n/2
+burst.list$s2 <- 0.1                    ## error prior SS/2
+
+
+#Setting the number of MCMC chains and their parameters
+nchain = 3
+inits <- list()
+for(i in 1:nchain){
+  inits[[i]] <- list(b = rnorm(2,0,5), S = runif(1,1/200,1/20))
+}
+
+#---------------------------------------------------------#
+#This section actually runs the model and then provides ways to check the output and clean it
+#---------------------------------------------------------#
+#running the model
+burst.model   <- jags.model (file = textConnection(hierarchical_regression),
+                             data = burst.list,
+                             inits = inits,
+                             n.chains = 3)
+
+
+#Converting the ooutput into a workable format
+burst.out   <- coda.samples (model = burst.model,
+                             variable.names = c("b","S"),
+                             n.iter = 5000)
+
+
+#Trace plot and distribution. For trace make sure they are very overlapped showing convergence
+plot(burst.out)
+
+
+#Checking that convergence happened
+gelman.diag(burst.out)
+
+#Checking where convergence occured
+GBR <- gelman.plot(burst.out)
+
+#Removing burnin before convergence occurred
+burnin = 750                                ## determine convergence from GBR output
+burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
+plot(burst.burn)                             ## check diagnostics post burn-in
+
+
+
+for(i in 1:burst.list$individual) {
+  a[i]  ~ dmnorm(mu.alpha, tau.alpha) #random individual effect on slope
+  b[i] ~  dmnorm(mu.beta, tau.alpha) #random individual effect on intercept
+}
+
+for(k in 1:burst.list$n) {
+  mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
+  y[k] ~ dnorm(mu[k], S)
+}
+
 
 

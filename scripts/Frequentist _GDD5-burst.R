@@ -115,12 +115,14 @@ dat.burst <- aggregate(dat.oak[dat.oak$Bud=="Yes", "Date.Observed"],
                        by=dat.oak[dat.oak$Bud=="Yes", c("Species", "PlantNumber", "Year")], 
                        FUN=min)
 
-dat.burst$Yday <- lubridate::yday((dat.burst$Date))
+#Adding in arboretum Lat and Long
 dat.burst$Latitude <- 41.8164
 dat.burst$Longitude <- -88.0549
 
-#Making easier names for the data frame
-dat.burst <- dat.burst[,c("Latitude", "Longitude", "PlantNumber", "Year", "Yday", "Species", "Date")]
+#Making easier names for the data frameYday",
+colnames(dat.burst) <- c("Species", "PlantNumber", "Year", "Date", "Latitude", "Longitude")
+dat.burst$Yday <- lubridate::yday((dat.burst$Date))
+
 
 #Relic from when this combined this data with npn. keeping since it will return.
 dat.comb <- dat.burst
@@ -221,7 +223,7 @@ for(i in 1:nrow(dat.yr)){
 
 
 #---------------------------------------------------------#
-#This section is for summarizing the model data and observed data so tehy can be visualized and compared
+#This section is for summarizing the model data and observed data so they can be visualized and compared
 #---------------------------------------------------------#
 #Calculating summary statistics of the matrix of values from each year
 dat.yr$bud.mean <- apply(mat.yr, 1, mean, na.rm=T)
