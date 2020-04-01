@@ -12,10 +12,10 @@
 #---------------------------------------------------#
 #This section sets up the model itself
 #---------------------------------------------------#
-#rjags for the model and coda for the summary statistics
-#YOU WILL NEED JAGS INSTALLED rjags is a package for interfacting but you need the program itself http://mcmc-jags.sourceforge.net/
-library(rjags)
+#rjags for the model and coda for the summary statisticslibrary(rjags)
 library(coda)
+#YOU WILL NEED JAGS INSTALLED rjags is a package for interfacting but you need the program itself http://mcmc-jags.sourceforge.net/
+
 #Setting up the Jags model itself
 
 univariate_regression <- "
@@ -140,10 +140,11 @@ ggplot(mosq, aes(x=time, y=density))+
 
 
 #--------------------------------------------------------#
-#Everything below here is a work in progress on making the hierarchicial model. DOES NOT WORK RIGHT NOW :(
+#Everything below here is a work in progress on making the hierarchicial model. WORKS BUT IN PROGRESS FOR QUALiTY CHECKS :)
 #--------------------------------------------------------#
 
 #Subsetting out any trees that don't have multiple years of observations
+#I'm not sure if those individuals would mess with the model but I need it working without them to check
 dat.comb$PlantNumber <- factor(dat.comb$PlantNumber)
 tab <- table(dat.comb$PlantNumber)
 dat.comb <- dat.comb[dat.comb$PlantNumber %in% names(tab)[tab>=2],]
@@ -156,8 +157,8 @@ model{
   S ~ dgamma(s1,s2)    ## prior precision for all individuals
 
   for(i in 1:p) {
-    a[i]  ~ dmnorm(b0, Vb0) #random individual effect on slope
-    b[i] ~  dmnorm(b1, Vb0) #random individual effect on intercept
+    a[i] ~ dnorm(b0, S) #random individual effect on slope
+    b[i] ~  dnorm(b1, S) #random individual effect on intercept
   }
   for(k in 1:n) {
     mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
@@ -169,9 +170,8 @@ model{
 burst.list <- list(x = dat.comb$GDD5.cum, y = dat.comb$Yday, individual = dat.comb$PlantNumber, p = length(dat.comb$PlantNumber), n = length(dat.comb$Yday))
 
 #Setting our uniformative priors
-burst.list$b0 <- as.vector(c(0,0))      ## regression random individual effect on intercept mean
-burst.list$Vb0 <- solve(diag(10000,2))   ## regression random individual effect on intercept precisions
-burst.list$b1 <- as.vector(c(0,0))      ## regression random individual effect on slope mean
+burst.list$b0 <- dnorm(0,.00001)      ## regression random individual effect on intercept mean
+burst.list$b1 <- dnorm(0,.00001)     ## regression random individual effect on slope mean
 burst.list$s1 <- 0.1                    ## error prior n/2
 burst.list$s2 <- 0.1                    ## error prior SS/2
 
@@ -180,7 +180,7 @@ burst.list$s2 <- 0.1                    ## error prior SS/2
 nchain = 3
 inits <- list()
 for(i in 1:nchain){
-  inits[[i]] <- list(b = rnorm(2,0,5), S = runif(1,1/200,1/20))
+  inits[[i]] <- list(S = runif(1,1/200,1/20))
 }
 
 #---------------------------------------------------------#
@@ -210,21 +210,8 @@ gelman.diag(burst.out)
 GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 750                                ## determine convergence from GBR output
+burnin = 1000                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)                             ## check diagnostics post burn-in
-
-
-
-for(i in 1:burst.list$individual) {
-  a[i]  ~ dmnorm(mu.alpha, tau.alpha) #random individual effect on slope
-  b[i] ~  dmnorm(mu.beta, tau.alpha) #random individual effect on intercept
-}
-
-for(k in 1:burst.list$n) {
-  mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
-  y[k] ~ dnorm(mu[k], S)
-}
-
 
 
