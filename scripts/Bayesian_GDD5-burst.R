@@ -12,7 +12,8 @@
 #---------------------------------------------------#
 #This section sets up the model itself
 #---------------------------------------------------#
-#rjags for the model and coda for the summary statisticslibrary(rjags)
+#rjags for the model and coda for the summary statistics
+library(rjags)
 library(coda)
 #YOU WILL NEED JAGS INSTALLED rjags is a package for interfacting but you need the program itself http://mcmc-jags.sourceforge.net/
 
