@@ -64,7 +64,7 @@ for(YR in unique(met.all$YEAR)){
   gdd.cum=0
   d.miss = 0
   for(i in 1:nrow(dat.tmp)){
-    if(is.na(dat.tmp$GDD5[i]) & d.miss<=3){
+    if(is.na(dat.tmp$GDD5[i]) & d.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
       d.miss <- d.miss+1 # Let us miss up to 3 consecutive days
       gdd.cum <- gdd.cum+0
     } else {
