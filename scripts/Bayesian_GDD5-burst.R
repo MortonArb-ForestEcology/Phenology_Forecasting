@@ -120,6 +120,7 @@ dat.yr <- dat.yr[dat.yr$YEAR>=2009,]
 mat.yr <- array(dim=c(nrow(dat.yr), 10503))
 dimnames(mat.yr)[[1]] <- dat.yr$YEAR
 
+#A distribution of gdd5.cum at bud burst that will be used to create a corresponding distribution of yday at bud burst
 dat.gdd5.vec <- burst.df$b
 
 #Function used to calculate bud burst day using gdd5
