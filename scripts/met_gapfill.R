@@ -1,20 +1,26 @@
 met.gapfill <- function(met.data, met.var){
-  val.na <- which(is.na(met.data[,met.var]))
+  val.vec <- met.data[,met.var]
+  
+  val.na <- which(is.na(val.vec))
   
   if(length(val.na)==0){
-    return("Done: No gapfilling necessary.")
+    print("Done: No gapfilling necessary.")
+    # break
     # return
   } 
   
   while(length(val.na)>0){
-    if(val.na[1]==1) return(warning("Missing first data point! Stop and re-evaluate"))
+    if(val.na[1]==1){ 
+      stop("Missing first data point! Stop and re-evaluate")
+      # break
+    }
     
     gap.now <- val.na[1]
     if(length(val.na)>1){
       for(i in 2:length(val.na)){
         if(val.na[i] == gap.now[length(gap.now)]+1){
           gap.now <- c(gap.now, val.na[i])
-        }
+        } else break 
       }
     }
     
@@ -26,13 +32,22 @@ met.gapfill <- function(met.data, met.var){
     obs.fill <- obs.fill[2:(length(obs.fill)-1)] # Trim out the observed start/end
     
     # Put the gap filled data back in palce
-    met.data[gap.now, met.var] <- obs.fill
+    val.vec[gap.now] <- obs.fill
     
     # Update our missing values
-    val.na <- which(is.na(met.data[,met.var]))
+    val.na <- which(is.na(val.vec))
     
-    if(length(val.na)==0){ return(paste0(met.var, " gapfilling complete"))}
-    if(val.na[length(val.na)]==nrow(met.data)) return(warning("Missing last data point! Stop and re-evaluate"))
+    # return(met.data)
+    if(length(val.na)==0){ 
+      print(paste0(met.var, " gapfilling complete"))
+      return(val.vec)
+      break
+    }
+    if(val.na[length(val.na)]==nrow(met.data)){ 
+      warning("Missing last data point! Stop and re-evaluate")
+      return(val.vec)
+      break
+    }
     
   }
 }

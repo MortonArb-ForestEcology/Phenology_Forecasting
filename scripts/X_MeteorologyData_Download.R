@@ -96,10 +96,14 @@ summary(dat.ghcn$flag.PRCP)
 if(is.na(dat.ghcn$SNWD[1])) dat.ghcn$SNWD[1] <- 0
 if(is.na(dat.ghcn$SNWD[nrow(dat.ghcn)])) dat.ghcn$SNWD[nrow(dat.ghcn)] <- 0
 
-met.gapfill(met.data = dat.ghcn, met.var="TMAX")
-met.gapfill(met.data = dat.ghcn, met.var="TMIN")
-met.gapfill(met.data = dat.ghcn, met.var="SNWD")
+dat.ghcn$TMAX <- met.gapfill(met.data = dat.ghcn, met.var="TMAX")
+dat.ghcn$TMIN <- met.gapfill(met.data = dat.ghcn, met.var="TMIN")
+dat.ghcn$SNWD <- met.gapfill(met.data = dat.ghcn, met.var="SNWD")
 summary(dat.ghcn)
+
+dat.ghcn$TMEAN <- apply(dat.ghcn[,c("TMAX", "TMIN")], 1, mean)
+summary(dat.ghcn)
+
 # -------------------------------------
 
 
@@ -107,11 +111,13 @@ summary(dat.ghcn)
 # -------------------------------------
 # Calculating some cumulative statistics
 # -------------------------------------
-for(YR in (min(dat.ghcn$YEAR)+1):max(dat.ghcn$YEAR)){
+yr.min <- 2008
+yr.max <- lubridate::year(Sys.Date())
+for(YR in yr.min:yr.max){
   rows.yr <- which(dat.ghcn$YEAR==YR)
   dat.yr <- dat.ghcn[rows.yr,]
   # dat.yr$TMEAN <- (dat.yr$TMAX + dat.yr$TMIN)/2
-  tmean.tmp
+  # tmean.tmp
   
   dat.yr$GDD0 <- ifelse(dat.yr$TMEAN>0, dat.yr$TMEAN-0, 0)
   dat.yr$GDD5 <- ifelse(dat.yr$TMEAN>5, dat.yr$TMEAN-5, 0)
