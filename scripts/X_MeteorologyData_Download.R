@@ -25,6 +25,12 @@
 #       - Cumulative precip
 #       - Days without rain: total, current tally
 # 3. Write files to existing structure to feed into forecast
+
+# NOTES
+# Currently running for all GHCN station data; 
+#  - probably want to edit so we're only doing the current year for the sake of time
+# Probably want to convert this script to a function 
+#  - so it can be executed more easily & transparently
 # ---------------------------------
 
 # ---------------------------------
@@ -44,31 +50,68 @@ dir.create(dir.met, recursive=T, showWarnings = F)
 ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
 # test <- FedData::download_ghcn_daily_station(ID=ID, raw.dir=dir.met)
-dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.met)
+dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.met, force.redo = T)
 
-test <- stack(dat.raw[[MET]][grep("D", names(dat.raw[[MET]]))])
-
-dat.ghcn <- data.frame(STATION=ID, 
-                       YEAR=dat.raw[[1]]$YEAR, 
-                       MONTH=dat.raw[[1]]$MONTH,
-                       DAY=rep(1:31, each=nrow(dat.raw[[1]])))
+# Finding an issue where not all variables may line up (weird; but we can deal)
+dat.ghcn <- data.frame(STATION=ID)
 for(MET in vars.want){
-  dat.ghcn[,MET] <- stack(dat.raw[[MET]][grep("D", names(dat.raw[[MET]]))])[,1]
+  dat.var <- data.frame(YEAR=dat.raw[[MET]]$YEAR, 
+                        MONTH=dat.raw[[MET]]$MONTH,
+                        DAY=rep(1:31, each=nrow(dat.raw[[MET]])))
+  dat.var[,MET] <- stack(dat.raw[[MET]][grep("D", names(dat.raw[[MET]]))])[,1]
+  
+  dat.ghcn <- merge(dat.ghcn, dat.var, all=T)
 }
 summary(dat.ghcn)
+
+dat.ghcn[,c("TMAX", "TMIN", "PRCP")] <- dat.ghcn[,c("TMAX", "TMIN", "PRCP")]*0.1 # Unit correction
 dat.ghcn$DATE <- as.Date(paste(dat.ghcn$YEAR, dat.ghcn$MONTH, dat.ghcn$DAY, sep="-"))
 dat.ghcn <- dat.ghcn[!is.na(dat.ghcn$DATE),]
+dat.ghcn <- dat.ghcn[dat.ghcn$DATE < Sys.Date(),] # Get rid of anything in the future
 dat.ghcn$YDAY <- lubridate::yday(dat.ghcn$DATE)
 dat.ghcn <- dat.ghcn[order(dat.ghcn$DATE),] # Ordering just to make life easier
-dat.ghcn[,c("TMAX", "TMIN", "PRCP")] <- dat.ghcn[,c("TMAX", "TMIN", "PRCP")]*0.1
 # dat.ghcn[,]
 summary(dat.ghcn)
+tail(dat.ghcn)
 
+# -------------------------------------
+# Missing days are going to be a pain in the butt, so lets do dumb gap-filling for now. 
+#  - For temperature, linearly interpolate
+#  - For precipitation, just assume no rain
+#  ** Make sure to add column about being gapfilled
+# -------------------------------------
+source("met_gapfill.R")
+dat.ghcn$flag.TMAX <- as.factor(ifelse(is.na(dat.ghcn$TMAX), "gapfill", "observed"))
+dat.ghcn$flag.TMIN <- as.factor(ifelse(is.na(dat.ghcn$TMIN), "gapfill", "observed"))
+dat.ghcn$flag.PRCP <- as.factor(ifelse(is.na(dat.ghcn$PRCP), "gapfill", "observed"))
+dat.ghcn$flag.SNOW <- as.factor(ifelse(is.na(dat.ghcn$SNOW), "gapfill", "observed"))
+dat.ghcn$flag.SNWD <- as.factor(ifelse(is.na(dat.ghcn$SNWD), "gapfill", "observed"))
+
+# Assuming missing precip (& snow) is 0
+dat.ghcn$PRCP[dat.ghcn$flag.PRCP=="gapfill"] <- 0
+dat.ghcn$SNOW[dat.ghcn$flag.SNOW=="gapfill"] <- 0
+summary(dat.ghcn$flag.PRCP)
+
+# Initial (& last) snow depth is missing, so lets assume 0
+if(is.na(dat.ghcn$SNWD[1])) dat.ghcn$SNWD[1] <- 0
+if(is.na(dat.ghcn$SNWD[nrow(dat.ghcn)])) dat.ghcn$SNWD[nrow(dat.ghcn)] <- 0
+
+met.gapfill(met.data = dat.ghcn, met.var="TMAX")
+met.gapfill(met.data = dat.ghcn, met.var="TMIN")
+met.gapfill(met.data = dat.ghcn, met.var="SNWD")
+summary(dat.ghcn)
+# -------------------------------------
+
+
+
+# -------------------------------------
 # Calculating some cumulative statistics
+# -------------------------------------
 for(YR in (min(dat.ghcn$YEAR)+1):max(dat.ghcn$YEAR)){
   rows.yr <- which(dat.ghcn$YEAR==YR)
   dat.yr <- dat.ghcn[rows.yr,]
-  dat.yr$TMEAN <- (dat.yr$TMAX + dat.yr$TMIN)/2
+  # dat.yr$TMEAN <- (dat.yr$TMAX + dat.yr$TMIN)/2
+  tmean.tmp
   
   dat.yr$GDD0 <- ifelse(dat.yr$TMEAN>0, dat.yr$TMEAN-0, 0)
   dat.yr$GDD5 <- ifelse(dat.yr$TMEAN>5, dat.yr$TMEAN-5, 0)
@@ -80,6 +123,7 @@ for(YR in (min(dat.ghcn$YEAR)+1):max(dat.ghcn$YEAR)){
     # PICK UP HERE
   }
 }
+# -------------------------------------
 
 ggplot(data=dat.ghcn, aes(x=YDAY, y=TMAX, group=YEAR)) +
   geom_line(alpha=0.2, size=0.5) +
