@@ -79,8 +79,9 @@ for(YR in unique(met.all$YEAR)){
 summary(met.all)
 
 # -----------------------------
-# This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
+# This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function found in the Phenology_LivingCollections repository
 # -----------------------------
+source("../../Phenology_LivingCollections/scripts/clean_google_form.R")
 
 quercus.18 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Quercus", dat.yr=2018)
 quercus.18$Collection <- as.factor("Quercus")
