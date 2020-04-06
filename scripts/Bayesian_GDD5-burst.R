@@ -88,7 +88,7 @@ gelman.diag(burst.out)
 GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 1500                                ## determine convergence from GBR output
+burnin = 750                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)                             ## check diagnostics post burn-in
 
@@ -117,7 +117,7 @@ dat.yr <- aggregate(met.all[,c("TMAX", "TMIN", "TMEAN", "PRCP", "SNOW")],
 dat.yr <- dat.yr[dat.yr$YEAR>=2009,]
 
 #Creating a matrix of the right size to be filled with the distribution of predictions for that year
-mat.yr <- array(dim=c(nrow(dat.yr), 10503))
+mat.yr <- array(dim=c(nrow(dat.yr), nrow(burst.df)))
 dimnames(mat.yr)[[1]] <- dat.yr$YEAR
 
 #A distribution of gdd5.cum at bud burst that will be used to create a corresponding distribution of yday at bud burst
@@ -127,7 +127,7 @@ dat.gdd5.vec <- burst.df$b
 calc.bud <- function(x){min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"])}
 
 #Filling a matrix with yday values calculating by running calc.bud on a distribution of gdd5.cum values at bud burst (dat.gdd5.vec)
-#2013 is problematic. Doesnt have enough data for accurate gdd5.cum for now its ok for visuals.
+#2013 is problematic. Doesnt have enough data for accurate gdd5.cum. For now its ok for visuals but check in regarding gdd5.cum limits.
 i <- 1
 for(i in 1:nrow(dat.yr)){
   YR=dat.yr$YEAR[i]

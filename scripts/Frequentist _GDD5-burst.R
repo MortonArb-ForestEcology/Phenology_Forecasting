@@ -129,7 +129,7 @@ dat.comb <- dat.burst
 
 dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
-#Creating a new column in our phenology data folder that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
+#Creating a new column in our phenology data frame that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
 dat.comb$GDD5.cum <- NA
 for(DAT in paste(dat.comb$Date)){
   if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])==0) next
