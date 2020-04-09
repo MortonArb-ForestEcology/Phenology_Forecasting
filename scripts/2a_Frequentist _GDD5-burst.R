@@ -1,15 +1,11 @@
 #----------------------------------------------------------------------------------------------------------------------------------#
 # Script by : Lucien Fitzpatrick
 # Project: Living Collections Phenology Forecasting
+# 2a_Frequentist GDD5-burst.R
 # Purpose: To use arb weather data and phenology monitoring data to create a predicitve model of bud burst timing
-#          This script serves as the initial data download, crosswalking, and orgnaizaiton needed for and the frequentist model
-#          Part way through the script it marks where it one can transition to the Bayesian_GDD5-burst.R script
-# Inputs: Old metstation data from 1895-2007 found in the "Arboretum Met Data/GHCN-Daily" google drive folder
-#         New metstation data from 2007-present found in the "Arboretum Met Data/GHCN-Daily" google drive folder
-#         Quercus 2018 to present phenology monitoring data from the googlesheet "Phenology_Observations_GoogleForm" in the "LivingCollections-Phenology/Data_Observations/" folder
-#         The clean_google_form.r script which defines the clean.google function. Found in the Github repository "Phenology_ LivingCollections"
-# Outputs: Figure of Frequentist model prediction for bud burst timing of Quercus Macrocarpa for each year
-#          dat.comb dataframe that can be used in the Bayesian_GDD5-burst.r script in this repository
+#          This script serves as the Frequentist model which will largely be for testing/comparison
+# Inputs: dat.comb dataframe that is created by the Organize_Data_Pheno.R script
+# Outputs: Currently, a hindcast of a species modeled day of budburst vs observed date of budburst
 # Notes: All script relating to met data is stolen from Christy ROllinson's script "02_MortonArb_Climate_BLoomTimes-1.r"
 #        The majority of the rest is currently a modification of that same script by Christy
 
