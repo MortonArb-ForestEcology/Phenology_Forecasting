@@ -29,7 +29,7 @@ model{
 
   for(i in 1:n){
 	  ##mu[i] <- b[1] + b[2]*x[i]   	## process model (simple linear regression)
-	  mu[i] <- b[1]
+	  mu[i] <- b[1]                   ## process model ANOVA
 	  y[i]  ~ dnorm(mu[i],S)		        ## data model
   }
 }
@@ -43,7 +43,7 @@ plot(dat.comb$GDD5.cum, dat.comb$Yday)
 #------------------------------------------------------#
 
 #Converting to list format needed for JAGs
-burst.list <- list( y = dat.comb$GDD5.cum, n = length(dat.comb$Yday))
+burst.list <- list( y = dat.comb$GDD5.cum, n = length(dat.comb$GDD5.cum))
 
 #Setting our uniformative priors
 ##burst.list$b0 <- as.vector(c(0,0))      ## regression b means
@@ -107,6 +107,7 @@ summary(burst.burn)
 
 #Converting it into a matrix so we can work with it
 burst.df <- as.data.frame(as.matrix(burst.burn))
+burst.df$SD <- 1/sqrt(burst.df[,"S"])
 
 #Creating a dataframe with the mean values of these metrics for every year
 dat.yr <- aggregate(met.all[,c("TMAX", "TMIN", "TMEAN", "PRCP", "SNOW")],
@@ -122,6 +123,8 @@ dimnames(mat.yr)[[1]] <- dat.yr$YEAR
 
 #A distribution of gdd5.cum at bud burst that will be used to create a corresponding distribution of yday at bud burst
 dat.gdd5.vec <- burst.df$b
+##dat.gdd5.vec <- rnorm(nrow
+
 
 #Function used to calculate bud burst day using gdd5
 calc.bud <- function(x){min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"])}
