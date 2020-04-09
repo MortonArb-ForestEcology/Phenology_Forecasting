@@ -76,6 +76,14 @@ dat.ghcn <- dat.ghcn[order(dat.ghcn$DATE),] # Ordering just to make life easier
 summary(dat.ghcn)
 tail(dat.ghcn)
 
+# If we have no data for days at the end, just trim those days
+dat.none <- which(is.na(dat.ghcn$TMAX) | is.na(dat.ghcn$TMIN))
+while(dat.none[length(dat.none)]==nrow(dat.ghcn)){
+  dat.ghcn <- dat.ghcn[1:(nrow(dat.ghcn)-1),]
+  dat.none <- which(is.na(dat.ghcn$TMAX) | is.na(dat.ghcn$TMIN))
+}
+tail(dat.ghcn)
+
 # -------------------------------------
 # Missing days are going to be a pain in the butt, so lets do dumb gap-filling for now. 
 #  - For temperature, linearly interpolate
@@ -112,7 +120,6 @@ dat.ghcn$CDD0 <- ifelse(dat.ghcn$YDAY>172 & dat.ghcn$TMEAN<0, 0-dat.ghcn$TMEAN, 
 dat.ghcn$CDD2 <- ifelse(dat.ghcn$YDAY>172 & dat.ghcn$TMEAN< -2, -2-dat.ghcn$TMEAN, 0)
 dat.ghcn$DaysNoRain <- NA
 summary(dat.ghcn)
-
 # -------------------------------------
 
 
@@ -144,7 +151,6 @@ write.csv(dat.ghcn, file.path(path.out, "data", "weather_ArbCOOP_latest.csv"), r
 # -------------------------------------
 # Doing some quick graphing
 # -------------------------------------
-
 day.labels <- data.frame(Date=seq.Date(as.Date("2020-01-01"), as.Date("2020-12-31"), by="month"))
 day.labels$yday <- lubridate::yday(day.labels$Date)
 day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::day(day.labels$Date))
@@ -214,7 +220,7 @@ plot.prcp <- ggplot(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum)) +
 plot.tmean <- ggplot(data=dat.ghcn, aes(x=YDAY, y=TMEAN)) +
   stat_summary(fun.y=mean, color="black", geom="line", size=1) +
   geom_line(aes(group=YEAR), alpha=0.2, size=0.5) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(color=as.factor(lubridate::year(Sys.Date()))), size=1.5) +
+  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(color=as.factor(lubridate::year(Sys.Date()))), size=1) +
   scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=3)], labels=day.labels$Text[seq(2, 12, by=3)]) +
   scale_y_continuous(name="Mean Daily Temp (C)" ,expand=c(0,0)) +
   scale_color_manual(name="Year", values = "blue2") +
@@ -224,10 +230,20 @@ plot.tmean <- ggplot(data=dat.ghcn, aes(x=YDAY, y=TMEAN)) +
         legend.title=element_blank(),
         legend.background = element_blank())
 
+plot.dat <- cowplot::plot_grid(plot.tmean, plot.prcp, plot.threshA, plot.threshB)
+
+library(cowplot)
+plot.title <- ggdraw() + 
+  draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE)),
+    fontface = 'bold', x = 0,hjust = 0) +
+  theme(plot.margin = margin(0, 0, 0, 1)
+  )
+
+
 png(file.path(path.out, "figures", "Weather_latest.png"), height=6, width=6, units="in", res=220)
-cowplot::plot_grid(plot.tmean, plot.prcp, plot.threshA, plot.threshB)
+cowplot::plot_grid(plot.title, plot.dat,ncol=1, rel_heights = c(0.1, 1))
 dev.off()
- # -------------------------------------
+# -------------------------------------
 
 
 
