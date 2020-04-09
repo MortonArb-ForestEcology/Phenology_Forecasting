@@ -124,7 +124,7 @@ dimnames(mat.yr)[[1]] <- dat.yr$YEAR
 #A distribution of gdd5.cum at bud burst that will be used to create a corresponding distribution of yday at bud burst
 dat.gdd5.vec <- burst.df$b
 ##dat.gdd5.vec <- rnorm(nrow
-(burst.df), mean(burst.df$b), mean(burst.df$SD))
+
 
 #Function used to calculate bud burst day using gdd5
 calc.bud <- function(x){min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"])}
