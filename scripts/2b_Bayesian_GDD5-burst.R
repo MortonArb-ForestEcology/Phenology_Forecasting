@@ -9,6 +9,10 @@
 #        In order to use rjags you need JAGS installed. rjags is simply for interfacing. It can be found at http://mcmc-jags.sourceforge.net/
 #-----------------------------------------------------------------------------------------------------------------------------------#
 
+# Read in output of previous script
+dat.comb <- read.csv("../data_processed/Phenology_Met_combined.csv")
+
+
 #---------------------------------------------------#
 #This section sets up the model itself
 #---------------------------------------------------#

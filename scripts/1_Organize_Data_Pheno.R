@@ -18,6 +18,8 @@
 #loading ggplot for visualization 
 library(ggplot2)
 
+dir.create("../data_processed/", recursive = T, showWarnings = F)
+
 #-------------------------------------------------#
 #This section is for downloaded the met data, pulling out data of interest, and calculating growing degree days
 #-------------------------------------------------#
@@ -140,121 +142,5 @@ for(DAT in paste(dat.comb$Date)){
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
 dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum")] <- NA
 
-#---------------------------------------------------------------------#
-#If only running the Bayesian model than you can stop here. These may become fully seperate scripts down the line
-#---------------------------------------------------------------------#
-
-# Testing whether GDD5 is a good predictor of day 
-dat.gdd5.lm <- lm(Yday ~ GDD5.cum, data=dat.comb)
-summary(dat.gdd5.lm)
-plot(Yday ~ GDD5.cum, data=dat.comb)
-abline(dat.gdd5.lm, col="red")
-
-
-#Box plot of dat.burst to see the distribution. Macrocarpa has an outlier but seems plausible 
-ggplot(data=dat.comb) +
-  geom_boxplot(aes(x=Species, y=GDD5.cum, fill=Species)) +
-  scale_y_continuous(name="Accumulated Warming") +
-  scale_fill_manual(name="Species", values=c("deeppink2", "mediumpurple1")) +
-  guides(fill=F) +
-  theme(panel.background=element_rect(fill=NA, color="black"),
-        legend.text = element_text(face="italic"),
-        axis.title.x=element_blank(),
-        axis.text.x=element_text(face="bold.italic", color="black", size=rel(3)),
-        axis.title.y=element_text(face="bold", color="black", size=rel(3.5)),
-        axis.text.y=element_text(color="black", size=rel(2)))
-
-
-#Creating a dataframe with the mean values of these metrics for every year
-dat.yr <- aggregate(met.all[,c("TMAX", "TMIN", "TMEAN", "PRCP", "SNOW")],
-                    by=met.all[,c("STATION", "YEAR")],
-                    FUN=mean, na.rm=T)
-
-#removing years too before reliable measurments
-dat.yr <- dat.yr[dat.yr$YEAR>=1922,]
-
-#Creating a matrix of the right size to be filled with the distribution of predictions for that year
-mat.yr <- array(dim=c(nrow(dat.yr), 1000))
-dimnames(mat.yr)[[1]] <- dat.yr$YEAR
-
-#---------------------------------------------------------#
-#This section is for calculating mean and sd of our observed data to base our model distribtuion off of
-#---------------------------------------------------------#
-#loading in nlme and lme4 for their linear mixed effect equations
-library(nlme); library(lme4)
-
-#creating a mean and sd for gdd
-dat.gdd5.mean <- mean(dat.comb[,"GDD5.cum"], na.rm=T); 
-dat.gdd5.sd <- sd(dat.comb[,"GDD5.cum"], na.rm=T)
-
-#Creating a hierarchial mean to compare
-mac.cue <- lme(GDD5.cum ~ 1, random=list(Year=~1, PlantNumber=~1), data=dat.comb, na.action=na.omit)
-mac.summ <- summary(mac.cue)
-MuMIn::r.squaredGLMM(mac.cue)
-mod.cue.est <- mac.summ$tTable[,"Value"] # Hierarchical mean
-mod.cue.se <- mac.summ$tTable[,"Std.Error"]
-mod.cue.sd <- mac.summ$tTable[,"Std.Error"]*sqrt(mac.summ$tTable[,"DF"]+1)
-
-# Compare to non-hierarchical
-mod.cue.est; mod.cue.sd
-dat.gdd5.mean; dat.gdd5.sd 
-
-#Creating the distribtuion of gdd5 values to be ran through the calc.bud function
-dat.gdd5.vec <- rnorm(1000, dat.gdd5.mean, dat.gdd5.sd)
-
-#Function used to calculate bud burst day using gdd5
-calc.bud <- function(x){min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"])}
-
-#Filling a matrix with yday values calculating by running calc.bud on a distribution of gdd5.cum values at bud burst (dat.gdd5.vec)
-i <- 1
-for(i in 1:nrow(dat.yr)){
-  YR=dat.yr$YEAR[i]
-  dat.tmp <- met.all[met.all$YEAR==YR, ]
-  # summary(dat.tmp)
-  if(nrow(dat.tmp)==0) next
-  
-  # Bloom time -- simple
-  bud.pred <- calc.bud(dat.gdd5.mean)
-  if(bud.pred != Inf) dat.yr[i,"bud.oak"] <- bud.pred
-  bud.vec <- unlist(lapply(dat.gdd5.vec, calc.bud))
-  bud.vec[bud.vec==Inf] <- NA
-  
-  mat.yr[i,] <- bud.vec
-}
-
-
-#---------------------------------------------------------#
-#This section is for summarizing the model data and observed data so they can be visualized and compared
-#---------------------------------------------------------#
-#Calculating summary statistics of the matrix of values from each year
-dat.yr$bud.mean <- apply(mat.yr, 1, mean, na.rm=T)
-dat.yr$bud.sd   <- apply(mat.yr, 1, sd, na.rm=T)
-dat.yr$bud.lb   <- apply(mat.yr, 1, quantile, 0.025, na.rm=T)
-dat.yr$bud.ub   <- apply(mat.yr, 1, quantile, 0.975, na.rm=T)
-summary(dat.yr) 
-
-
-#Aggregating all indivudla measurements into one mean for the every year
-oak.bud <- aggregate(dat.comb[,c("Yday", "GDD5.cum")],
-                        by=list(dat.comb$Year),
-                        FUN=mean, na.rm=F)
-
-
-#Calculating sd values to put on our visualizations
-oak.bud[,c("Yday.sd", "GDD5.cum.sd")]  <- aggregate(dat.comb[,c("Yday", "GDD5.cum")],
-                                                       by=list(dat.comb$Year),
-                                                       FUN=sd, na.rm=F)[,c("Yday", "GDD5.cum")]
-
-
-#Graphing the output of the model vs. the observed data
-ggplot(data=dat.yr[,]) +
-  geom_ribbon(data=dat.yr[,], aes(x=YEAR, ymin=bud.lb, ymax=bud.ub, fill="Modeled"), alpha=0.5) +
-  geom_point(data=dat.yr[,], aes(x=YEAR, y=bud.mean, color="Modeled"), alpha=0.8) +
-  geom_line(data=dat.yr[,], aes(x=YEAR, y=bud.mean, color="Modeled"), alpha=0.8) + 
-  geom_pointrange(data=oak.bud, aes(x=Group.1, y=Yday, ymin=Yday-Yday.sd, ymax=Yday+Yday.sd,color="Observed"))+
-  ggtitle("Modeled and Observed day of year of budburst for Quercus Macrocarpa")+
-  theme_bw() +
-  theme(panel.grid=element_blank()) +
-  theme(axis.text=element_text(size=rel(2.5), color="black"),
-        axis.title=element_text(size=rel(2.5), face="bold"),)
-
+# Save dat.comb 
+write.csv(dat.comb, "../data_processed/Phenology_Met_combined.csv", row.names=F)
