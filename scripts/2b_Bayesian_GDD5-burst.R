@@ -29,12 +29,13 @@ model{
 
   ##b ~ dmnorm(b0,Vb)  	## multivariate Normal prior on vector of regression params
   b ~ dnorm (b0, v0)
-  S ~ dgamma(s1,s2)    ## prior precision
+  # S ~ dgamma(s1,s2)    ## prior precision
 
   for(i in 1:n){
 	  ##mu[i] <- b[1] + b[2]*x[i]   	## process model (simple linear regression)
-	  mu[i] <- b[1]                   ## process model ANOVA
-	  y[i]  ~ dnorm(mu[i],S)		        ## data model
+	  # mu[i] <- b[1]                   ## process model ANOVA
+	  # y[i]  ~ dnorm(mu[i],S)		        ## data model
+	  y[i] ~ b[1]
   }
 }
 "
@@ -54,8 +55,8 @@ burst.list <- list( y = dat.comb$GDD5.cum, n = length(dat.comb$GDD5.cum))
 ##burst.list$Vb <- solve(diag(10000,2))   ## regression b precisions
 burst.list$b0 <- 0
 burst.list$v0 <- .0001
-burst.list$s1 <- 0.1                    ## error prior n/2
-burst.list$s2 <- 0.1                    ## error prior SS/2
+# burst.list$s1 <- 0.1                    ## error prior n/2
+# burst.list$s2 <- 0.1                    ## error prior SS/2
 
 
 #Setting the number of MCMC chains and their parameters

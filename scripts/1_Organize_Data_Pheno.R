@@ -25,7 +25,8 @@ dir.create("../data_processed/", recursive = T, showWarnings = F)
 #-------------------------------------------------#
 
 #Setting a shared file path for where the data are
-path.met <- "G:/My Drive/Arboretum Met Data/GHCN-Daily"
+# path.met <- "G:/My Drive/Arboretum Met Data/GHCN-Daily"
+path.met <- "/Volumes/GoogleDrive/My Drive/Arboretum Met Data/GHCN-Daily/"
 
 # Read in the older dataset. This is because the GHCND at the arboretum changed in 2007 and we need to pull from both
 met.old <- read.csv(file.path(path.met, "MortonArb_GHCND-USC00119221_1895-2007.csv"))
