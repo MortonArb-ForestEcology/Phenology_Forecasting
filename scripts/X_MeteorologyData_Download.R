@@ -252,4 +252,20 @@ dev.off()
 # ---------------------------------
 # 2. Forecast Data 
 # ---------------------------------
+source("X_Meteorology_Download_CFS.R")
+lat.in=41.812739
+lon.in=-88.072749
+path.save="../data_raw/meteorology/CFS_Forecast"
+vars.in <- c("tmax", "tmin", "prate")
+
+download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, path.save=path.save)
+
+tmax <- read.csv(file.path(path.save, "tmax_cfs_latest.csv"))
+names(tmax) <- c("time", "latitude", "longitude", "vertCoord", "tmax")
+tmax$date <- as.Date(substr(tmax$time, 1, 10))
+tmax <- aggregate(tmax ~ date + latitude + longitude, data=tmax, FUN=max)
+summary(tmax)
+library(ggplot2)
+ggplot(data=tmax) +
+  geom_line(aes(x=date, y=tmax-273))
 # ---------------------------------
