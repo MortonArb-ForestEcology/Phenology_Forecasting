@@ -16,6 +16,8 @@
 #loading ggplot for visualization 
 library(ggplot2)
 
+path.g <- "G:/My Drive"
+
 dir.create("../data_processed/", recursive = T, showWarnings = F)
 
 #-------------------------------------------------#
@@ -23,7 +25,7 @@ dir.create("../data_processed/", recursive = T, showWarnings = F)
 #-------------------------------------------------#
 
 #Setting a shared file path for where the data are
-path.met <- "G:/My Drive/Arboretum Met Data/GHCN-Daily"
+path.met <- file.path(path.g, "Arboretum Met Data/GHCN-Daily")
 
 # Read in the older dataset. This is because the GHCND at the arboretum changed in 2007 and we need to pull from both
 met.old <- read.csv(file.path(path.met, "MortonArb_GHCND-USC00119221_1895-2007.csv"))
@@ -81,22 +83,34 @@ summary(met.all)
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function found in the Phenology_LivingCollections repository
 # -----------------------------
-source("../../Phenology_LivingCollections/scripts/clean_google_form.R")
+path.hub <- "C:/Users/lucie/Documents/GitHub/"
 
-quercus.18 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Quercus", dat.yr=2018)
-quercus.18$Collection <- as.factor("Quercus")
-quercus.18$Year <- lubridate::year(quercus.18$Date.Observed)
+source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
 
-quercus.19 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Quercus", dat.yr=2019)
-quercus.19$Collection <- as.factor("Quercus")
-quercus.19$Year <- lubridate::year(quercus.19$Date.Observed)
+#Enter the genus of interest and the range of years of interest for the chosen species
+#Format is df <- list("Genus name", list("year of interest", "Other year of interest"))
+#The range of years BACKWARDS. MUST BE BACKWARDS. This works around the clean.google funciton not changing column names for quercus 2018
 
+Quercus <- list("Quercus", list("2019", "2018"))
+#Acer <- list("Acer", list("2019"))
+#Ulmus <- list("Ulmus", list("2020"))
+form.list <- list(Quercus)
+dat.pheno <- data.frame()
 
-#Year 2018 has different column names not converted by the clean.google function so this sets them back to equal
-colnames(quercus.18) <- as.character(colnames(quercus.19))
-
-#Creating one data frame from them both
-dat.pheno <- rbind(quercus.18, quercus.19)
+#Loop that will download all of the google forms of interest.
+for(i in seq_along(form.list)){
+  collection <- form.list[[i]][[1]]
+  for(yr in form.list[[i]][[2]]){
+    temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
+    temp$Year <- yr
+    temp$Collection <- as.factor(collection)
+    #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
+    if(yr == 2018){
+      colnames(temp) <- as.character(colnames(dat.pheno)) 
+    }
+    dat.pheno <- rbind(dat.pheno, temp)
+  }
+}
 
 #Enter chosen species here. Genus must be capitalized, one space between genus and species, and species is lower case
 chosen <- "Quercus macrocarpa"

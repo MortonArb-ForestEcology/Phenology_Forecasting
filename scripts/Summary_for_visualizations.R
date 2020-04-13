@@ -77,20 +77,36 @@ summary(met.all)
 
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
+# As it stands with the clean.google function this must be hardcoded to included the years and species of interest for now
 # -----------------------------
+path.hub <- "C:/Users/lucie/Documents/GitHub/"
 
-quercus.18 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Quercus", dat.yr=2018)
-quercus.18$Collection <- as.factor("Quercus")
-quercus.18$Year <- lubridate::year(quercus.18$Date.Observed)
+source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
 
-quercus.19 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Quercus", dat.yr=2019)
-quercus.19$Collection <- as.factor("Quercus")
-quercus.19$Year <- lubridate::year(quercus.19$Date.Observed)
+#Enter the genus of interest and the range of years of interest for the chosen species
+#Format is df <- list("Genus name", list("year of interest", "Other year of interest"))
+#The range of years BACKWARDS. MUST BE BACKWARDS. This works around the clean.google funciton not changing column names for quercus 2018
 
-acer.19 <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection="Acer", dat.yr=2019)
-acer.19$Collection <- as.factor("Acer")
-acer.19$Year <- lubridate::year(acer.19$Date.Observed)
+Quercus <- list("Quercus", list("2019", "2018"))
+Acer <- list("Acer", list("2019"))
+#Ulmus <- list("Ulmus", list("2020"))
+form.list <- list(Quercus, Acer)
+dat.pheno <- data.frame()
 
+#Loop that will download all of the google forms of interest.
+for(i in seq_along(form.list)){
+  collection <- form.list[[i]][[1]]
+ for(yr in form.list[[i]][[2]]){
+    temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
+    temp$Year <- yr
+    temp$Collection <- as.factor(collection)
+    #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
+    if(yr == 2018){
+      colnames(temp) <- as.character(colnames(dat.pheno)) 
+    }
+    dat.pheno <- rbind(dat.pheno, temp)
+  }
+}
 
 #Year 2018 has different column names not converted by the clean.google function so this sets them back to equal
 colnames(quercus.18) <- as.character(colnames(quercus.19))
