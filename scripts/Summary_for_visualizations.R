@@ -94,6 +94,7 @@ form.list <- list(Quercus, Acer)
 dat.pheno <- data.frame()
 
 #Loop that will download all of the google forms of interest.
+#Tends to tke about 30 seconds per form
 for(i in seq_along(form.list)){
   collection <- form.list[[i]][[1]]
  for(yr in form.list[[i]][[2]]){
@@ -108,78 +109,67 @@ for(i in seq_along(form.list)){
   }
 }
 
-#Year 2018 has different column names not converted by the clean.google function so this sets them back to equal
-colnames(quercus.18) <- as.character(colnames(quercus.19))
-
-#Creating one data frame from them both
-dat.pheno <- rbind(quercus.18, quercus.19, acer.19)
-
-#Choosing the species of interest
+#-----------------------------------------------------------------#
+#HERE you make choices about the species and phenophses
+#-----------------------------------------------------------------#
+#Choosing the species of interest here.
 species <- c("Acer saccharum", "Acer saccharinum", "Acer rubrum", "Quercus macrocarpa", "Quercus alba", "Quercus rubra")
 
+#Choosing the Phenophase of interest here. Name is stored as a variable then placed in a list for a loop later on. Make sure it matches the column name
+Bud <- "Bud"
+Flower <- "Flower"
+#Pollen <- "Pollen"
+#Fruit <- "Fruit"
+#Drop <- "Drop"
+Pheno <- c(Bud, Flower)
+
+#Renaming and picking out your phenophases of interest. REMEMBER to matchw hat you seleted in the last step
+dat.pheno[[Bud]] <- as.factor(dat.pheno$leaf.buds.observed)
+dat.pheno[[Flower]] <- as.factor(dat.pheno$flower.open.observed)
+#dat.pheno[[Pollen]] <- as.factor(dat.pheno$flower.pollen.observed)
+#dat.pheno[[Fruit]] <- as.factor(dat.pheno$fruit.present.observed)
+#dat.pheno[[Drop]] <- as.factor(dat.pheno$fruit.drop.observed)
+
+#Pulling our species of interest
 dat.chosen <- dat.pheno[dat.pheno$Species %in% species, ]
 dat.chosen <- dat.chosen[!is.na(dat.chosen$Date.Observed),]
-dat.chosen$Bud <- as.factor(dat.chosen$leaf.buds.observed)
-dat.chosen$Flower <- as.factor(dat.chosen$flower.open.observed)
 
-#pulling out bud burst information from out phenology data
-dat.chosen <- subset(dat.chosen, select = c("Date.Observed", "Year", "Species", "Bud", "Flower", "PlantNumber"))
+
+#pulling out bud burst information from out phenology data. MAKE SURE this includes the phenophases you picked out earlier
+dat.chosen <- subset(dat.chosen, select = c("Date.Observed", "Year", "Species", "PlantNumber", "Bud", "Flower"))
 dat.chosen$Species <- as.character(dat.chosen$Species)
 
 #----------------------------------------------------------------#
 #If you are interested in bud burst
 #----------------------------------------------------------------#
-
 #Creating final frame containing the first burst for each year.
-dat.burst <- aggregate(dat.chosen[dat.chosen$Bud=="Yes", "Date.Observed"], 
-                       by=dat.chosen[dat.chosen$Bud=="Yes", c("Species", "PlantNumber", "Year")], 
-                       FUN=min)
-
-#Making easier names for the data frame
-colnames(dat.burst) <- c("Species", "PlantNumber", "Year", "Date")
-dat.burst$burst.yday <- lubridate::yday((dat.burst$Date))
-
-
-#Creating a new column in our phenology data frame that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
-dat.burst$burst.GDD5.cum <- NA
-for(DAT in paste(dat.burst$Date)){
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])==0) next
-  dat.burst[dat.burst$Date==as.Date(DAT),"burst.GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
-}
-
-#Final frame for the summary statistics relating to bud burst
-#This needs to do.call because otherwise it gives a dataframe containing matrices that are hard to work with
-dat.burst <- do.call(data.frame, aggregate(cbind(burst.yday, burst.GDD5.cum) ~ Species, data = dat.burst, FUN = function(x) c(mean = mean(x), sd = sd(x) ) ))
-
-
-#------------------------------------------------------------------#
-#If you are interested in flower timing
-#------------------------------------------------------------------#
-
-#Working with flower
-dat.flower <- aggregate(dat.chosen[dat.chosen$Flower=="Yes", "Date.Observed"], 
-                        by=dat.chosen[dat.chosen$Flower=="Yes", c("Species", "PlantNumber", "Year")], 
+sum.df <- data.frame()
+for(i in Pheno){
+  dat.burst <- aggregate(dat.chosen[dat.chosen[[i]]=="Yes", "Date.Observed"], 
+                        by=dat.chosen[dat.chosen[[i]]=="Yes", c("Species", "PlantNumber", "Year")], 
                         FUN=min)
 
-#Making easier names for the data frameYday",
-colnames(dat.flower) <- c("Species", "PlantNumber", "Year", "Date")
-dat.flower$flower.yday <- lubridate::yday((dat.flower$Date))
+  #Making easier names for the data frame
+  colnames(dat.burst) <- c("Species", "PlantNumber", "Year", "Date")
+  dat.burst$yday <- lubridate::yday((dat.burst$Date))
 
 
-#Creating a new column in our phenology data frame that takes the date of earliest flower and gives us the cumulative gdd of that date from the met data
-dat.flower$flower.GDD5.cum <- NA
-for(DAT in paste(dat.flower$Date)){
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])==0) next
-  dat.flower[dat.flower$Date==as.Date(DAT),"flower.GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+  #Creating a new column in our phenology data frame that takes the date of earliest phenophase and gives us the cumulative gdd of that date from the met data
+  dat.burst$GDD5.cum <- NA
+  for(DAT in paste(dat.burst$Date)){
+    if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])==0) next
+    dat.burst[dat.burst$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+  }
+
+  #Final frame for the summary statistics relating to phenophase
+  #This needs to do.call because otherwise it gives a dataframe containing matrices that are hard to work with
+  dat.burst <- do.call(data.frame, aggregate(cbind(yday, GDD5.cum) ~ Species, 
+                                             data = dat.burst, FUN = function(x) c(mean = mean(x), sd = sd(x))))
+  dat.burst$Pheno <- i
+  sum.df <- rbind(sum.df, dat.burst)
 }
 
-#This needs to do.call because otherwise it gives a dataframe containing matrices that are hard to work with
-dat.flower <- do.call(data.frame, aggregate(cbind(flower.yday, flower.GDD5.cum) ~ Species, data = dat.flower, FUN = function(x) c(mean = mean(x), sd = sd(x))))
-
-#Creating the final data frame that is the output of this script
-#Each species has a mean and sd calculated for the day of year and gdd5 threshold for both bud burst and flower open
-sum.df <- merge(dat.burst, dat.flower, by = "Species")
-
-
-
+#This dataframe contains the yday and gdd5.cum mean and sd for every species.
+#Currently is split by the Pheno type. Slightly different than original. Should be easy to tweak to desires
+sum.df
 
