@@ -85,30 +85,35 @@ source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_for
 
 #Enter the genus of interest and the range of years of interest for the chosen species
 #Format is df <- list("Genus name", list("year of interest", "Other year of interest"))
-#The range of years BACKWARDS. MUST BE BACKWARDS. This works around the clean.google funciton not changing column names for quercus 2018
+#FOr QUERCUS THE YEARS RANGE MUST HAVE 2018 LAST!!!!!!! This works around the clean.google funciton not changing column names for quercus 2018
 
 Quercus <- list("Quercus", list("2019", "2018"))
 Acer <- list("Acer", list("2019"))
 #Ulmus <- list("Ulmus", list("2020"))
 form.list <- list(Quercus, Acer)
-dat.pheno <- data.frame()
+
+dat.pheno <- group.google(form.list)
+
 
 #Loop that will download all of the google forms of interest.
 #Tends to tke about 30 seconds per form
-for(i in seq_along(form.list)){
-  collection <- form.list[[i]][[1]]
- for(yr in form.list[[i]][[2]]){
-    temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
-    temp$Year <- yr
-    temp$Collection <- as.factor(collection)
-    #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
-    if(yr == 2018){
-      colnames(temp) <- as.character(colnames(dat.pheno)) 
+group.google <- function(x){
+  dat.pheno <- data.frame()
+  for(i in seq_along(x)){
+      collection <- x[[i]][[1]]
+    for(yr in x[[i]][[2]]){
+      temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
+      temp$Year <- yr
+      temp$Collection <- as.factor(collection)
+      #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
+      if(yr == 2018){
+        colnames(temp) <- as.character(colnames(dat.pheno)) 
+      }
+      dat.pheno <- rbind(dat.pheno, temp)
     }
-    dat.pheno <- rbind(dat.pheno, temp)
   }
+  return(dat.pheno)
 }
-
 #-----------------------------------------------------------------#
 #HERE you make choices about the species and phenophses
 #-----------------------------------------------------------------#
