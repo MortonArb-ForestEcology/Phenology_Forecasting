@@ -2,16 +2,15 @@
 # Script by : Lucien Fitzpatrick
 # Project: Living Collections Phenology Forecasting
 # Purpose: To use arb weather data and phenology monitoring data to create a predicitve model of bud burst timing
-#          This script serves as the Bayesian model which will become the finla product
-# Inputs: dat.comb dataframe that is created by the Frequentist_GDD%-burst.r script in this repository
-# Outputs: Currently, a posterior distribtuion of yday as a funciton of Gdd5.cum
-# Notes: This script is basedon exercises from the ecological forecasting textbook
+#          This script serves as the Bayesian model which will become the final product
+# Inputs: dat.comb dataframe that is created by the Organize_Data_Pheno.R script
+# Outputs: Currently, a hindcast of a species modeled day of budburst vs observed date of budburst
+# Notes: This script is based on exercises from the ecological forecasting textbook
 #        In order to use rjags you need JAGS installed. rjags is simply for interfacing. It can be found at http://mcmc-jags.sourceforge.net/
 #-----------------------------------------------------------------------------------------------------------------------------------#
 
 # Read in output of previous script
 dat.comb <- read.csv("../data_processed/Phenology_Met_combined.csv")
-
 
 #---------------------------------------------------#
 #This section sets up the model itself
@@ -29,13 +28,14 @@ model{
 
   ##b ~ dmnorm(b0,Vb)  	## multivariate Normal prior on vector of regression params
   b ~ dnorm (b0, v0)
-  # S ~ dgamma(s1,s2)    ## prior precision
+  S ~ dgamma(s1,s2)    ## prior precision 
+
 
   for(i in 1:n){
 	  ##mu[i] <- b[1] + b[2]*x[i]   	## process model (simple linear regression)
-	  # mu[i] <- b[1]                   ## process model ANOVA
-	  # y[i]  ~ dnorm(mu[i],S)		        ## data model
-	  y[i] ~ b[1]
+	  mu[i] <- b[1]                   ## process model ANOVA
+	  y[i]  ~ dnorm(mu[i],S)		        ## data model
+	  ##y[i]  ~ b[1]
   }
 }
 "
@@ -48,15 +48,15 @@ plot(dat.comb$GDD5.cum, dat.comb$Yday)
 #------------------------------------------------------#
 
 #Converting to list format needed for JAGs
-burst.list <- list( y = dat.comb$GDD5.cum, n = length(dat.comb$GDD5.cum))
+burst.list <- list(y = dat.comb$GDD5.cum, n = length(dat.comb$GDD5.cum))
 
 #Setting our uniformative priors
 ##burst.list$b0 <- as.vector(c(0,0))      ## regression b means
 ##burst.list$Vb <- solve(diag(10000,2))   ## regression b precisions
 burst.list$b0 <- 0
 burst.list$v0 <- .0001
-# burst.list$s1 <- 0.1                    ## error prior n/2
-# burst.list$s2 <- 0.1                    ## error prior SS/2
+burst.list$s1 <- .1                    ## error prior n/2
+burst.list$s2 <- .1                    ## error prior SS/2
 
 
 #Setting the number of MCMC chains and their parameters
@@ -78,7 +78,7 @@ burst.model   <- jags.model (file = textConnection(univariate_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                            variable.names = c("b","S"),
+                            variable.names = c("b", "S"),
                             n.iter = 5000)
 
 
@@ -93,7 +93,7 @@ gelman.diag(burst.out)
 GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 750                                ## determine convergence from GBR output
+burnin = 1500                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)                             ## check diagnostics post burn-in
 
@@ -112,6 +112,8 @@ summary(burst.burn)
 
 #Converting it into a matrix so we can work with it
 burst.df <- as.data.frame(as.matrix(burst.burn))
+
+#Jags uses variance so we must convert it to sd
 burst.df$SD <- 1/sqrt(burst.df[,"S"])
 
 #Creating a dataframe with the mean values of these metrics for every year
@@ -128,11 +130,15 @@ dimnames(mat.yr)[[1]] <- dat.yr$YEAR
 
 #A distribution of gdd5.cum at bud burst that will be used to create a corresponding distribution of yday at bud burst
 dat.gdd5.vec <- burst.df$b
-##dat.gdd5.vec <- rnorm(nrow
 
 
 #Function used to calculate bud burst day using gdd5
 calc.bud <- function(x){min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"])}
+
+#calc.bud <- function(b, s, n=1){
+#  x <- rnorm(n, b, s)
+#  return(min(dat.tmp[which(dat.tmp$GDD5.cum >= x),"YDAY"]))
+#}
 
 #Filling a matrix with yday values calculating by running calc.bud on a distribution of gdd5.cum values at bud burst (dat.gdd5.vec)
 #2013 is problematic. Doesnt have enough data for accurate gdd5.cum. For now its ok for visuals but check in regarding gdd5.cum limits.
@@ -146,7 +152,7 @@ for(i in 1:nrow(dat.yr)){
   # Bloom time -- simple
   bud.pred <- calc.bud(mean(burst.df$b))
   if(bud.pred != Inf) dat.yr[i,"bud.oak"] <- bud.pred
-  bud.vec <- unlist(lapply(dat.gdd5.vec, calc.bud))
+  bud.vec <- unlist(lapply(burst.df$b, calc.bud))
   bud.vec[bud.vec==Inf] <- NA
   
   mat.yr[i,] <- bud.vec
@@ -184,7 +190,7 @@ ggplot(data=dat.yr[,]) +
   geom_pointrange(data=oak.bud, aes(x=Group.1, y=Yday, ymin=Yday-Yday.sd, ymax=Yday+Yday.sd,color="Observed"))+
   ggtitle("Modeled and Observed day of budburst for Quercus Macrocarpa")+
   scale_y_continuous(name="Day of Year") +
-  scale_x_discrete(name="Year",limits=c(2008,2019)) +
+  scale_x_discrete(name="Year",limits=c(2009,2019)) +
   theme_bw() +
   theme(panel.grid=element_blank()) +
   theme(axis.text=element_text(size=rel(1.5), color="black"),
@@ -291,6 +297,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 burst.out   <- coda.samples (model = burst.model,
                              variable.names = c("a","b"),
                              n.iter = 5000)
+
 
 
 #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
