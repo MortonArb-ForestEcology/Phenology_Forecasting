@@ -81,37 +81,28 @@ for(YR in unique(met.all$YEAR)){
 summary(met.all)
 
 # -----------------------------
-# This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function found in the Phenology_LivingCollections repository
+# This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
+# This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
 path.hub <- "C:/Users/lucie/Documents/GitHub/"
 
+#Calling in the clean.google function
 source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
 
-#Enter the genus of interest and the range of years of interest for the chosen species
-#Format is df <- list("Genus name", list("year of interest", "Other year of interest"))
-#The range of years BACKWARDS. MUST BE BACKWARDS. This works around the clean.google funciton not changing column names for quercus 2018
+#Calling in the group.google function. clean.google is needed for this.
+source(file.path(path.hub, "Phenology_Forecasting/scripts/Group_google.R"))
 
-Quercus <- list("Quercus", list("2019", "2018"))
-#Acer <- list("Acer", list("2019"))
-#Ulmus <- list("Ulmus", list("2020"))
-form.list <- list(Quercus)
-dat.pheno <- data.frame()
+#Enter the genus of interest as a vector and the final year of observations you want as a variable
+#The function will crash if you have a genus included without end years we have a form for i.e("Ulmus" with range 2018:2019)
+#This only matters for end years. Start years are adjusted to match the first year the genus has a form.
+Genus <- c("Quercus", "Acer")
+StartYear <- 2018
+EndYear <- 2019
 
-#Loop that will download all of the google forms of interest.
-for(i in seq_along(form.list)){
-  collection <- form.list[[i]][[1]]
-  for(yr in form.list[[i]][[2]]){
-    temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
-    temp$Year <- yr
-    temp$Collection <- as.factor(collection)
-    #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
-    if(yr == 2018){
-      colnames(temp) <- as.character(colnames(dat.pheno)) 
-    }
-    dat.pheno <- rbind(dat.pheno, temp)
-  }
-}
-
+dat.pheno <- group.google(Genus, StartYear, EndYear)
+#--------------------------------------------------------#
+# Here is where you pick out your species of interest
+#--------------------------------------------------------#
 #Enter chosen species here. Genus must be capitalized, one space between genus and species, and species is lower case
 chosen <- "Quercus macrocarpa"
 

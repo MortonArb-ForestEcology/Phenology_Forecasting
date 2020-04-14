@@ -77,43 +77,26 @@ summary(met.all)
 
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
-# As it stands with the clean.google function this must be hardcoded to included the years and species of interest for now
+# This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
 path.hub <- "C:/Users/lucie/Documents/GitHub/"
 
+#Calling in the clean.google function
 source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
 
-#Enter the genus of interest and the range of years of interest for the chosen species
-#Format is df <- list("Genus name", list("year of interest", "Other year of interest"))
-#FOr QUERCUS THE YEARS RANGE MUST HAVE 2018 LAST!!!!!!! This works around the clean.google funciton not changing column names for quercus 2018
-
-Quercus <- list("Quercus", list("2019", "2018"))
-Acer <- list("Acer", list("2019"))
-#Ulmus <- list("Ulmus", list("2020"))
-form.list <- list(Quercus, Acer)
-
-dat.pheno <- group.google(form.list)
+#Calling in the group.google function. clean.google is needed for this.
+source(file.path(path.hub, "Phenology_Forecasting/scripts/Group_google.R"))
 
 
-#Loop that will download all of the google forms of interest.
-#Tends to tke about 30 seconds per form
-group.google <- function(x){
-  dat.pheno <- data.frame()
-  for(i in seq_along(x)){
-      collection <- x[[i]][[1]]
-    for(yr in x[[i]][[2]]){
-      temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
-      temp$Year <- yr
-      temp$Collection <- as.factor(collection)
-      #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE
-      if(yr == 2018){
-        colnames(temp) <- as.character(colnames(dat.pheno)) 
-      }
-      dat.pheno <- rbind(dat.pheno, temp)
-    }
-  }
-  return(dat.pheno)
-}
+#Enter the genus of interest as a vector and the final year of observations you want as a variable
+#The function will crash if you have a genus included without end years we have a form for i.e("Ulmus" with range 2018:2019)
+#This only matters for end years. Start years are adjusted to match the first year the genus has a form.
+Genus <- c("Quercus", "Acer")
+StartYear <- 2018
+EndYear <- 2019
+
+dat.pheno <- group.google(Genus, StartYear, EndYear)
+
 #-----------------------------------------------------------------#
 #HERE you make choices about the species and phenophses
 #-----------------------------------------------------------------#
