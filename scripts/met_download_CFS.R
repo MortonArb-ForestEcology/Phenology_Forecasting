@@ -2,14 +2,15 @@
 # https://www.ncdc.noaa.gov/data-access/model-data/model-datasets/climate-forecast-system-version2-cfsv2#CFSv2%20Operational%20Forecasts
 # Full documentation to come (ask Christy in the meanwhile)
 
-download.cfs <- function(vars.in, lat.in, lon.in, path.save){
-  if(!dir.exist(path.save)) dir.create(path.save, recursive=T, showWarnings = F)
+download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sys.Date(), forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")){
+  if(!dir.exists(path.save)) dir.create(path.save, recursive=T, showWarnings = F)
 
   # The variable tranlsation table
   var.table <- data.frame(var=c("tmax", "tmin", "prate"),
                           cfs=c("Maximum_temperature_height_above_ground", "Minimum_temperature_height_above_ground", "Precipitation_rate_surface"))
   
-  
+  if(lon.in<0) lon.in = 180+lon.in
+
   # Setting up the various file paths
   cfs.base <- "https://www.ncdc.noaa.gov/thredds/ncss/cfs_v2_for_ts"
   cat.base <- "https://www.ncdc.noaa.gov/thredds/catalog/cfs_v2_for_ts"
@@ -55,13 +56,11 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save){
   
   # WHen trying to string together the path, use ncss = netcdf sub set
   
-  if(lon.in<0) lon.in = 180+lon.in
-  
   # Loop through our variables to get what we want & save them
   for(VAR in vars.in){
     cfs.var <- var.table$cfs[var.table$var==VAR]
     
-    path.latest <- file.path(cfs.base, yr.latest, mo.latest, day.latest, hr.latest, paste0(VAR, ".01.", hr.latest, ".daily.grb2?var=", cfs.var, "&latitude=", lat.in, "&longitude=", lon.in, "&time_start=", day.strng, "T00%3A00%3A00Z&time_end=", as.numeric(yr.latest)+1, "-01-01T00%3A00%3A00Z&vertCoord=1&accept=csv"))
+    path.latest <- file.path(cfs.base, yr.latest, mo.latest, day.latest, hr.latest, paste0(VAR, ".01.", hr.latest, ".daily.grb2?var=", cfs.var, "&latitude=", lat.in, "&longitude=", lon.in, "&time_start=", forecast.start, "T00%3A00%3A00Z&time_end=", forecast.end, "T00%3A00%3A00Z&vertCoord=1&accept=csv"))
     
     download.file(path.latest, destfile=file.path(path.save, paste0(VAR, "_cfs_latest.csv")))
   }
