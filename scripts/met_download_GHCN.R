@@ -1,6 +1,6 @@
 download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD"), path.save, dir.raw, gapfill=T){
   vars.in <- toupper(vars.in)
-  if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
+  # if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
   
   dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.raw, force.redo = T)
   
@@ -62,14 +62,6 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
     dat.ghcn$SNWD <- met.gapfill(met.data = dat.ghcn, met.var="SNWD")
     summary(dat.ghcn)
     
-    dat.ghcn$TMEAN <- apply(dat.ghcn[,c("TMAX", "TMIN")], 1, mean)
-    dat.ghcn$GDD0 <- ifelse(dat.ghcn$TMEAN>0, dat.ghcn$TMEAN-0, 0)
-    dat.ghcn$GDD5 <- ifelse(dat.ghcn$TMEAN>5, dat.ghcn$TMEAN-5, 0)
-    
-    # For chilling days, only start after the solstice (June 20th)
-    dat.ghcn$CDD0 <- ifelse(dat.ghcn$YDAY>172 & dat.ghcn$TMEAN<0, 0-dat.ghcn$TMEAN, 0)
-    dat.ghcn$CDD2 <- ifelse(dat.ghcn$YDAY>172 & dat.ghcn$TMEAN< -2, -2-dat.ghcn$TMEAN, 0)
-    dat.ghcn$DaysNoRain <- NA
     # summary(dat.ghcn)
   }
   write.csv(dat.ghcn, file.path(path.save, paste0(ID, "_latest.csv")), row.names=F)

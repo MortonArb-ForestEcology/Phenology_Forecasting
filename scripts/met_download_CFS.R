@@ -60,7 +60,7 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sy
   for(VAR in vars.in){
     cfs.var <- var.table$cfs[var.table$var==VAR]
     
-    path.latest <- file.path(cfs.base, yr.latest, mo.latest, day.latest, hr.latest, paste0(VAR, ".01.", hr.latest, ".daily.grb2?var=", cfs.var, "&latitude=", lat.in, "&longitude=", lon.in, "&time_start=", start.str, "T00%3A00%3A00Z&time_end=", end.str, "T00%3A00%3A00Z&vertCoord=1&accept=csv"))
+    path.latest <- file.path(cfs.base, yr.latest, mo.latest, day.latest, hr.latest, paste0(VAR, ".01.", hr.latest, ".daily.grb2?var=", cfs.var, "&latitude=", lat.in, "&longitude=", lon.in, "&time_start=", forecast.start, "T00%3A00%3A00Z&time_end=", forecast.end, "T00%3A00%3A00Z&vertCoord=1&accept=csv"))
     
     download.file(path.latest, destfile=file.path(path.save, paste0(VAR, "_cfs_latest.csv")))
   }

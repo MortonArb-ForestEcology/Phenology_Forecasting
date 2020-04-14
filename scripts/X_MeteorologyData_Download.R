@@ -51,11 +51,11 @@ dir.create(dir.met, recursive=T, showWarnings = F)
 # ---------------------------------
 ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
-path.save=c("../data_raw/meteorology/GHCN_extracted/")
+path.ghcn=c("../data_raw/meteorology/GHCN_extracted/")
 dir.raw="../data_raw/meteorology/GHCN_raw/"
 
 source("met_download_GHCN.R")
-download.ghcn(ID=ID, vars.in=vars.want, path.save=path.save, dir.raw=dir.raw, gapfill=T)
+download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T)
 # -------------------------------------
 
 # ---------------------------------
@@ -63,7 +63,6 @@ download.ghcn(ID=ID, vars.in=vars.want, path.save=path.save, dir.raw=dir.raw, ga
 # ---------------------------------
 lat.in=41.812739
 lon.in=-88.072749
-vars.in <- c("tmax", "tmin", "precip")
 forecast.start = Sys.Date()-7
 forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")
 
@@ -75,6 +74,7 @@ vars.in <- c("tmax", "tmin", "prate")
 download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=forecast.start, forecast.end=forecast.end, path.save=path.save.cfs)
 
 source("met_download_NMME.R")
+vars.in <- c("tmax", "tmin", "precip")
 mod.use <- c("CCSM4", "CanCM4")
 for(MOD in mod.use){
   path.save=file.path("../data_raw/meteorology", MOD)
@@ -89,25 +89,55 @@ for(MOD in mod.use){
 # -------------------------------------
 # Calculating some cumulative statistics
 # -------------------------------------
+# Create a function to calculate values we're interested in for prediction
+calc.indices <- function(dat){
+  # Assumes upper case column names of: TMAX, TMIN, PRCP, YDAY
+  # For chilling days, only start after the solstice (June 20th)
+  dat$TMEAN <- apply(dat[,c("TMAX", "TMIN")], 1, mean)
+  dat$GDD0 <- ifelse(dat$TMEAN>0, dat$TMEAN-0, 0)
+  dat$GDD5 <- ifelse(dat$TMEAN>5, dat$TMEAN-5, 0)
+  dat$CDD0 <- ifelse(dat$YDAY>172 & dat$TMEAN<0, 0-dat$TMEAN, 0)
+  dat$CDD2 <- ifelse(dat$YDAY>172 & dat$TMEAN< -2, -2-dat$TMEAN, 0)
+  dat$DaysNoRain <- NA
+  
+  dat[, c("GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum", "PRCP.cum")] <- cumsum(dat[, c("GDD0", "GDD5", "CDD0", "CDD2", "PRCP")])
+  
+  dat[, c("NORAIN.cum")] <- cumsum(ifelse(dat[,"PRCP"]>0, 1, 0))
+  
+  # Calculating days since rain just in case
+  dat$DaysNoRain[1] <- ifelse(dat$PRCP[1]>0, 0, 1)
+  for(i in 2:nrow(dat)){
+    dat$DaysNoRain[i] <- ifelse(dat$PRCP[i]>0, dat$DaysNoRain[i-1]+1, 0)
+  }
+  return(dat)
+}
+
+# For the "historical" GHCN data
+dat.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
+dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
+summary(dat.ghcn)
+
 yr.min <- 2008
 yr.max <- lubridate::year(Sys.Date())
+dat.ghcn2 <- data.frame()
 for(YR in yr.min:yr.max){
   rows.yr <- which(dat.ghcn$YEAR==YR)
   # dat.yr <- dat.ghcn[rows.yr,]
-
-  dat.ghcn[rows.yr, c("GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum", "PRCP.cum")] <- cumsum(dat.ghcn[rows.yr, c("GDD0", "GDD5", "CDD0", "CDD2", "PRCP")])
-  
-  dat.ghcn[rows.yr, c("NORAIN.cum")] <- cumsum(ifelse(dat.ghcn[rows.yr,"PRCP"]>0, 1, 0))
-  
-  # Calculating days since rain just in case
-  dat.ghcn$DaysNoRain[rows.yr[1]] <- ifelse(dat.ghcn$PRCP[rows.yr[1]]>0, 0, 1)
-  for(i in 2:length(rows.yr)){
-    dat.ghcn$DaysNoRain[rows.yr[i]] <- ifelse(dat.ghcn$PRCP[rows.yr[i]]>0, dat.ghcn$DaysNoRain[rows.yr[i-1]]+1, 0)
-  }
+  dat.tmp <- calc.indices(dat=dat.ghcn[rows.yr,])
+  dat.ghcn2 <- rbind(dat.ghcn2, dat.tmp)
 }
-summary(dat.ghcn)
+summary(dat.ghcn2)
 
-write.csv(dat.ghcn, file.path(path.out, "data", "weather_ArbCOOP_latest.csv"), row.names=F)
+write.csv(dat.ghcn2, file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
+
+
+# Load and format the forecast ensembles data
+# 1. Load data
+# 2. turn to daily
+# 3. calculate indices
+# 4. flatten and save
+
+write.csv(dat.forecast, file.path(path.out, "data", "Weather_Arb_forecast_ensemble_latest.csv"), row.names=F)
 # -------------------------------------
 
 
