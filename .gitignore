@@ -1,2 +1,3 @@
 data_raw/meteorology/*
 *.Rhistory
+.DS_Store

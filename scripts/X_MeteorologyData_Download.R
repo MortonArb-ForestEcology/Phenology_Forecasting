@@ -136,6 +136,11 @@ write.csv(dat.ghcn2, file.path(path.out, "data", "Weather_ArbCOOP_historical_lat
 # 2. turn to daily
 # 3. calculate indices
 # 4. flatten and save
+
+# Read in GHCN as training data for bias-correction
+dat.ghcn2 <- read.csv(file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"))
+dat.ghcn2$DATE <- as.Date(dat.ghcn2$DATE)
+
 path.met <- "../data_raw/meteorology"
 forecast.gcm <- c("CCSM4", "CanCM4", "CFSV2")
 met.ens <- list()
@@ -194,6 +199,42 @@ for(GCM in forecast.gcm){
       dat.mod$PRCP <- dat.mod$PRCP*60*60*24
       summary(dat.mod)  
       
+      # Precip has some wonky things going on
+      if(GCM=="CCSM4") dat.mod$PRCP <- dat.mod$PRCP*1e3
+      dat.mod$PRCP <- dat.mod$PRCP*10 # Something seems off
+      
+      # ----------------------
+      # Bias-correct our variables using all of the GHCN data
+      # ----------------------
+      # for temperature, just correct the seasonal cycle & climatology; 
+      #   leave the anomalies alone
+      for(VAR in c("TMAX", "TMIN")){
+        ghcn.tmp <- data.frame(VAR=dat.ghcn2[dat.ghcn2$YDAY %in% dat.mod$YDAY,VAR],
+                               YDAY=dat.ghcn2[dat.ghcn2$YDAY %in% dat.mod$YDAY, "YDAY"])
+        
+        mod.tmp <- data.frame(VAR=dat.mod[,VAR],
+                              YDAY=dat.mod$YDAY)
+        
+        
+        mod.ghcn <- mgcv::gam(VAR ~ s(YDAY, k=6), data=ghcn.tmp)
+        mod.gcm <- mgcv::gam(VAR ~ s(YDAY, k=6), data=mod.tmp)
+        
+        # Overwrite TMAX with the new bias-corrected TMAX 
+        #   as the GCHN seasonal cycle plus its mean PLUS 
+        #   our observed residuals from the GCM trend
+        dat.mod$TMAX <- predict(mod.ghcn, newdata = mod.tmp) + mean(ghcn.tmp$VAR) + resid(mod.gcm)
+      }
+      
+      # For Precip, we need to adjust the variance we see
+      rain.ghcn <- dat.ghcn2$PRCP[dat.ghcn2$PRCP>0 & dat.ghcn2$YDAY %in% dat.mod$YDAY]
+      rain.gcm <- dat.mod$PRCP[dat.mod$PRCP>min(rain.ghcn) & !is.na(dat.mod$PRCP)]
+      # Do a median-based bias-correction
+      rain.adj <- median(rain.ghcn)/median(rain.gcm)
+      
+      dat.mod$PRCP <- dat.mod$PRCP*rain.adj
+      # ----------------------
+      
+
       # Truncate our forecast to just the range we need  & then add the 
       # observed so we can 
       dat.mod <- dat.mod[dat.mod$DATE>max(dat.ghcn2$DATE),]
@@ -208,8 +249,6 @@ for(GCM in forecast.gcm){
       
       # CCSM4 has weird precip units --> orders of magnitude off; 
       #  -- MUST be m precip/m/s rather than kg/m2/s 
-      if(GCM=="CCSM4") dat.mod$PRCP <- dat.mod$PRCP*1e3
-      dat.mod$PRCP <- dat.mod$PRCP*10 # Something seems off
       
       met.ens[[paste(GCM, ens, sep="-")]] <- rbind(dat.fill, dat.mod[,c("ID", "MODEL", "ENS", "TYPE", "DATE", "YDAY", "PRCP", "TMAX", "TMIN")])
       

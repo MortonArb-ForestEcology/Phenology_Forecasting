@@ -142,7 +142,7 @@ plot.dat <- cowplot::plot_grid(plot.tmean, plot.prcp, plot.threshA, plot.threshB
 
 library(cowplot)
 plot.title <- ggdraw() + 
-  draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n     **NOTE: Forecast needs to be bias-corrected!"),
+  draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n     **NOTE: Forecast is experimental!"),
              fontface = 'bold', x = 0,hjust = 0) +
   theme(plot.margin = margin(0, 0, 0, 1)
   )
