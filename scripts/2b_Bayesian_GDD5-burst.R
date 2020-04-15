@@ -257,20 +257,21 @@ model{
   S ~ dgamma(s1,s2)    ## prior precision for all individuals
 
   for(i in 1:p) {
-    a[i] ~ dnorm(b0, S) #random individual effect on slope
+    ##a[i] ~ dnorm(b0, S) #random individual effect on slope
     b[i] ~  dnorm(b1, S) #random individual effect on intercept
   }
   for(k in 1:n) {
-    mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
+    ##mu[k] <- a[individual[k]] + b[individual[k]] * x[individual[k]] 
+    mu[k] <- b[individual[k]]
     y[k] ~ dnorm(mu[k], S)
   }
 }
 "
 
-burst.list <- list(x = dat.comb$GDD5.cum, y = dat.comb$Yday, individual = dat.comb$PlantNumber, p = length(dat.comb$PlantNumber), n = length(dat.comb$Yday))
+burst.list <- list(y = dat.comb$GDD5.cum, individual = dat.comb$PlantNumber, p = length(unique(dat.comb$PlantNumber)), n = length(dat.comb$Gdd5.cum))
 
 #Setting our uniformative priors
-burst.list$b0 <- dnorm(0,.00001)      ## regression random individual effect on intercept mean
+#burst.list$b0 <- dnorm(0,.00001)      ## regression random individual effect on intercept mean
 burst.list$b1 <- dnorm(0,.00001)     ## regression random individual effect on slope mean
 burst.list$s1 <- 0.1                    ## error prior n/2
 burst.list$s2 <- 0.1                    ## error prior SS/2
@@ -295,7 +296,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("a","b"),
+                             variable.names = c("b","S"),
                              n.iter = 5000)
 
 
