@@ -127,27 +127,109 @@ for(YR in yr.min:yr.max){
   dat.ghcn2 <- rbind(dat.ghcn2, dat.tmp)
 }
 summary(dat.ghcn2)
+# dat.ghcn2[dat.ghcn2$DATE=="2020-04-09",]
 
 write.csv(dat.ghcn2, file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
 
-
 # Load and format the forecast ensembles data
-# 1. Load data
+# 1. Load data -- need columns of YDAY, TMAX, TMIN, PRCP
 # 2. turn to daily
 # 3. calculate indices
 # 4. flatten and save
+path.met <- "../data_raw/meteorology"
+forecast.gcm <- c("CCSM4", "CanCM4", "CFSV2")
+met.ens <- list()
+for(GCM in forecast.gcm){
+  path.gcm <- ifelse(GCM=="CFSV2", "CFS_Forecast", GCM)
+  var.pcp <- ifelse(GCM=="CFSV2", "prate", "precip")
+  
+  if(GCM=="CFSV2"){
+    mems=NA
+  } else {
+    mems <- dir(file.path("../data_raw/meteorology/", GCM))
+  }
+  
+    for(i in 1:length(mems)){
+      if(length(mems)>1){
+        ens <- strsplit(mems[i], "_")[[1]][3]
+        path.mem <-file.path(path.met, path.gcm, mems[i])
+      } else {
+        ens="01"
+        path.mem <-file.path(path.met, path.gcm)
+      }
+      fls <- dir(path.mem)
+      
+      dat.tmx <- read.csv(file.path(path.mem, fls[grep("tmax", fls)]))
+      dat.tmn <- read.csv(file.path(path.mem, fls[grep("tmin", fls)]))
+      dat.prp <- read.csv(file.path(path.mem, fls[grep(var.pcp, fls)]))
+      
+      # Different models label things differently, but data should always be the last column
+      dat.tmp <- data.frame(DATE=as.Date(substr(dat.tmx$time, 1, 10)),
+                            HOUR=format(strptime(substr(dat.tmx$time, 12, 19), format="%T"), "%H"),
+                            TMAX=dat.tmx[,ncol(dat.tmx)],
+                            TMIN=dat.tmn[,ncol(dat.tmn)])
+      if(nrow(dat.prp)==nrow(dat.tmx)){
+        dat.tmp$PRCP <- dat.prp[,ncol(dat.prp)]
+      } else {
+        dat.prp$PRCP <- dat.prp[,ncol(dat.prp)]
+        dat.prp$DATE <- as.Date(substr(dat.prp$time, 1, 10))
+        dat.prp$HOUR <- format(strptime(substr(dat.prp$time, 12, 19), format="%T"), "%H")
+        
+        dat.tmp <- merge(dat.tmp, dat.prp[,c("DATE", "HOUR", "PRCP")], all=T)
+        dat.tmp$PRCP[is.na(dat.tmp$PRCP)] <- -9999
+      }
+      dat.tmp$YDAY <- lubridate::yday(dat.tmp$DATE)
+      summary(dat.tmp)
+      
+      # Aggregate to daily values; note: PRCP will require unit conversion
+      dat.mod <- aggregate(TMAX ~ DATE + YDAY, data=dat.tmp, FUN=max)
+      dat.mod$TMIN <- aggregate(TMIN ~ DATE + YDAY, data=dat.tmp, FUN=min)$TMIN
+      dat.mod$PRCP <- aggregate(PRCP ~ DATE + YDAY, data=dat.tmp, FUN=sum)$PRCP
+      dat.mod$PRCP[dat.mod$PRCP==-9999] <- NA
+      
+      # Add meta vars; do unit conversion
+      dat.mod$MODEL <- as.factor(GCM)
+      dat.mod$ENS <- as.factor(ens)
+      dat.mod[,c("TMAX", "TMIN")] <- dat.mod[,c("TMAX", "TMIN")]-273.15
+      dat.mod$PRCP <- dat.mod$PRCP*60*60*24
+      summary(dat.mod)  
+      
+      # Truncate our forecast to just the range we need  & then add the 
+      # observed so we can 
+      dat.mod <- dat.mod[dat.mod$DATE>max(dat.ghcn2$DATE),]
+      dat.mod$ID <- paste(GCM, ens, sep="-")
+      dat.mod$TYPE <- as.factor("forecast")
+      
+      dat.fill <- data.frame(ID=paste(GCM, ens, sep="-"),
+                             MODEL=GCM, 
+                             ENS=ens, 
+                             TYPE="observed",
+                             dat.ghcn2[lubridate::year(dat.ghcn2$DATE)==min(lubridate::year(dat.mod$DATE)), c("DATE", "YDAY", "PRCP", "TMAX", "TMIN")])
+      
+      # CCSM4 has weird precip units --> orders of magnitude off; 
+      #  -- MUST be m precip/m/s rather than kg/m2/s 
+      if(GCM=="CCSM4") dat.mod$PRCP <- dat.mod$PRCP*1e3
+      dat.mod$PRCP <- dat.mod$PRCP*10 # Something seems off
+      
+      met.ens[[paste(GCM, ens, sep="-")]] <- rbind(dat.fill, dat.mod[,c("ID", "MODEL", "ENS", "TYPE", "DATE", "YDAY", "PRCP", "TMAX", "TMIN")])
+      
+    }
+}
+summary(met.ens$`CCSM4-02`[met.ens$`CCSM4-02`$TYPE=="forecast",])
+# summary(dat.ghcn2$PRCP)
+
+# Calculate our indices using 
+met.ens2 <- lapply(met.ens, calc.indices)
+summary(met.ens2[[3]])
+# plot(met.ens2[[5]]$PRCP.cum); abline(v=max(dat.ghcn2$YDAY[dat.ghcn2$YEAR==2020]), col="red")
+
+# Turn our forecast dataset into a long format to make it easier to save
+dat.forecast <- do.call(rbind, met.ens2)
+summary(dat.forecast)
 
 write.csv(dat.forecast, file.path(path.out, "data", "Weather_Arb_forecast_ensemble_latest.csv"), row.names=F)
 # -------------------------------------
 
 
 
-tmax <- read.csv(file.path(path.save.cfs, "tmax_cfs_latest.csv"))
-names(tmax) <- c("time", "latitude", "longitude", "vertCoord", "tmax")
-tmax$date <- as.Date(substr(tmax$time, 1, 10))
-tmax <- aggregate(tmax ~ date + latitude + longitude, data=tmax, FUN=max)
-summary(tmax)
-library(ggplot2)
-ggplot(data=tmax) +
-  geom_line(aes(x=date, y=tmax-273))
 # ---------------------------------
