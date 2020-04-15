@@ -104,10 +104,10 @@ dat.pheno <- group.google(Genus, StartYear, EndYear)
 # Here is where you pick out your species of interest
 #--------------------------------------------------------#
 #Enter chosen species here. Genus must be capitalized, one space between genus and species, and species is lower case
-chosen <- "Quercus macrocarpa"
+species <- c("Quercus macrocarpa")
 
 #Seperating out our chosen species
-dat.oak <- dat.pheno[(dat.pheno$Species == chosen),]
+dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
 dat.oak$Date.Observed <- as.Date(dat.oak$Date.Observed)
 dat.oak$Bud <- as.factor(dat.oak$leaf.buds.observed)
 dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
