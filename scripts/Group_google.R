@@ -36,11 +36,11 @@ group.google <- function(x, ystart, yend){
       temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
       temp$Year <- yr
       temp$Collection <- as.factor(collection)
-      names(temp) <- tolower(names(temp))
+      # names(temp) <- tolower(names(temp))
       #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE FOR QUERCUS
-      if(yr == 2018){
-        colnames(temp) <- as.character(colnames(dat.pheno))
-      }
+      # if(yr == 2018){
+      #   colnames(temp) <- as.character(colnames(dat.pheno))
+      # }
       dat.pheno <- rbind(dat.pheno, temp)
     }
   }
