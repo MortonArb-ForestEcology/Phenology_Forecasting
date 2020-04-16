@@ -215,14 +215,18 @@ for(GCM in forecast.gcm){
         mod.tmp <- data.frame(VAR=dat.mod[,VAR],
                               YDAY=dat.mod$YDAY)
         
+        # Set our spline based on our forecst length;
+        # For other work I use 6 knots for a year, so lets 
+        # use similar scaling so it's not over-flexible
+        k.use <- max(round(nrow(dat.mod)/60), 2)
         
-        mod.ghcn <- mgcv::gam(VAR ~ s(YDAY, k=6), data=ghcn.tmp)
-        mod.gcm <- mgcv::gam(VAR ~ s(YDAY, k=6), data=mod.tmp)
+        mod.ghcn <- mgcv::gam(VAR ~ s(YDAY, k=k.use), data=ghcn.tmp)
+        mod.gcm <- mgcv::gam(VAR ~ s(YDAY, k=k.use), data=mod.tmp)
         
         # Overwrite TMAX with the new bias-corrected TMAX 
-        #   as the GCHN seasonal cycle plus its mean PLUS 
-        #   our observed residuals from the GCM trend
-        dat.mod$TMAX <- predict(mod.ghcn, newdata = mod.tmp) + mean(ghcn.tmp$VAR) + resid(mod.gcm)
+        #   as the GCHN seasonal cycle plus our observed 
+        #   residuals from the GCM trend
+        dat.mod[,VAR] <- predict(mod.ghcn, newdata = mod.tmp) + resid(mod.gcm)
       }
       
       # For Precip, we need to adjust the variance we see

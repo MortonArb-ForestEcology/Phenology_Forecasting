@@ -56,7 +56,7 @@ plot.threshA <- ggplot(data=dat.ghcn) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshA, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshA, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
-  geom_ribbon(data=ens.forecast$threshA, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.3) +
+  geom_ribbon(data=ens.forecast$threshA, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$threshA, aes(x=YDAY, y=mean, color="forecast")) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
@@ -71,7 +71,7 @@ plot.threshB <- ggplot(data=dat.ghcn) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshB, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
-  geom_ribbon(data=ens.forecast$threshB, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.3) +
+  geom_ribbon(data=ens.forecast$threshB, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$threshB, aes(x=YDAY, y=mean, color="forecast")) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
@@ -111,7 +111,7 @@ plot.prcp <- ggplot(data=dat.ghcn, aes(x=YDAY)) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=PRCP.cum, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
-  geom_ribbon(data=ens.forecast$PRCP.cum, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.3) +
+  geom_ribbon(data=ens.forecast$PRCP.cum, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$PRCP.cum, aes(x=YDAY, y=mean, color="forecast")) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
@@ -127,7 +127,7 @@ plot.tmean <- ggplot(data=dat.ghcn, aes(x=YDAY)) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=TMEAN, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
-  geom_ribbon(data=ens.forecast$TMEAN, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.3) +
+  geom_ribbon(data=ens.forecast$TMEAN, aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$TMEAN, aes(x=YDAY, y=mean, color="forecast")) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
