@@ -8,14 +8,17 @@
 # Notes: This script is based on exercises from the ecological forecasting textbook
 #        In order to use rjags you need JAGS installed. rjags is simply for interfacing. It can be found at http://mcmc-jags.sourceforge.net/
 #-----------------------------------------------------------------------------------------------------------------------------------#
+library(rjags)
+library(coda)
+
 # Read in output of previous script
 dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
 dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), function(x){x[1]}))
 dat.all$Date <- as.Date(dat.all$Date)
 
-spp.model <- c("Quercus macrocarpa", "Quercus alba") 
+spp.model <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum") 
 for(SPP in spp.model){
-  dat.comb <- dat.all[dat.all$Species %in% spp.model,]
+  dat.comb <- dat.all[dat.all$Species == SPP,]
   
   # summary(dat.comb)
   
@@ -23,8 +26,6 @@ for(SPP in spp.model){
   #This section sets up the model itself
   #---------------------------------------------------#
   #rjags for the model and coda for the summary statistics
-  library(rjags)
-  library(coda)
   #YOU WILL NEED JAGS INSTALLED rjags is a package for interfacting but you need the program itself http://mcmc-jags.sourceforge.net/
   
   
@@ -94,7 +95,7 @@ for(SPP in spp.model){
   #Converting the ooutput into a workable format
   burst.out   <- coda.samples (model = burst.model,
                                variable.names = c("THRESH","S"),
-                               n.iter = 5000)
+                               n.iter = 10000)
   
   # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
   # plot(burst.out)
@@ -106,9 +107,11 @@ for(SPP in spp.model){
   # GBR <- gelman.plot(burst.out)
   
   #Removing burnin before convergence occurred
-  burnin = 1000                                ## determine convergence from GBR output
+  burnin = 2000                                ## determine convergence from GBR output
   burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
-  plot(burst.burn)                             ## check diagnostics post burn-in
+  png(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", SPP), ".png")), height=8, width=8, units="in", res=240)
+  print(plot(burst.burn))                             ## check diagnostics post burn-in
+  dev.off()
   
   # #Checking autocorrelation
   # acfplot(burst.burn)
@@ -120,4 +123,6 @@ for(SPP in spp.model){
   
   burst.df2 <- as.data.frame(as.matrix(burst.burn))
   summary(burst.df2)
+  
+  write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")), row.names=F)
 }
