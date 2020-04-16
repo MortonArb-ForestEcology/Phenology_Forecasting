@@ -17,31 +17,29 @@ group.google <- function(x, ystart, yend){
   for(p in x){
     
     if (p == "Quercus") {
-      range <- c(yend:ystart)  ##This is reversed because quercus 2018 needs its colnames changed and this is a workaround
-    } 
-    
-    else if (p == "Acer") {
+      yrange <- c(yend:ystart)  ##This is reversed because quercus 2018 needs its colnames changed and this is a workaround
+    } else if (p == "Acer") {
       if(ystart < 2019){
         ystart <- 2019
       }
-      range <- c(ystart:yend)
-    } 
-    
-    else if (p == "Ulmus") {
+      yrange <- c(ystart:yend)
+    } else if (p == "Ulmus") {
       if(ystart < 2020){
         ystart <- 2020
       }
-      range <- c(ystart:yend)
+      yrange <- c(ystart:yend)
     }
+    
     collection <- p
     #Downloading the googleform from every year in the requested range
-    for(yr in range){
+    for(yr in yrange){
       temp <- clean.google(google.key = "1eEsiJ9FdDiNj_2QwjT5-Muv-t0e-b1UGu0AFBRyITSg", collection=collection, dat.yr=yr)
       temp$Year <- yr
       temp$Collection <- as.factor(collection)
+      names(temp) <- tolower(names(temp))
       #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE FOR QUERCUS
       if(yr == 2018){
-        colnames(temp) <- as.character(colnames(dat.pheno)) 
+        colnames(temp) <- as.character(colnames(dat.pheno))
       }
       dat.pheno <- rbind(dat.pheno, temp)
     }
