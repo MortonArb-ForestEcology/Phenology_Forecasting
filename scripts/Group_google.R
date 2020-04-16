@@ -17,7 +17,7 @@ group.google <- function(x, ystart, yend){
   for(p in x){
     
     if (p == "Quercus") {
-      yrange <- c(yend:ystart)  ##This is reversed because quercus 2018 needs its colnames changed and this is a workaround
+      yrange <- c(ystart:yend)  
     } else if (p == "Acer") {
       if(ystart < 2019){
         ystart <- 2019
