@@ -2,3 +2,4 @@ data_raw/meteorology/*
 *.Rhistory
 .DS_Store
 data_processed/Phenology_Met_combined.csv
+data_processed/GHCN_met_all.csv

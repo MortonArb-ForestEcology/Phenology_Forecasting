@@ -68,7 +68,7 @@ for(YR in unique(met.all$YEAR)){
   gdd5.cum=0; gdd0.cum=0
   d5.miss = 0; d0.miss=0
   for(i in 1:nrow(dat.tmp)){
-    if(is.na(dat.tmp$GDD5[i]) & d.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
+    if(is.na(dat.tmp$GDD5[i]) & d5.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
       d5.miss <- d5.miss+1 # Let us miss up to 3 consecutive days
       gdd5.cum <- gdd5.cum+0
     } else {
@@ -76,7 +76,7 @@ for(YR in unique(met.all$YEAR)){
       gdd5.cum <- gdd5.cum+dat.tmp$GDD5[i] 
     }
     
-    if(is.na(dat.tmp$GDD0[i]) & d.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
+    if(is.na(dat.tmp$GDD0[i]) & d0.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
       d0.miss <- d0.miss+1 # Let us miss up to 3 consecutive days
       gdd0.cum <- gdd0.cum+0
     } else {
@@ -90,7 +90,7 @@ for(YR in unique(met.all$YEAR)){
   met.all[met.all$YEAR==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
 }
 summary(met.all)
-
+write.csv(met.all, "../data_processed/GHCN_met_all.csv", row.names=F)
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want

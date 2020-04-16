@@ -22,6 +22,9 @@ dat.comb <- dat.comb[dat.comb$Species %in% species,]
 #---------------------------------------------------------------------#
 #If only running the Bayesian model than you can stop here. These may become fully seperate scripts down the line
 #---------------------------------------------------------------------#
+met.all <- read.csv("../data_processed/GHCN_met_all.csv")
+met.all$DATE <- as.Date(met.all$DATE)
+summary(met.all)
 
 # Testing whether GDD5 is a good predictor of day 
 dat.gdd5.lm <- lm(Yday ~ GDD5.cum*Species, data=dat.comb)
