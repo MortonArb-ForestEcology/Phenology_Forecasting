@@ -13,33 +13,35 @@
 
 #loading ggplot for visualization 
 library(ggplot2)
+# species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
+species <- "Quercus macrocarpa"
 
 # Read in output of previous script
 dat.comb <- read.csv("../data_processed/Phenology_Met_combined.csv")
-
+dat.comb <- dat.comb[dat.comb$Species %in% species,]
 #---------------------------------------------------------------------#
 #If only running the Bayesian model than you can stop here. These may become fully seperate scripts down the line
 #---------------------------------------------------------------------#
 
 # Testing whether GDD5 is a good predictor of day 
-dat.gdd5.lm <- lm(Yday ~ GDD5.cum, data=dat.comb)
+dat.gdd5.lm <- lm(Yday ~ GDD5.cum*Species, data=dat.comb)
 summary(dat.gdd5.lm)
 plot(Yday ~ GDD5.cum, data=dat.comb)
-abline(dat.gdd5.lm, col="red")
+# abline(dat.gdd5.lm, col="red")
 
 
 #Box plot of dat.burst to see the distribution. Macrocarpa has an outlier but seems plausible 
 ggplot(data=dat.comb) +
   geom_boxplot(aes(x=Species, y=GDD5.cum, fill=Species)) +
   scale_y_continuous(name="Accumulated Warming") +
-  scale_fill_manual(name="Species", values=c("deeppink2", "mediumpurple1")) +
+  # scale_fill_manual(name="Species", values=c("deeppink2", "mediumpurple1")) +
   guides(fill=F) +
   theme(panel.background=element_rect(fill=NA, color="black"),
         legend.text = element_text(face="italic"),
         axis.title.x=element_blank(),
-        axis.text.x=element_text(face="bold.italic", color="black", size=rel(3)),
-        axis.title.y=element_text(face="bold", color="black", size=rel(3.5)),
-        axis.text.y=element_text(color="black", size=rel(2)))
+        axis.text.x=element_text(face="bold.italic", color="black", size=rel(1), angle=-15, hjust=0),
+        axis.title.y=element_text(face="bold", color="black", size=rel(1.5)),
+        axis.text.y=element_text(color="black", size=rel(1)))
 
 
 #Creating a dataframe with the mean values of these metrics for every year
@@ -51,8 +53,9 @@ dat.yr <- aggregate(met.all[,c("TMAX", "TMIN", "TMEAN", "PRCP", "SNOW")],
 dat.yr <- dat.yr[dat.yr$YEAR>=1922,]
 
 #Creating a matrix of the right size to be filled with the distribution of predictions for that year
-mat.yr <- array(dim=c(nrow(dat.yr), 1000))
+mat.yr <- array(dim=c(nrow(dat.yr), 1000, length(species)))
 dimnames(mat.yr)[[1]] <- dat.yr$YEAR
+dimnames(mat.yr)[[3]] <- species
 
 #---------------------------------------------------------#
 #This section is for calculating mean and sd of our observed data to base our model distribtuion off of

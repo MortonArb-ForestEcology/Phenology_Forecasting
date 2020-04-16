@@ -16,8 +16,8 @@
 #loading ggplot for visualization 
 library(ggplot2)
 
-path.g <- "G:/My Drive"
-
+# path.g <- "G:/My Drive"
+path.g <- "/Volumes/GoogleDrive/My Drive"
 dir.create("../data_processed/", recursive = T, showWarnings = F)
 
 #-------------------------------------------------#
@@ -55,6 +55,8 @@ summary(met.all)
 # Adding in growing degree-days with base temp of 5
 met.all$GDD5 <- ifelse(met.all$TMEAN>5, met.all$TMEAN-5, 0)
 met.all$GDD5.cum <- NA
+met.all$GDD0 <- ifelse(met.all$TMEAN>0, met.all$TMEAN, 0)
+met.all$GDD0.cum <- NA
 summary(met.all)
 
 # Calculate the cumulative growing degree days for each day/year
@@ -63,20 +65,29 @@ for(YR in unique(met.all$YEAR)){
   
   if(min(dat.tmp$DATE)>as.Date(paste0(YR, "-01-01"))) next
   
-  gdd.cum=0
-  d.miss = 0
+  gdd5.cum=0; gdd0.cum=0
+  d5.miss = 0; d0.miss=0
   for(i in 1:nrow(dat.tmp)){
     if(is.na(dat.tmp$GDD5[i]) & d.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
-      d.miss <- d.miss+1 # Let us miss up to 3 consecutive days
-      gdd.cum <- gdd.cum+0
+      d5.miss <- d5.miss+1 # Let us miss up to 3 consecutive days
+      gdd5.cum <- gdd5.cum+0
     } else {
-      d.miss = 0 # reset to 0
-      gdd.cum <- gdd.cum+dat.tmp$GDD5[i] 
+      d5.miss = 0 # reset to 0
+      gdd5.cum <- gdd5.cum+dat.tmp$GDD5[i] 
     }
     
-    dat.tmp[i,"GDD5.cum"] <- gdd.cum
+    if(is.na(dat.tmp$GDD0[i]) & d.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
+      d0.miss <- d0.miss+1 # Let us miss up to 3 consecutive days
+      gdd0.cum <- gdd0.cum+0
+    } else {
+      d0.miss = 0 # reset to 0
+      gdd0.cum <- gdd5.cum+dat.tmp$GDD0[i] 
+    }
+    dat.tmp[i,"GDD5.cum"] <- gdd5.cum
+    dat.tmp[i,"GDD0.cum"] <- gdd0.cum
   }
   met.all[met.all$YEAR==YR, "GDD5.cum"] <- dat.tmp$GDD5.cum
+  met.all[met.all$YEAR==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
 }
 summary(met.all)
 
@@ -84,7 +95,8 @@ summary(met.all)
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
-path.hub <- "C:/Users/lucie/Documents/GitHub/"
+# path.hub <- "C:/Users/lucie/Documents/GitHub/"
+path.hub <- "../.."
 
 #Calling in the clean.google function
 source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
@@ -104,10 +116,12 @@ dat.pheno <- group.google(Genus, StartYear, EndYear)
 # Here is where you pick out your species of interest
 #--------------------------------------------------------#
 #Enter chosen species here. Genus must be capitalized, one space between genus and species, and species is lower case
-species <- c("Quercus macrocarpa")
+# species <- c("Quercus macrocarpa")
+# species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
 
 #Seperating out our chosen species
-dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
+# dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
+dat.oak <- dat.pheno
 dat.oak$Date.Observed <- as.Date(dat.oak$Date.Observed)
 dat.oak$Bud <- as.factor(dat.oak$leaf.buds.observed)
 dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
@@ -137,13 +151,19 @@ dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
 #Creating a new column in our phenology data frame that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
 dat.comb$GDD5.cum <- NA
+dat.comb$GDD0.cum <- NA
 for(DAT in paste(dat.comb$Date)){
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])==0) next
-  dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])>0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+  }
+  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"])>0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"GDD0.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"]
+  }
+  
 }
 
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
-dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum")] <- NA
+dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_Met_combined.csv", row.names=F)
