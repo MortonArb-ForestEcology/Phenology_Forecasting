@@ -123,7 +123,7 @@ dat.pheno <- group.google(Genus, StartYear, EndYear)
 # dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
 dat.oak <- dat.pheno
 dat.oak$Date.Observed <- as.Date(dat.oak$Date.Observed)
-dat.oak$Bud <- as.factor(dat.oak$leaf.buds.observed)
+dat.oak$Bud <- as.factor(dat.oak$leaf.breaking.buds.observed)
 dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
 
 #pulling out bud burst information from out phenology data
@@ -164,6 +164,7 @@ for(DAT in paste(dat.comb$Date)){
 
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
 dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
+summary(dat.comb)
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_Met_combined.csv", row.names=F)
