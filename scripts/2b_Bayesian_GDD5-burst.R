@@ -8,9 +8,13 @@
 # Notes: This script is based on exercises from the ecological forecasting textbook
 #        In order to use rjags you need JAGS installed. rjags is simply for interfacing. It can be found at http://mcmc-jags.sourceforge.net/
 #-----------------------------------------------------------------------------------------------------------------------------------#
-
+spp.model <- c("Quercus macrocarpa") 
 # Read in output of previous script
 dat.comb <- read.csv("../data_processed/Phenology_Met_combined.csv")
+dat.comb <- dat.comb[dat.comb$Species %in% spp.model,]
+dat.comb$Date <- as.Date(dat.comb$Date)
+
+summary(dat.comb)
 
 #---------------------------------------------------#
 #This section sets up the model itself
