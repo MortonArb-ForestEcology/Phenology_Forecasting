@@ -187,23 +187,26 @@ for(SPP in spp.forecast){
   thresh <- sample(gdd.prior$THRESH, 200)
   pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
   
-  for(i in 1:length(ens.unique)){
+  for(i in 1:length(ens)){
     pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ID==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
     # calc.bud(dat=dat.forecast[dat.forecast$ID==ens[i],], VAR="GDD5.cum", THRESH=thresh[1])
   }
   pred.df <- data.frame(x=as.vector(pred.array))
   
+  # Create some useful indices and labels
+  dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
+                        q75=quantile(pred.array,c(0.125, 0.875)),
+                        q95=quantile(pred.array,c(0.025, 0.975)))
+  row.names(dat.lim) <- c("lb", "ub")
+  dat.lim <- data.frame(t(dat.lim))
+  pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
+  pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
   
-  # plot.threshA.spp <- plot.threshA + 
-  #   geom_vline(data=hist.pred[hist.pred$Species==SPP,],
-  #              aes(xintercept =mean(YDAY))) 
-  dat.lim <- data.frame(lb=quantile(pred.array, 0.25),
-                        ub=quantile(pred.array, 0.75))
   
   plot.yday.dens <- ggplot() + 
     geom_density(data=pred.df, aes(x=x), adjust=2, fill="green3", alpha=0.5) +
-    geom_vline(data=dat.lim, aes(xintercept=lb), color="darkgreen", linetype="dashed") +
-    geom_vline(data=dat.lim, aes(xintercept=ub), color="darkgreen", linetype="dashed") +
+    geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
+    geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
     scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=14)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=14)])  +
     scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
     theme_bw() +
@@ -213,21 +216,22 @@ for(SPP in spp.forecast){
           legend.background = element_blank())
 
     plot.threshB.spp <- plot.threshB + 
-    geom_rect(data=dat.lim,
+    geom_rect(data=dat.lim["q75",],
               aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
   
   plot.tmean.spp <- plot.tmean +
-    geom_rect(data=dat.lim,
+    geom_rect(data=dat.lim["q75",],
               aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
 
   plot.prcp.spp <- plot.prcp + 
-      geom_rect(data=dat.lim,
+      geom_rect(data=dat.lim["q75",],
                 aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
     
   plot.dat <- cowplot::plot_grid(plot.tmean.spp, plot.prcp.spp, plot.threshB.spp, plot.yday.dens)
   
+ 
   plot.title <- ggdraw() + 
-    draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n    Forecast: ", SPP, ", green = predicted ", lubridate::year(Sys.Date())),
+    draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n    Forecast: ", SPP, ", 2020 75%CI = ", pred.range[1], " - ", pred.range[2] ),
                fontface = 'bold', x = 0,hjust = 0) +
     theme(plot.margin = margin(0, 0, 0, 1)
     )
