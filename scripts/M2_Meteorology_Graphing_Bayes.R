@@ -78,7 +78,9 @@ plot.threshA <- ggplot(data=dat.ghcn) +
   guides(fill=F) +
   theme(legend.position = c(0.2, 0.9),
         legend.title=element_blank(),
-        legend.background = element_blank())
+        legend.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank())
 
 plot.threshB <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun.y=mean, color="black", geom="line", size=1) +
@@ -93,7 +95,9 @@ plot.threshB <- ggplot(data=dat.ghcn) +
   guides(fill=F) +
   theme(legend.position = c(0.2, 0.9),
         legend.title=element_blank(),
-        legend.background = element_blank())
+        legend.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank())
 
 if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
   plot.threshA <- plot.threshA + 
@@ -135,7 +139,9 @@ plot.prcp <- ggplot(data=dat.ghcn) +
   guides(fill=F) +
   theme(legend.position = c(0.2, 0.9),
         legend.title=element_blank(),
-        legend.background = element_blank())
+        legend.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank())
 
 plot.tmean <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun.y=mean, color="black", geom="line", size=1) +
@@ -152,7 +158,9 @@ plot.tmean <- ggplot(data=dat.ghcn) +
   guides(fill=F) +
   theme(legend.position = c(0.5, 0.2),
         legend.title=element_blank(),
-        legend.background = element_blank())
+        legend.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank())
 
 library(cowplot)
 plot.title <- ggdraw() + 
@@ -180,6 +188,7 @@ summary(day.labels2)
 
 spp.forecast <- "Quercus macrocarpa"
 ens <- unique(dat.forecast$ID)
+SPP=spp.forecast
 for(SPP in spp.forecast){
   gdd.prior <- read.csv(file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")))
   summary(gdd.prior)
@@ -189,7 +198,6 @@ for(SPP in spp.forecast){
   
   for(i in 1:length(ens)){
     pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ID==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
-    # calc.bud(dat=dat.forecast[dat.forecast$ID==ens[i],], VAR="GDD5.cum", THRESH=thresh[1])
   }
   pred.df <- data.frame(x=as.vector(pred.array))
   
@@ -207,13 +215,15 @@ for(SPP in spp.forecast){
     geom_density(data=pred.df, aes(x=x), adjust=2, fill="green3", alpha=0.5) +
     geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
     geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
-    scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=14)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=14)])  +
+    scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
     scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
     theme_bw() +
     guides(fill=F) +
     theme(legend.position = c(0.5, 0.2),
           legend.title=element_blank(),
-          legend.background = element_blank())
+          legend.background = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank())
 
     plot.threshB.spp <- plot.threshB + 
     geom_rect(data=dat.lim["q75",],
@@ -231,9 +241,9 @@ for(SPP in spp.forecast){
   
  
   plot.title <- ggdraw() + 
-    draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n    Forecast: ", SPP, ", 2020 75%CI = ", pred.range[1], " - ", pred.range[2] ),
+    draw_label(paste("The Morton Arboretum weather, last updated:", Sys.Date(), "\nBud Burst Forecast: ", SPP, ", 75%CI = ", pred.range[1], " - ", pred.range[2] ),
                fontface = 'bold', x = 0,hjust = 0) +
-    theme(plot.margin = margin(0, 0, 0, 1)
+    theme(plot.margin = margin(0, 0, 0, l=10)
     )
   
   
