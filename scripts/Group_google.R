@@ -17,7 +17,7 @@ group.google <- function(x, ystart, yend){
   for(p in x){
     
     if (p == "Quercus") {
-      yrange <- c(ystart:yend)  
+      yrange <- c(yend:ystart)  #THIS MUST BE REVERSED AS A WORKAROUND TO AN ISSUE WITH 2018 QUERCUS. SEEMS ONLY PC ISSUE
     } else if (p == "Acer") {
       if(ystart < 2019){
         ystart <- 2019
@@ -38,9 +38,9 @@ group.google <- function(x, ystart, yend){
       temp$Collection <- as.factor(collection)
       # names(temp) <- tolower(names(temp))
       #Work around for clean.google not changing 2018 names. THIS ALSO MEANS RANGE MUST GO REVERSE FOR QUERCUS
-      # if(yr == 2018){
-      #   colnames(temp) <- as.character(colnames(dat.pheno))
-      # }
+      if(yr == "2018"){
+      colnames(temp) <- as.character(colnames(dat.pheno))
+      }
       dat.pheno <- rbind(dat.pheno, temp)
     }
   }
