@@ -164,7 +164,7 @@ plot.tmean <- ggplot(data=dat.ghcn) +
 
 library(cowplot)
 plot.title <- ggdraw() + 
-  draw_label(paste("The Morton Arboretum weather, last updated:", max(dat.ghcn$DATE), "\n   "),
+  draw_label(paste("The Morton Arboretum weather, last updated:", Sys.Date(), "\n   "),
              fontface = 'bold', x = 0,hjust = 0) +
   theme(plot.margin = margin(0, 0, 0, 1)
   )
@@ -241,7 +241,7 @@ for(SPP in spp.forecast){
   
  
   plot.title <- ggdraw() + 
-    draw_label(paste("The Morton Arboretum weather, last updated:", Sys.Date(), "\nBud Burst Forecast: ", SPP, ", 75%CI = ", pred.range[1], " - ", pred.range[2] ),
+    draw_label(paste("The Morton Arboretum Bud Burst Forecast (updated:", Sys.Date(), ")\n   ", SPP, ": ", pred.range[1], " - ", pred.range[2], " (75% CI)"),
                fontface = 'bold', x = 0,hjust = 0) +
     theme(plot.margin = margin(0, 0, 0, l=10)
     )
