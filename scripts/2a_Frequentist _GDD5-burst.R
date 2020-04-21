@@ -71,7 +71,7 @@ dat.gdd5.mean <- mean(dat.comb[,"GDD5.cum"], na.rm=T);
 dat.gdd5.sd <- sd(dat.comb[,"GDD5.cum"], na.rm=T)
 
 #Creating a hierarchial mean to compare
-mac.cue <- lme(GDD5.cum ~ 1, random=list(Year=~1, PlantNumber=~1), data=dat.comb, na.action=na.omit)
+mac.cue <- lme(GDD5.cum ~ 1, random=list(PlantNumber=~1), data=dat.comb, na.action=na.omit)
 mac.summ <- summary(mac.cue)
 MuMIn::r.squaredGLMM(mac.cue)
 mod.cue.est <- mac.summ$tTable[,"Value"] # Hierarchical mean

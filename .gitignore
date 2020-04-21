@@ -5,3 +5,4 @@ data_processed/Phenology_Met_combined.csv
 data_processed/GHCN_met_all.csv
 *.csv
 *.png
+data_processed/TracePlots_Quercus_macrocarpa.pdf

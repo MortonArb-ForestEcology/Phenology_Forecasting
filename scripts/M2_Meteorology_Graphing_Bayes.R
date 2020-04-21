@@ -212,7 +212,7 @@ for(SPP in spp.forecast){
   
   
   plot.yday.dens <- ggplot() + 
-    geom_density(data=pred.df, aes(x=x), adjust=2, fill="green3", alpha=0.5) +
+    geom_density(data=pred.df, aes(x=x), adjust=1.5, fill="green3", alpha=0.5) +
     geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
     geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
     scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +

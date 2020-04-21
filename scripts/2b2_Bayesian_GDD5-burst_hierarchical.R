@@ -102,7 +102,7 @@ SPP="Quercus macrocarpa"
   
   #Converting the ooutput into a workable format
   burst.out   <- coda.samples (model = burst.model,
-                               variable.names = c("THRESH","S"),
+                               variable.names = c("THRESH", "b","S"),
                                n.iter = 100000)
   
   # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
@@ -117,10 +117,28 @@ SPP="Quercus macrocarpa"
   #Removing burnin before convergence occurred
   burnin = 90000                                ## determine convergence from GBR output
   burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
-  png(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", SPP), ".png")), height=8, width=8, units="in", res=240)
-  print(plot(burst.burn))                             ## check diagnostics post burn-in
-  dev.off()
-  dev.off()
+  summary(burst.burn)
+  burst.df2 <- as.data.frame(as.matrix(burst.burn))
+  summary(burst.df2)
+  
+  write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")), row.names=F)
+  
+  
+  if(ncol(burst.df2)>2){
+    pdf(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", SPP), ".pdf")))
+    for(i in 1:ncol(burst.df2)){
+    print(plot(burst.burn[,i], main=names(burst.df2)[i]))                             ## check diagnostics post burn-in
+    }
+    dev.off()
+    dev.off()
+  } else {
+    png(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", SPP), ".png")), height=8, width=8, units="in", res=240)
+    print(plot(burst.burn))                             ## check diagnostics post burn-in
+    dev.off()
+    dev.off()
+    
+  }
+  
   # #Checking autocorrelation
   # acfplot(burst.burn)
   # 
@@ -129,8 +147,4 @@ SPP="Quercus macrocarpa"
   
   summary(burst.burn)
   
-  burst.df2 <- as.data.frame(as.matrix(burst.burn))
-  summary(burst.df2)
-  
-  write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")), row.names=F)
 # }
