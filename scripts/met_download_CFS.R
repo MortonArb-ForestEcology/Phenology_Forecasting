@@ -12,8 +12,9 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sy
   if(lon.in<0) lon.in = 180+lon.in
 
   # Setting up the various file paths
-  cfs.base <- "https://www.ncdc.noaa.gov/thredds/ncss/cfs_v2_for_ts"
-  cat.base <- "https://www.ncdc.noaa.gov/thredds/catalog/cfs_v2_for_ts"
+  cfs.base <- "https://www.ncei.noaa.gov/thredds/ncss/model-cfs_v2_for_ts"
+  cat.base <- "https://www.ncei.noaa.gov/thredds/catalog/model-cfs_v2_for_ts"
+  # https://www.ncei.noaa.gov/thredds/catalog/model-cfs_v2_for_ts/catalog.html
   
   # 1. Getting a list of the years we can get dara from
   fname <- RCurl::getURL(file.path(cat.base, "catalog.html"), dirlistonly = TRUE)

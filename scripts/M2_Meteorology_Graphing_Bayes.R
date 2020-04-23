@@ -193,7 +193,8 @@ for(SPP in spp.forecast){
   gdd.prior <- read.csv(file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")))
   summary(gdd.prior)
   
-  thresh <- sample(gdd.prior$THRESH, 200)
+  set.seed(902)
+  thresh <- sample(gdd.prior$THRESH, 500)
   pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
   
   for(i in 1:length(ens)){
@@ -212,7 +213,7 @@ for(SPP in spp.forecast){
   
   
   plot.yday.dens <- ggplot() + 
-    geom_density(data=pred.df, aes(x=x), adjust=1.5, fill="green3", alpha=0.5) +
+    geom_density(data=pred.df, aes(x=x), adjust=2, fill="green3", alpha=0.5) +
     geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
     geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
     scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
@@ -250,6 +251,15 @@ for(SPP in spp.forecast){
   png(file.path(path.out, "figures", paste0("Forecast_latest_", sub(" ", "_", SPP), ".png")), height=6, width=8, units="in", res=220)
   print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
   dev.off()
+
+  png(file.path(path.out, "figures", paste0("Forecast_", sub(" ", "_", SPP), "_", Sys.Date(), ".png")), height=6, width=8, units="in", res=220)
+  print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
+  dev.off()
+
+  png(file.path(path.out, "figures", paste0("Forecast_", sub(" ", "_", SPP), "_latest.png")), height=6, width=8, units="in", res=220)
+  print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
+  dev.off()
+  
   
 }
 # -------------------------------------
