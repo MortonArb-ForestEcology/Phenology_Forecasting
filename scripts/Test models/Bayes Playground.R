@@ -71,7 +71,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH","S", "b"),
+                             variable.names = c("THRESH","S"),
                              n.iter = 100000)
 
 # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence

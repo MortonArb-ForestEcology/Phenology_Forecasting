@@ -4,16 +4,17 @@
 library(dplyr)
 
 #Retrieving npn data
-dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_macrocarpa_IL.csv")
-chosen <- ("Quercus macrocarpa")
+dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_data/NPN_Quercus.csv")
+chosen <- c("Quercus imbricaria", "Quercus falcata", "Quercus stellata")
 
 dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", "First_Yes_DOY"], 
-                     by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year")], 
+                     by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year", "Genus", "Species")], 
                      FUN=min)
 
-colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year", "Yday")
+dat.npn$Species <- paste(dat.npn$Genus, dat.npn$Species, sep= " ")
+colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Yday")
 dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
-dat.npn$Species <- chosen
+
 
 for(YR in dat.npn$Year){
   start <- paste(as.character(dat.npn$Year), "-01-01", sep="")
@@ -22,8 +23,8 @@ for(YR in dat.npn$Year){
 
 
 #Setting the points to download the daymet data from
-path.doc <- "C:/Users/lucie/Documents/"
-species <- "Q_macrocarpa"
+path.doc <- "C:/Users/lucie/Documents/NPN_data/"
+species <- "Chosen_Oaks"
 ystart <- 2018
 
 #make sure the yend of the data matches what you enter. Sometimes daymet truncates and this varibale will become wrong later in the script
@@ -138,5 +139,6 @@ dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
 summary(dat.comb)
 
+setwd("../")
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_NPN_combined.csv", row.names=F)
