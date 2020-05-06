@@ -1,4 +1,17 @@
 #This is the standard species hierarchical model with an added level for accesion number
+
+library(rjags)
+library(coda)
+
+# Read in output of previous script
+dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
+dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), function(x){x[1]}))
+dat.all$Date <- as.Date(dat.all$Date)
+
+species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
+dat.comb <- dat.all[dat.all$Species %in% species, ]
+
+
 hierarchical_regression <- "
   model{
     

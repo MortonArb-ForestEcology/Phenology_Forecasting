@@ -5,6 +5,7 @@ library(dplyr)
 
 #Retrieving npn data
 dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_macrocarpa_IL.csv")
+chosen <- ("Quercus macrocarpa")
 
 dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", "First_Yes_DOY"], 
                      by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year")], 
@@ -31,7 +32,7 @@ yend <- 2019
 pointsfile <- paste(species, "_npn_points.csv", sep="")
 
 #Subsetting to only include lat and long (and for now the first rows to make testing easier)
-q.lat <- dat.comb[,(c=1:2)]
+q.lat <- dat.npn[,(c=1:2)]
 
 #creating a proxy "site" column because the batch function needs it
 q.lat$site <- "Daymet"
@@ -55,7 +56,7 @@ lat.list <- lat.list[sapply(lat.list, function(x) is.list(x))]
 
 #----------------------------------------------------#
 #This is not strictly for npn data but how the loop for the model must change when it is included.
-#THis is not its own script but a saved loop to be reinserted into Frequentist_GDD5-burst.R later on
+#This is not its own script but a saved loop to be reinserted into Frequentist_GDD5-burst.R later on
 #----------------------------------------------------#
 
 #Start of loop to pull out the GDD5.cum of the bud burst date fore every tree and location
@@ -67,6 +68,8 @@ pb.ind=0
 df.loc <- data.frame(latitude=rep(lat.list[[1]]$latitude, ((yend-ystart)+1)) ,
                      longitude=rep(lat.list[[1]]$longitude, ((yend-ystart)+1)))
 
+#Making sure we only go through relevant years we are calculating gdd5 for
+dat.npn <- dat.npn[dat.npn$Year >= ystart, ]
 
 #Looping to pull out the GDD5.cum of the bud burst date fore every tree and location
 count <- 1
@@ -120,59 +123,20 @@ for(i in seq_along(lat.list)){
     count <- count + 1
     
   }
-  dat.comb$GDD5.cum <- NA
-  for(DAT in paste(dat.comb$Date)){
+  dat.npn$GDD5.cum <- NA
+  for(DAT in paste(dat.npn$Date)){
     if(length(df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"])==0) next
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]
+    dat.npn[dat.npn$Date==as.Date(DAT),"GDD5.cum"] <- df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]
   }
   
 }
 
-mat.yr <- array(dim=c(nrow(df.loc), 1000))
-dimnames(mat.yr)[[1]] <- df.loc$year
+dat.comb <- dat.npn
 
+dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
+dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
+summary(dat.comb)
 
-for(i in seq_along(lat.list)){
-  df.tmp <- lat.list[[i]]$data
-  df.tmp$TMEAN <- (df.tmp$tmax..deg.c. + df.tmp$tmin..deg.c.)/2
-  df.tmp$GDD5 <- ifelse(df.tmp$TMEAN>5, df.tmp$TMEAN-5, 0)
-  for(YR in min(df.tmp$year):max(df.tmp$year)){
-    df.yr <- df.tmp[df.tmp$year==YR,]
-    gdd.cum=0
-    d.miss = 0
-    for(j in 1:nrow(df.yr)){
-      if(is.na(df.yr$GDD5[j]) & d.miss<=3){
-        d.miss <- d.miss+1 # Let us miss up to 3 consecutive days
-        gdd.cum <- gdd.cum+0
-      } else {
-        d.miss = 0 # reset to 0
-        gdd.cum <- gdd.cum+df.yr$GDD5[j] 
-      }
-      
-      df.yr[j,"GDD5.cum"] <- gdd.cum
-    }
-    # summary(dat.tmp)
-    if(nrow(df.yr)==0) next
-    
-    # Bloom time -- simple
-    bud.pred <- calc.bud(dat.gdd5.mean)
-    if(bud.pred != Inf) df.loc[k,"bud.oak"] <- bud.pred
-    bud.vec <- unlist(lapply(dat.gdd5.vec, calc.bud))
-    bud.vec[bud.vec==Inf] <- NA
-    
-    # par(mfrow=c(2,1))
-    # hist(dat.gdd5.vec); hist(bud.vec)
-    # par(mfrow=c(1,1))
-    
-    mat.yr[k,] <- bud.vec
-    k <- k +1
-  }
-  
-}
-
-df.loc$bud.mean <- apply(mat.yr, 1, mean, na.rm=T)
-df.loc$bud.sd   <- apply(mat.yr, 1, sd, na.rm=T)
-df.loc$bud.lb   <- apply(mat.yr, 1, quantile, 0.025, na.rm=T)
-df.loc$bud.ub   <- apply(mat.yr, 1, quantile, 0.975, na.rm=T)
-
+# Save dat.comb 
+write.csv(dat.comb, "../data_processed/Phenology_NPN_combined.csv", row.names=F)
