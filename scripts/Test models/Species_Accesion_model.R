@@ -8,7 +8,7 @@ dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
 dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), function(x){x[1]}))
 dat.all$Date <- as.Date(dat.all$Date)
 
-species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
+species <- c("Quercus acutissima", "Quercus georgiana", "Quercus imbricaria", "Quercus stellata")
 dat.comb <- dat.all[dat.all$Species %in% species, ]
 
 
@@ -48,14 +48,6 @@ burst.list <- list(y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Specie
                    nSp = length(unique(dat.comb$Species)), nObs = length(dat.comb$GDD5.cum))
 
 #Setting our uniformative priors
-burst.list$b0 <- 0
-burst.list$v0 <- 0.1
-# burst.list$b1 <- 0
-# burst.list$v1 <- .0001
-# burst.list$b0 <- 0.1
-# burst.list$v0 <- 0.1
-burst.list$b1 <- 0
-burst.list$v1 <- 0.001
 burst.list$s1 <- 0.1                    ## error prior n/2
 burst.list$s2 <- 0.1                    ## error prior SS/2
 
@@ -83,7 +75,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH", "c", "b"),
+                             variable.names = c("THRESH", "c"),
                              n.iter = 100000)
 
 # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
@@ -100,3 +92,26 @@ burnin = 90000                                ## determine convergence from GBR 
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)
 summary(burst.burn)
+
+
+burst.df2 <- as.data.frame(as.matrix(burst.burn))
+colnames(burst.df2) <- c(as.character(unique(dat.comb$Species)))
+
+write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", "Chosen_Oaks"), ".csv")), row.names=F)
+
+
+if(ncol(burst.df2)>2){
+  pdf(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", "Chosen_Oaks"), ".pdf")))
+  for(i in 1:ncol(burst.df2)){
+    print(plot(burst.burn[,i], main=names(burst.df2)[i]))                             ## check diagnostics post burn-in
+  }
+  dev.off()
+  dev.off()
+} else {
+  png(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", "Chosen_Oaks"), ".png")), height=8, width=8, units="in", res=240)
+  print(plot(burst.burn))                             ## check diagnostics post burn-in
+  dev.off()
+  dev.off()
+  
+}
+

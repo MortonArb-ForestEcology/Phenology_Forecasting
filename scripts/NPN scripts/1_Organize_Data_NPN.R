@@ -8,11 +8,12 @@ dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_data/NPN_Quercus.csv")
 chosen <- c("Quercus imbricaria", "Quercus falcata", "Quercus stellata")
 
 dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", "First_Yes_DOY"], 
-                     by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year", "Genus", "Species")], 
+                     by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year", "Genus", "Species", "NumDays_Since_Prior_No")], 
                      FUN=min)
 
 dat.npn$Species <- paste(dat.npn$Genus, dat.npn$Species, sep= " ")
-colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Yday")
+dat.npn <- dat.npn[(dat.npn$NumDays_Since_Prior_No > 0),]
+colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species","Days_Since_No", "Yday")
 dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
 
 
@@ -25,10 +26,10 @@ for(YR in dat.npn$Year){
 #Setting the points to download the daymet data from
 path.doc <- "C:/Users/lucie/Documents/NPN_data/"
 species <- "Chosen_Oaks"
-ystart <- 2018
+ystart <- min(dat.npn$Year)
 
 #make sure the yend of the data matches what you enter. Sometimes daymet truncates and this varibale will become wrong later in the script
-yend <- 2019
+yend <- max(dat.npn$Year)
 
 pointsfile <- paste(species, "_npn_points.csv", sep="")
 
