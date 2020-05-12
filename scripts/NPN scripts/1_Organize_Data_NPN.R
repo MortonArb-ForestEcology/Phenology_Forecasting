@@ -12,7 +12,9 @@ dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds
                      FUN=min)
 
 dat.npn$Species <- paste(dat.npn$Genus, dat.npn$Species, sep= " ")
-dat.npn <- dat.npn[(dat.npn$NumDays_Since_Prior_No > 0),]
+
+dat.npn <-  dat.npn[(dat.npn$NumDays_Since_Prior_No > 0 & dat.npn$NumDays_Since_Prior_No < 20) , ] 
+
 colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species","Days_Since_No", "Yday")
 dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
 

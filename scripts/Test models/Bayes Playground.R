@@ -11,6 +11,7 @@ dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), fu
 dat.all$Date <- as.Date(dat.all$Date)
 
 species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
+species <- c("Quercus macrocarpa")
 dat.comb <- dat.all[dat.all$Species %in% species, ]
 
 #This is the hierarchical model including the species influence on Threshold
@@ -105,11 +106,13 @@ summary(burst.burn)
 #This issue actually goes away in the species model
 #This may simply be a result of sample size but reaching below 1.05 is acceptable according to Dietze
 hierarchical_regression <- "
+
   model{
     
     for(k in 1:nObs){
       mu[k] <- Ex[pln[k]]
       y[k] ~ dnorm(mu[k], S)
+      log_lik[k] <- logdensity.norm(y[k], mu[k], S) 
     }
     
     # Priors
@@ -117,6 +120,7 @@ hierarchical_regression <- "
       Ex[i] <- THRESH + b[i]
       b[i] ~ dnorm(0, bPrec)
     }
+    THRESHY <- exp(THRESH)
     bPrec ~ dgamma(0.1, 0.1)
     S ~ dgamma(s1, s2)
     THRESH ~ dnorm(b1, v1)
@@ -159,7 +163,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH", "b","S"),
+                             variable.names = c("THRESH"),
                              n.iter = 100000)
 
 # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
@@ -173,8 +177,7 @@ GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
 burnin = 90000                                ## determine convergence from GBR output
-burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
+burst.burn <- window(burst.out, start=burnin)  ## remove burn-in
 summary(burst.burn)
 plot(burst.burn)
-
 
