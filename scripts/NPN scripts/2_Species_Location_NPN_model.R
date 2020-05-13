@@ -17,15 +17,15 @@ hierarchical_regression <- "
   model{
     
     for(k in 1:nObs){
-      mu[k] <- Ex[loc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
+      mu[k] <- Ex[loc[k]] + THRESHlog[sp[k]]  #Combination of species Threshold and individual effect
       y[k] ~ dlnorm(mu[k], S)
     }
     
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    THRESH[j] ~ dnorm(0, lPrec)
-    THRESHY[j] <- exp(THRESH[j])
+    THRESHlog[j] ~ dnorm(0, lPrec)
+    THRESH[j] <- exp(THRESH[j])
     }
     
     for(t in 1:nLoc){
@@ -61,7 +61,7 @@ inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
                      # b=runif(burst.list$nAcc,0,1e4),
-                     THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+                     THRESHlog=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
                      # THRESH=runif(1,0,1e4),
                      S = runif(1,1/200,30))
 }
@@ -77,7 +77,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESHY"),
+                             variable.names = c("THRESH"),
                              n.iter = 100000)
 
 # #Trace plot and distribution. For trace make sure they are very overlapped showing convergence

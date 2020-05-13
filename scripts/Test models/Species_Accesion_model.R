@@ -17,7 +17,7 @@ hierarchical_regression <- "
     
     for(k in 1:nObs){
       mu[k] <- Ex[acc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dlnorm(mu[k], S)
+      y[k] ~ dnorm(mu[k], S)
     }
     
     
@@ -59,9 +59,7 @@ nchain = 10
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
-                     # b=runif(burst.list$nAcc,0,1e4),
                      THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
-                     # THRESH=runif(1,0,1e4),
                      S = runif(1,1/200,30))
 }
 
@@ -76,17 +74,16 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH", "THRESHY"),
+                             variable.names = c("THRESH"),
                              n.iter = 100000)
 
-# #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
-# plot(burst.out)
-# 
+
 # #Checking that convergence happened
-gelman.diag(burst.out)
-# 
+#gelman.diag(burst.out)
+
+
 # #Checking where convergence occured
-GBR <- gelman.plot(burst.out)
+#GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
 burnin = 90000                                ## determine convergence from GBR output

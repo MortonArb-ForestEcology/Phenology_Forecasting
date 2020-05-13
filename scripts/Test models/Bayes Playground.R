@@ -112,7 +112,11 @@ hierarchical_regression <- "
     for(k in 1:nObs){
       mu[k] <- Ex[pln[k]]
       y[k] ~ dnorm(mu[k], S)
-      log_lik[k] <- logdensity.norm(y[k], mu[k], S) 
+    }
+    
+    for(k in 1:nObs){
+      Ynew[k]  ~ dnorm(munew[k], S)
+      munew[k] <- Ex[pln[k]]
     }
     
     # Priors
@@ -120,20 +124,22 @@ hierarchical_regression <- "
       Ex[i] <- THRESH + b[i]
       b[i] ~ dnorm(0, bPrec)
     }
-    THRESHY <- exp(THRESH)
+    
     bPrec ~ dgamma(0.1, 0.1)
     S ~ dgamma(s1, s2)
     THRESH ~ dnorm(b1, v1)
+    
+    d[1] <- max(Ynew[])
+    d[2] <- min(Ynew[])
+    d[3] <- max(Ynew[])-min(Ynew[])
+    d[4] <- mean(Ynew[])
+    d[5] <- sd(Ynew[])
   }
   "
 
 burst.list <- list(y = dat.comb$GDD5.cum, pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)), nObs = length(dat.comb$GDD5.cum))
 
 #Setting our uniformative priors
-# burst.list$b1 <- 0
-# burst.list$v1 <- .0001
-# burst.list$b0 <- 0.1
-# burst.list$v0 <- 0.1
 burst.list$b1 <- 0
 burst.list$v1 <- 0.001
 burst.list$s1 <- 0.1                    ## error prior n/2
