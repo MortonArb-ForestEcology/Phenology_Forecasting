@@ -34,8 +34,8 @@ summary(p.burn)
 
 d  <- p.burn[[1]]
 
-do <- c(max(dat.comb$GDD5.cum),min(dat.comb$GDD5.cum),max(dat.comb$GDD5.cum)-min(dat.comb$GDD5.cum),
-        mean(dat.comb$GDD5.cum),sd(dat.comb$GDD5.cum))
+do <- c(max(dat.comb$GDD5.cum, na.rm = TRUE),min(dat.comb$GDD5.cum, na.rm = TRUE),max(dat.comb$GDD5.cum, na.rm = TRUE)-min(dat.comb$GDD5.cum, na.rm = TRUE),
+        mean(dat.comb$GDD5.cum, na.rm = TRUE),sd(dat.comb$GDD5.cum, na.rm = TRUE))
 
 names <- c("max","min","range","mean","sd")
 
@@ -46,13 +46,6 @@ for(j in 1:ncol(d)){
   legend("topright",names[j],inset=0.05,pch=0)
   
 }
-
-
-
-
-
-
-
 
 
 

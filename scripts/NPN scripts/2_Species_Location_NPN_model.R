@@ -17,15 +17,21 @@ hierarchical_regression <- "
   model{
     
     for(k in 1:nObs){
-      mu[k] <- Ex[loc[k]] + THRESHlog[sp[k]]  #Combination of species Threshold and individual effect
+      mu[k] <- Ex[loc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
       y[k] ~ dlnorm(mu[k], S)
     }
+    
+    #Posterior predictive check
+    for(k in 1:nObs){
+      Ynew[k]  ~ dlnorm(munew[k], S)
+      munew[k] <- Ex[loc[k]] + THRESH[sp[k]]
+    }
+
     
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    THRESHlog[j] ~ dnorm(0, lPrec)
-    THRESH[j] <- exp(THRESH[j])
+    THRESH[j] ~ dnorm(0, lPrec)
     }
     
     for(t in 1:nLoc){
@@ -41,6 +47,11 @@ hierarchical_regression <- "
     aPrec ~ dgamma(0.1, 0.1)
     bPrec ~ dgamma(0.1, 0.1)
     S ~ dgamma(s1, s2)
+    d[1] <- max(Ynew[])
+    d[2] <- min(Ynew[])
+    d[3] <- max(Ynew[])-min(Ynew[])
+    d[4] <- mean(Ynew[])
+    d[5] <- sd(Ynew[])
   }
   "
 
@@ -61,7 +72,7 @@ inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
                      # b=runif(burst.list$nAcc,0,1e4),
-                     THRESHlog=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+                     THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
                      # THRESH=runif(1,0,1e4),
                      S = runif(1,1/200,30))
 }

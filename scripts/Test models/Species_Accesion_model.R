@@ -17,9 +17,13 @@ hierarchical_regression <- "
     
     for(k in 1:nObs){
       mu[k] <- Ex[acc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dnorm(mu[k], S)
+      y[k] ~ dlnorm(mu[k], S)
     }
     
+    for(k in 1:nObs){
+      Ynew[k]  ~ dlnorm(munew[k], S)
+      munew[k] <- Ex[acc[k]] + THRESH[sp[k]]
+    }
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
@@ -40,6 +44,12 @@ hierarchical_regression <- "
     aPrec ~ dgamma(0.1, 0.1)
     bPrec ~ dgamma(0.1, 0.1)
     S ~ dgamma(s1, s2)
+    
+    d[1] <- max(Ynew[])
+    d[2] <- min(Ynew[])
+    d[3] <- max(Ynew[])-min(Ynew[])
+    d[4] <- mean(Ynew[])
+    d[5] <- sd(Ynew[])
   }
   "
 
