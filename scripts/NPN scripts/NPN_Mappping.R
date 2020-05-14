@@ -34,16 +34,22 @@ extent(npn)
 extent(state_boundary_us)
 
 
+#Setting up different colors for different species
+species_palette <- c("blue", "red", "green")
+all_species_colors <- (species_palette)[npn$Species]
+
 #Plotting out results
 plot(state_boundary_us,
-     main = "Map of Continental US State Boundaries \n with SJER AOI",
+     main = "Locations of our NPN Oak data",
      border = "gray40")
 
 plot(npn,
-     pch = 19,
-     col = "purple",
+     col = all_species_colors,
+     lwd = 2,
      add = TRUE)
 
-
-
+legend("bottomleft",   # location of legend
+       legend = levels(npn$Species), # categories or elements to render in
+       # the legend
+       fill = species_palette)
 
