@@ -17,11 +17,11 @@ hierarchical_regression <- "
     
     for(k in 1:nObs){
       mu[k] <- Ex[acc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dlnorm(mu[k], S)
+      y[k] ~ dnorm(mu[k], S)
     }
     
     for(k in 1:nObs){
-      Ynew[k]  ~ dlnorm(munew[k], S)
+      Ynew[k]  ~ dnorm(munew[k], S)
       munew[k] <- Ex[acc[k]] + THRESH[sp[k]]
     }
     
@@ -89,7 +89,7 @@ burst.out   <- coda.samples (model = burst.model,
 
 
 # #Checking that convergence happened
-#gelman.diag(burst.out)
+gelman.diag(burst.out)
 
 
 # #Checking where convergence occured
@@ -105,14 +105,16 @@ summary(burst.burn)
 burst.df2 <- as.data.frame(as.matrix(burst.burn))
 colnames(burst.df2) <- c(as.character(unique(dat.comb$Species)))
 
-write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", "Chosen_Oaks"), ".csv")), row.names=F)
+write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", "Chosen_Oaks_norm"), ".csv")), row.names=F)
 
 
 if(ncol(burst.df2)>2){
-  pdf(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", "Chosen_Oaks"), ".pdf")))
+  pdf(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", "Chosen_Oaks_norm"), ".pdf")))
   for(i in 1:ncol(burst.df2)){
     print(plot(burst.burn[,i], main=names(burst.df2)[i]))                             ## check diagnostics post burn-in
   }
+  print(hist(dat.comb$Yday))
+  print(hist(dat.comb$GDD5.cum))
   dev.off()
   dev.off()
 } else {
@@ -122,4 +124,5 @@ if(ncol(burst.df2)>2){
   dev.off()
   
 }
+
 

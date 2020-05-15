@@ -32,6 +32,7 @@ hierarchical_regression <- "
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
     THRESH[j] ~ dnorm(0, lPrec)
+    THRESHY[j] <- exp(THRESH[j])
     }
     
     for(t in 1:nLoc){
@@ -71,9 +72,7 @@ nchain = 10
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
-                     # b=runif(burst.list$nAcc,0,1e4),
                      THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
-                     # THRESH=runif(1,0,1e4),
                      S = runif(1,1/200,30))
 }
 
@@ -88,12 +87,10 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH"),
+                             variable.names = c("THRESHY"),
                              n.iter = 100000)
 
-# #Trace plot and distribution. For trace make sure they are very overlapped showing convergence
-# plot(burst.out)
-# 
+
 # #Checking that convergence happened
 gelman.diag(burst.out)
 # 
@@ -117,13 +114,9 @@ if(ncol(burst.df2)>2){
   for(i in 1:ncol(burst.df2)){
     print(plot(burst.burn[,i], main=names(burst.df2)[i]))                             ## check diagnostics post burn-in
   }
+  print(hist(dat.comb$Yday))
+  print(hist(dat.comb$GDD5.cum))
   dev.off()
   dev.off()
-} else {
-  png(file.path("../data_processed/", paste0("TracePlots_", gsub(" ", "_", "NPN_Oaks_log"), ".png")), height=8, width=8, units="in", res=240)
-  print(plot(burst.burn))                             ## check diagnostics post burn-in
-  dev.off()
-  dev.off()
-  
-}
+} 
 

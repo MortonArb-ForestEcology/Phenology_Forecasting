@@ -28,7 +28,6 @@ p.out   <- coda.samples (model = burst.model,
 #Removing burnin before convergence occurred
 burnin = 90000                                ## determine convergence from GBR output
 p.burn <- window(p.out,start=burnin)  ## remove burn-in
-plot(p.burn)
 summary(p.burn)
 
 
@@ -39,13 +38,17 @@ do <- c(max(dat.comb$GDD5.cum, na.rm = TRUE),min(dat.comb$GDD5.cum, na.rm = TRUE
 
 names <- c("max","min","range","mean","sd")
 
+pdf(file.path("../data_processed/", paste0("Pvalue_", gsub(" ", "_", "Chosen_Oaks_norm"), ".pdf")))
 for(j in 1:ncol(d)){
   pval <- mean(d[,j]>do[j])
-  hist(d[,j],breaks=25,xlab="PPD",main=paste("p-value",j," = ",round(pval,2),sep=""))
+  print(hist(d[,j],breaks=25,xlab="PPD",main=paste("p-value",j," = ",round(pval,2),sep="")))
   abline(v=do[j],lwd=2,col=2)
   legend("topright",names[j],inset=0.05,pch=0)
   
 }
+dev.off()
+
+
 
 
 

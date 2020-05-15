@@ -139,7 +139,7 @@ dat.comb <- dat.npn
 
 dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
-dat.comb[dat.comb$Yday>=240, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
+dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
 summary(dat.comb)
 
 setwd("../")

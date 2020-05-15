@@ -2,21 +2,20 @@
 # Script by : Lucien Fitzpatrick
 # Project: Living Collections Phenology Forecasting
 # Purpose: To use arb weather data and phenology monitoring data to create a predicitve model of bud burst timing
-#          This script serves as the initial data download, crosswalking, and orgnaizaiton needed for and the model input
+#          This script serves as the initial data download, crosswalking, and orgnaizaiton needed for and the linear model input
 # Inputs: Old metstation data from 1895-2007 found in the "Arboretum Met Data/GHCN-Daily" google drive folder
 #         New metstation data from 2007-present found in the "Arboretum Met Data/GHCN-Daily" google drive folder
 #         Quercus 2018 to present phenology monitoring data from the googlesheet "Phenology_Observations_GoogleForm" in the "LivingCollections-Phenology/Data_Observations/" folder
 #         The clean_google_form.r script which defines the clean.google function. Found in the Github repository "Phenology_ LivingCollections"
-# Outputs:dat.comb dataframe that can be used in the Bayesian_GDD5-burst.r script and the Freqeuntist_GDD5-burst.Rin this repository
+# Outputs:dat.comb dataframe that can be used in the linear regression models in this repository
 # Notes: All script relating to met data is stolen from Christy ROllinson's script "02_MortonArb_Climate_BLoomTimes-1.r"
-#        The majority of the rest is currently a modification of that same script by Christy
-
 #-----------------------------------------------------------------------------------------------------------------------------------#
+
 
 #loading ggplot for visualization 
 library(ggplot2)
 
-# path.g <- "G:/My Drive"
+path.g <- "G:/My Drive"
 path.g <- "/Volumes/GoogleDrive/My Drive"
 dir.create("../data_processed/", recursive = T, showWarnings = F)
 
@@ -52,50 +51,27 @@ met.all <- met.all[met.all$YEAR>1895 & met.all$YEAR<2020,]
 met.all$TMEAN <- (met.all$TMAX + met.all$TMIN)/2
 summary(met.all)
 
-# Adding in growing degree-days with base temp of 5
-met.all$GDD5 <- ifelse(met.all$TMEAN>5, met.all$TMEAN-5, 0)
-met.all$GDD5.cum <- NA
-met.all$GDD0 <- ifelse(met.all$TMEAN>0, met.all$TMEAN, 0)
-met.all$GDD0.cum <- NA
-summary(met.all)
 
-# Calculate the cumulative growing degree days for each day/year
+# Calculating the Tmean for the growing season of that year
+
+g_start <- 1
+g_end <- 120
+
+met.all <- met.all[(met.all$YDAY>=g_start & met.all$YDAY<=g_end), ]
+
 for(YR in unique(met.all$YEAR)){
   dat.tmp <- met.all[met.all$YEAR==YR, ]
-  
-  if(min(dat.tmp$DATE)>as.Date(paste0(YR, "-01-01"))) next
-  
-  gdd5.cum=0; gdd0.cum=0
-  d5.miss = 0; d0.miss=0
-  for(i in 1:nrow(dat.tmp)){
-    if(is.na(dat.tmp$GDD5[i]) & d5.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
-      d5.miss <- d5.miss+1 # Let us miss up to 3 consecutive days
-      gdd5.cum <- gdd5.cum+0
-    } else {
-      d5.miss = 0 # reset to 0
-      gdd5.cum <- gdd5.cum+dat.tmp$GDD5[i] 
-    }
-    
-    if(is.na(dat.tmp$GDD0[i]) & d0.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
-      d0.miss <- d0.miss+1 # Let us miss up to 3 consecutive days
-      gdd0.cum <- gdd0.cum+0
-    } else {
-      d0.miss = 0 # reset to 0
-      gdd0.cum <- gdd5.cum+dat.tmp$GDD0[i] 
-    }
-    dat.tmp[i,"GDD5.cum"] <- gdd5.cum
-    dat.tmp[i,"GDD0.cum"] <- gdd0.cum
-  }
-  met.all[met.all$YEAR==YR, "GDD5.cum"] <- dat.tmp$GDD5.cum
-  met.all[met.all$YEAR==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
+  dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
+  met.all[met.all$YEAR==YR, "GTmean"] <- dat.tmp$GTmean
 }
+
 summary(met.all)
-write.csv(met.all, "../data_processed/GHCN_met_all.csv", row.names=F)
+write.csv(met.all, "../data_processed/GHCN_met_all_linear.csv", row.names=F)
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
-# path.hub <- "C:/Users/lucie/Documents/GitHub/"
+path.hub <- "C:/Users/lucie/Documents/GitHub/"
 path.hub <- "../.."
 
 #Calling in the clean.google function
@@ -123,7 +99,7 @@ dat.pheno <- group.google(Genus, StartYear, EndYear)
 # dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
 dat.oak <- dat.pheno
 dat.oak$Date.Observed <- as.Date(dat.oak$Date.Observed)
-dat.oak$Bud <- as.factor(dat.oak$leaf.breaking.buds.observed)
+dat.oak$Bud <- as.factor(dat.oak$leaf.buds.observed)
 dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
 
 #pulling out bud burst information from out phenology data
@@ -150,21 +126,16 @@ dat.comb <- dat.burst
 dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
 #Creating a new column in our phenology data frame that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
-dat.comb$GDD5.cum <- NA
-dat.comb$GDD0.cum <- NA
+
+dat.comb$GTmean <- NA
 for(DAT in paste(dat.comb$Date)){
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+    YR <- lubridate::year(DAT)
+    dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- mean(met.all[met.all$YEAR == YR, "GTmean"])
   }
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD0.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"]
-  }
-  
-}
 
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
-dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
+dat.comb[dat.comb$Yday>=171, c("Yday", "GTmean")] <- NA
 summary(dat.comb)
 
 # Save dat.comb 
-write.csv(dat.comb, "../data_processed/Phenology_Met_combined.csv", row.names=F)
+write.csv(dat.comb, "../data_processed/Phenology_Met_combined_linear.csv", row.names=F)
