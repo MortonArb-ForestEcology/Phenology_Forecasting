@@ -1,5 +1,6 @@
 download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD"), path.save, dir.raw, gapfill=T){
   vars.in <- toupper(vars.in)
+  if(!dir.exists(path.save)) dir.create(path.save)
   # if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
   
   dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.raw, force.redo = T)

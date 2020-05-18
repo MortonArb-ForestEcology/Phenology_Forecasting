@@ -66,7 +66,7 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
 }
 
 plot.threshA <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshA), fun.y=mean, color="black", geom="line", size=1) +
+  stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshA), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshA, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshA, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
@@ -83,7 +83,7 @@ plot.threshA <- ggplot(data=dat.ghcn) +
         panel.grid.minor.y = element_blank())
 
 plot.threshB <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun.y=mean, color="black", geom="line", size=1) +
+  stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshB, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
@@ -125,7 +125,7 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
 }  
 
 plot.prcp <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum), fun.y=mean, color="black", geom="line", size=1) +
+  stat_summary(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=PRCP.cum, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
@@ -144,7 +144,7 @@ plot.prcp <- ggplot(data=dat.ghcn) +
         panel.grid.minor.y = element_blank())
 
 plot.tmean <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun.y=mean, color="black", geom="line", size=1) +
+  stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=TMEAN, group=YEAR), alpha=0.2, size=0.5) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
