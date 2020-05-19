@@ -62,16 +62,15 @@ summary(met.all)
 
 
 # Calculating the Tmean for the growing season of that year
-
 g_start <- 1
 g_end <- 120
 
 met.gtmean <- met.all[(met.all$YDAY>=g_start & met.all$YDAY<=g_end), ]
 
 for(YR in unique(met.gtmean$YEAR)){
-  dat.tmp <- met.all[met.all$YEAR==YR, ]
+  dat.tmp <- met.gtmean[met.gtmean$YEAR==YR, ]
   dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
-  met.all[met.all$YEAR==YR, "GTmean"] <- dat.tmp$GTmean
+  met.gtmean[met.gtmean$YEAR==YR, "GTmean"] <- dat.tmp$GTmean
 }
 
 # Calculate the cumulative growing degree days for each day/year

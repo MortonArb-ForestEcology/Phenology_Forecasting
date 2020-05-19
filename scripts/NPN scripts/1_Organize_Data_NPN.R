@@ -1,5 +1,16 @@
-#Script for the integration of historical npn data into our model
+#----------------------------------------------------------------------------------------------------------------------------------#
+# Script by : Lucien Fitzpatrick
+# Project: Living Collections Phenology Forecasting
+# Purpose: To use arb weather data and phenology monitoring data to create a predicitve model of bud burst timing
+#          This script serves as the initial data download, crosswalking, and orgnaizaiton needed for and the model input for NPN data
+# Inputs: Old metstation data from 1895-2007 found in the "Arboretum Met Data/GHCN-Daily" google drive folder
+#         New metstation data from 2007-present found in the "Arboretum Met Data/GHCN-Daily" google drive folder
+#         NPN download currently manually gotten from the npn website
+# Outputs:dat.comb dataframe that can be used in the NPN models in  this repository
+# Notes: All script relating to met data is stolen from Christy ROllinson's script "02_MortonArb_Climate_BLoomTimes-1.r"
+#        The majority of the rest is currently a modification of that same script by Christy
 
+#-----------------------------------------------------------------------------------------------------------------------------------#
 #dplyr for the summarise function
 library(dplyr)
 
@@ -84,6 +95,19 @@ for(i in seq_along(lat.list)){
   df.tmp$TMEAN <- (df.tmp$tmax..deg.c. + df.tmp$tmin..deg.c.)/2
   df.tmp$GDD5 <- ifelse(df.tmp$TMEAN>5, df.tmp$TMEAN-5, 0)
   df.tmp$GDD5.cum <- NA
+  df.tmp$NCD <- NA
+  df.tmp$GTmean <- NA
+  
+  g_start <- 1
+  g_end <- 120
+  
+  met.gtmean <- df.tmp[(df.tmp$yday>=g_start & df.tmp$yday<=g_end), ]
+  
+  for(YR in unique(met.gtmean$year)){
+    dat.tmp <- met.gtmean[met.gtmean$year==YR, ]
+    dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
+    met.gtmean[met.gtmean$year==YR, "GTmean"] <- dat.tmp$GTmean
+  }
   
   #Loop that goes through every year for each point
   for(YR in min(df.tmp$year):max(df.tmp$year)){
@@ -93,21 +117,27 @@ for(i in seq_along(lat.list)){
     start <- paste(as.character(df.tmp$year), "-01-01", sep="")
     df.tmp$Date <- as.Date((df.yr$yday-1), origin = start)
     
+    g_end = 120
     gdd.cum=0
     d.miss = 0
+    ncd = 0
     for(j in 1:nrow(df.yr)){
-      if(is.na(df.yr$GDD5[i]) & d.miss<=3){
+      if(is.na(df.yr$GDD5[j]) & d.miss<=3){
         d.miss <- d.miss+1 # Let us miss up to 3 consecutive days
         gdd.cum <- gdd.cum+0
       } else {
         d.miss = 0 # reset to 0
         gdd.cum <- gdd.cum+df.yr$GDD5[j] 
       }
-      
+      if(!is.na(df.yr$TMEAN[j]) & df.yr$TMEAN[j] < 0){
+        ncd <- ncd + 1
+      }
+      df.yr[j, "NCD"] <- ncd
       df.yr[j,"GDD5.cum"] <- gdd.cum
     }
     df.tmp[df.tmp$year==YR, "GDD5.cum"] <- df.yr$GDD5.cum
-    
+    df.tmp[df.tmp$year==YR, "NCD"] <- df.yr$NCD
+
     loc.sum <- df.yr %>% summarise(TMAX = max(tmax..deg.c.),
                                    TMIN = min(tmin..deg.c.),
                                    TMEAN = mean(TMEAN),
@@ -128,18 +158,27 @@ for(i in seq_along(lat.list)){
     
   }
   dat.npn$GDD5.cum <- NA
+  dat.npn$NCD <- NA
+  dat.npn$GTmean <- NA
   for(DAT in paste(dat.npn$Date)){
-    if(length(df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"])==0) next
+    if(length(df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]) > 0){
     dat.npn[dat.npn$Date==as.Date(DAT),"GDD5.cum"] <- df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]
+    }
+    if(length(df.tmp[df.tmp$Date==as.Date(DAT), "NCD"]) > 0){ 
+      dat.npn[dat.npn$Date==as.Date(DAT),"NCD"] <- df.tmp[df.tmp$Date==as.Date(DAT), "NCD"]
+    }
+    YR <- lubridate::year(DAT)
+    dat.npn[dat.npn$Date==as.Date(DAT),"GTmean"] <- mean(met.gtmean[met.gtmean$year == YR, "GTmean"])
   }
   
 }
+
 
 dat.comb <- dat.npn
 
 dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
-dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "GDD0.cum")] <- NA
+dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "NCD")] <- NA
 summary(dat.comb)
 
 setwd("../")
