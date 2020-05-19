@@ -36,9 +36,12 @@ d  <- p.burn[[1]]
 do <- c(max(dat.comb$GDD5.cum, na.rm = TRUE),min(dat.comb$GDD5.cum, na.rm = TRUE),max(dat.comb$GDD5.cum, na.rm = TRUE)-min(dat.comb$GDD5.cum, na.rm = TRUE),
         mean(dat.comb$GDD5.cum, na.rm = TRUE),sd(dat.comb$GDD5.cum, na.rm = TRUE))
 
+do <- c(max(dat.comb$Yday, na.rm = TRUE),min(dat.comb$Yday, na.rm = TRUE),max(dat.comb$Yday, na.rm = TRUE)-min(dat.comb$Yday, na.rm = TRUE),
+        mean(dat.comb$Yday, na.rm = TRUE),sd(dat.comb$Yday, na.rm = TRUE))
+
 names <- c("max","min","range","mean","sd")
 
-pdf(file.path("../data_processed/", paste0("Pvalue_", gsub(" ", "_", "Chosen_Oaks_norm"), ".pdf")))
+pdf(file.path("../data_processed/", paste0("Pvalue_", gsub(" ", "_", "Chosen_Oaks_linear_norm"), ".pdf")))
 for(j in 1:ncol(d)){
   pval <- mean(d[,j]>do[j])
   print(hist(d[,j],breaks=25,xlab="PPD",main=paste("p-value",j," = ",round(pval,2),sep="")))
