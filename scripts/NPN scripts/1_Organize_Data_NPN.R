@@ -13,22 +13,25 @@
 #-----------------------------------------------------------------------------------------------------------------------------------#
 #dplyr for the summarise function
 library(dplyr)
+library(rnpn)
 
 #Retrieving npn data
-dat.npn <- read.csv("C:/Users/lucie/Documents/NPN_data/NPN_Quercus.csv")
-chosen <- c("Quercus imbricaria", "Quercus falcata", "Quercus stellata")
+#The Species ID's are currently for imbricaria falcata, and stellata respectively. Phenophase is breakign leaf buds
+#rnpn packages has tools to show the corresponding id's for these queries. Request source is your name/affiliation
+dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2010:2019), 
+                                    species_id=c(1190, 1484, 1755), phenophase_ids =c(371))
 
-dat.npn <- aggregate(dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", "First_Yes_DOY"], 
-                     by=dat.npn[dat.npn$Phenophase_Description=="Breaking leaf buds", c("Latitude", "Longitude", "Individual_ID", "First_Yes_Year", "Genus", "Species", "NumDays_Since_Prior_No")], 
+dat.npn$year <- lubridate::year(dat.npn$observation_date)
+
+dat.npn <- aggregate(dat.npn[dat.npn$phenophase_status==1, "day_of_year"], 
+                     by=dat.npn[dat.npn$phenophase_status==1, c("latitude", "longitude", "individual_id", "year", "genus", "species" )], 
                      FUN=min)
 
-dat.npn$Species <- paste(dat.npn$Genus, dat.npn$Species, sep= " ")
+dat.npn$species <- paste(dat.npn$genus, dat.npn$species, sep= " ")
 
-dat.npn <-  dat.npn[(dat.npn$NumDays_Since_Prior_No > 0 & dat.npn$NumDays_Since_Prior_No < 20) , ] 
 
-colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species","Days_Since_No", "Yday")
+colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Yday")
 dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
-
 
 for(YR in dat.npn$Year){
   start <- paste(as.character(dat.npn$Year), "-01-01", sep="")
