@@ -98,11 +98,13 @@ for(i in seq_along(lat.list)){
   df.tmp$NCD <- NA
   df.tmp$GTmean <- NA
   
+  #Setting the parameters of the growing season length for the growing season temp mean
   g_start <- 1
   g_end <- 120
   
   met.gtmean <- df.tmp[(df.tmp$yday>=g_start & df.tmp$yday<=g_end), ]
   
+  #Calculating the mean temp of the growing season for each years
   for(YR in unique(met.gtmean$year)){
     dat.tmp <- met.gtmean[met.gtmean$year==YR, ]
     dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)

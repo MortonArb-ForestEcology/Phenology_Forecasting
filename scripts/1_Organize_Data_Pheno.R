@@ -185,7 +185,7 @@ for(DAT in paste(dat.comb$Date)){
     dat.comb[dat.comb$Date==as.Date(DAT),"NCD"] <- met.all[met.all$DATE==as.Date(DAT), "NCD"]
   } 
   YR <- lubridate::year(DAT)
-  dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- mean(met.all[met.all$YEAR == YR, "GTmean"])
+  dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- mean(met.gtmean[met.gtmean$YEAR == YR, "GTmean"])
 }
 
 #Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS

@@ -121,13 +121,13 @@ hierarchical_regression <- "
     
     # Priors
     for(i in 1:nPln){
-      Ex[i] <- THRESH + b[i]
+      Ex[i] <- exp(THRESH) + b[i]
       b[i] ~ dnorm(0, bPrec)
     }
     
     bPrec ~ dgamma(0.1, 0.1)
     S ~ dgamma(s1, s2)
-    THRESH ~ dnorm(b1, v1)
+    THRESH ~ dlnorm(b1, v1)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])

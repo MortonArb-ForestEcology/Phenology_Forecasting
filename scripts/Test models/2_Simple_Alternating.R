@@ -23,7 +23,9 @@ dat.comb <- dat.all[dat.all$Species %in% species, ]
 univariate_regression <- "
 model{
 
+  a ~ dnorm(0, .001)
   b ~ dnorm(0, .001)
+  c ~ dnorm(0, .001)
   S ~ dgamma(s1,s2)    ## prior precision
 
   for(i in 1:nObs){
