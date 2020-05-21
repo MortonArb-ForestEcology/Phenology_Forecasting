@@ -111,17 +111,17 @@ hierarchical_regression <- "
     
     for(k in 1:nObs){
       mu[k] <- Ex[pln[k]]
-      y[k] ~ dlnorm(mu[k], S)
+      y[k] ~ dnorm(mu[k], S)
     }
     
     for(k in 1:nObs){
-      Ynew[k]  ~ dlnorm(munew[k], S)
+      Ynew[k]  ~ dnorm(munew[k], S)
       munew[k] <- Ex[pln[k]]
     }
     
     # Priors
     for(i in 1:nPln){
-      Ex[i] <- exp(THRESH) + b[i]
+      Ex[i] <- THRESH + b[i]
       b[i] ~ dnorm(0, bPrec)
     }
     
