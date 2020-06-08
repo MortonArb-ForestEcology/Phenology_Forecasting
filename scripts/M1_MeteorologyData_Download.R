@@ -55,10 +55,6 @@ path.ghcn=c("../data_raw/meteorology/GHCN_extracted/")
 dir.raw="../data_raw/meteorology/GHCN_raw/"
 
 source("met_download_GHCN.R")
-test <- read.csv(file.path(ghcn.https, paste0(ID, ".csv")))
-summary(test)
-tail(test)
-
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
 # -------------------------------------
 
