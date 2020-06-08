@@ -44,7 +44,7 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
     dat.raw$DAY <- lubridate::day(dat.raw$DATE)
     dat.raw$YDAY <- lubridate::yday(dat.raw$DATE)
     
-    dat.ghcn <- dat.raw[,c("YEAR", "MONTH", "DAY", "STATION", "TMAX", "TMIN", "PRCP", "SNOW", "SNWD", "DATE")]
+    dat.ghcn <- dat.raw[,c("YEAR", "MONTH", "DAY", "STATION", "TMAX", "TMIN", "PRCP", "SNOW", "SNWD", "DATE", "YDAY")]
   }
   
   dat.ghcn[,c("TMAX", "TMIN", "PRCP")] <- dat.ghcn[,c("TMAX", "TMIN", "PRCP")]*0.1 # Unit correction
