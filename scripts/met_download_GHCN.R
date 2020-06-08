@@ -3,7 +3,7 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
   if(!dir.exists(path.save)) dir.create(path.save)
   # if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
   
-  if(! method %in% c("https", "ftp")){
+  if(!method %in% c("https", "ftp")){
     warning("invalid method.  Only https and ftp allowed.  Defaulting to https")
     method="https"
   } 
@@ -30,7 +30,7 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
     dat.ghcn$YDAY <- lubridate::yday(dat.ghcn$DATE)
     
   }
-  if(method="https"){
+  if(method=="https"){
     ghcn.https <- "https://www.ncei.noaa.gov/data/global-historical-climatology-network-daily/access/"
     dat.raw <- read.csv(file.path(ghcn.https, paste0(ID, ".csv")))
     dat.raw$DATE <- as.Date(dat.raw$DATE)
