@@ -1,27 +1,55 @@
-download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD"), path.save, dir.raw, gapfill=T){
+download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD"), path.save, dir.raw, gapfill=T, method="https"){
   vars.in <- toupper(vars.in)
   if(!dir.exists(path.save)) dir.create(path.save)
   # if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
   
-  dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.raw, force.redo = T)
-  
-  # Finding an issue where not all variables may line up (weird; but we can deal)
-  dat.ghcn <- data.frame(STATION=ID)
-  for(MET in vars.want){
-    dat.var <- data.frame(YEAR=dat.raw[[MET]]$YEAR, 
-                          MONTH=dat.raw[[MET]]$MONTH,
-                          DAY=rep(1:31, each=nrow(dat.raw[[MET]])))
-    dat.var[,MET] <- stack(dat.raw[[MET]][grep("D", names(dat.raw[[MET]]))])[,1]
+  if(! method %in% c("https", "ftp")){
+    warning("invalid method.  Only https and ftp allowed.  Defaulting to https")
+    method="https"
+  } 
+  # if(any(!vars.in %in% c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")))
+  if(method=="ftp"){
+    dat.raw <- FedData::get_ghcn_daily_station(ID=ID, raw.dir=dir.raw, force.redo = T)
     
-    dat.ghcn <- merge(dat.ghcn, dat.var, all=T)
+    # Finding an issue where not all variables may line up (weird; but we can deal)
+    dat.ghcn <- data.frame(STATION=ID)
+    summary(dat.ghcn)
+    
+    for(MET in vars.want){
+      dat.var <- data.frame(YEAR=dat.raw[[MET]]$YEAR, 
+                            MONTH=dat.raw[[MET]]$MONTH,
+                            DAY=rep(1:31, each=nrow(dat.raw[[MET]])))
+      dat.var[,MET] <- stack(dat.raw[[MET]][grep("D", names(dat.raw[[MET]]))])[,1]
+      
+      dat.ghcn <- merge(dat.ghcn, dat.var, all=T)
+    }
+    
+    # Format Date
+    dat.ghcn$DATE <- as.Date(paste(dat.ghcn$YEAR, dat.ghcn$MONTH, dat.ghcn$DAY, sep="-"))
+    dat.ghcn <- dat.ghcn[!is.na(dat.ghcn$DATE),]
+    dat.ghcn$YDAY <- lubridate::yday(dat.ghcn$DATE)
+    
   }
-  summary(dat.ghcn)
+  if(method="https"){
+    ghcn.https <- "https://www.ncei.noaa.gov/data/global-historical-climatology-network-daily/access/"
+    dat.raw <- read.csv(file.path(ghcn.https, paste0(ID, ".csv")))
+    dat.raw$DATE <- as.Date(dat.raw$DATE)
+    
+    # Adding in missing dates
+    df.date <- data.frame(DATE=seq.Date(min(dat.raw$DATE), max(dat.raw$DATE), by=1))
+    
+    dat.raw <- merge(dat.raw, df.date, all=T)
+    dat.raw$YEAR <- lubridate::year(dat.raw$DATE)
+    dat.raw$MONTH <- lubridate::month(dat.raw$DATE)
+    dat.raw$DAY <- lubridate::day(dat.raw$DATE)
+    dat.raw$YDAY <- lubridate::yday(dat.raw$DATE)
+    
+    dat.ghcn <- dat.raw[,c("YEAR", "MONTH", "DAY", "STATION", "TMAX", "TMIN", "PRCP", "SNOW", "SNWD", "DATE")]
+  }
   
   dat.ghcn[,c("TMAX", "TMIN", "PRCP")] <- dat.ghcn[,c("TMAX", "TMIN", "PRCP")]*0.1 # Unit correction
-  dat.ghcn$DATE <- as.Date(paste(dat.ghcn$YEAR, dat.ghcn$MONTH, dat.ghcn$DAY, sep="-"))
-  dat.ghcn <- dat.ghcn[!is.na(dat.ghcn$DATE),]
+
   dat.ghcn <- dat.ghcn[dat.ghcn$DATE < Sys.Date(),] # Get rid of anything in the future
-  dat.ghcn$YDAY <- lubridate::yday(dat.ghcn$DATE)
   dat.ghcn <- dat.ghcn[order(dat.ghcn$DATE),] # Ordering just to make life easier
   # dat.ghcn[,]
   summary(dat.ghcn)
@@ -42,7 +70,7 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
   #  ** Make sure to add column about being gapfilled
   # -------------------------------------
   if(gapfill){
-    source("met_gapfill.R")
+    if(!"met.gapfill" %in% ls()) source("met_gapfill.R")
     dat.ghcn$flag.TMAX <- as.factor(ifelse(is.na(dat.ghcn$TMAX), "gapfill", "observed"))
     dat.ghcn$flag.TMIN <- as.factor(ifelse(is.na(dat.ghcn$TMIN), "gapfill", "observed"))
     dat.ghcn$flag.PRCP <- as.factor(ifelse(is.na(dat.ghcn$PRCP), "gapfill", "observed"))
