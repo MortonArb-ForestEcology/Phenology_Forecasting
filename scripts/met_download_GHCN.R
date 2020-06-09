@@ -70,7 +70,7 @@ download.ghcn <- function(ID="USC00115097", vars.in= c("TMAX", "TMIN", "PRCP", "
   #  ** Make sure to add column about being gapfilled
   # -------------------------------------
   if(gapfill){
-    if(!"met.gapfill" %in% ls()) source("met_gapfill.R")
+    # if(!"met.gapfill" %in% ls()) source("met_gapfill.R")
     dat.ghcn$flag.TMAX <- as.factor(ifelse(is.na(dat.ghcn$TMAX), "gapfill", "observed"))
     dat.ghcn$flag.TMIN <- as.factor(ifelse(is.na(dat.ghcn$TMIN), "gapfill", "observed"))
     dat.ghcn$flag.PRCP <- as.factor(ifelse(is.na(dat.ghcn$PRCP), "gapfill", "observed"))
