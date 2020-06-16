@@ -24,25 +24,31 @@ Alternating_model <- "
 model{
 
   b ~ dunif(0, 5000)
-  c ~ dunif(-5, 0)
+  c ~ dunif(-1, 0)
   S ~ dgamma(s1,s2)    ## prior precision
 
   for(i in 1:nObs){
-	  mu[i] <- a[pln[i]] + b*exp(c * NCD[i])   	## process model
+	  mu[i] <- ind[pln[i]] + THRESH[sp[i]] +  b*exp(c * NCD[i])   	## process model
 	  y[i]  ~ dnorm(mu[i],S)		        ## data model
   }
   
   for(k in 1:nObs){
       Ynew[k]  ~ dnorm(munew[k], S)
-      munew[k] <- a[pln[k]] + b*exp(c * NCD[k])
+      munew[k] <- ind[pln[k]] + THRESH[sp[k]] + b*exp(c * NCD[k])
   }
-  for(i in 1:nPln){
-      a[i] <- THRESH + p[i]
-      p[i] ~ dnorm(0, pPrec)
-    }
+  
+  for(j in 1:nSp){                      #This loop adds the species effect on Threshold
+    THRESH[j] ~ dnorm(0, tPrec)
+  }
     
+  for(i in 1:nPln){
+    ind[i] <-  p[i]
+    p[i] ~ dnorm(0, pPrec)
+  }
+    
+    tPrec ~ dgamma(0.1, 0.1)
+    aPrec ~ dgamma(0.1, 0.1)
     pPrec ~ dgamma(0.1, 0.1)
-    THRESH ~ dnorm(0, .001)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
@@ -52,8 +58,9 @@ model{
 }
 "
 
-burst.list <- list(NCD = dat.comb$NCD, y = dat.comb$GDD5.cum, nObs = length(dat.comb$GDD5.cum),
-                   pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)))
+burst.list <- list(NCD = dat.comb$NCD, y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Species)),
+                   pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)),
+                   nSp = length(unique(dat.comb$Species)), nObs = length(dat.comb$GDD5.cum))
 
 burst.list$s1 <- 0.1                    ## error prior n/2
 burst.list$s2 <- 0.1                    ## error prior SS/2
@@ -62,8 +69,9 @@ burst.list$s2 <- 0.1                    ## error prior SS/2
 nchain = 3
 inits <- list()
 for(i in 1:nchain){
-  inits[[i]] <- list(S = runif(1,1/200,1/20),
-                     THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5))
+  inits[[i]] <- list(S = runif(1,1/4000,1/20),
+                     b = runif(1, 0, 3000),
+                     c = runif(1, -1, 0))
 }
 
 burst.model   <- jags.model (file = textConnection(Alternating_model),
@@ -73,8 +81,8 @@ burst.model   <- jags.model (file = textConnection(Alternating_model),
 
 
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH","b", "c"),
-                             n.iter = 10000)
+                             variable.names = c("THRESH", "ind", "b", "c", "S"),
+                             n.iter = 100000)
 
 
 
@@ -85,7 +93,7 @@ gelman.diag(burst.out)
 GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 5000                                ## determine convergence from GBR output
+burnin = 90000                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)
 summary(burst.burn)
