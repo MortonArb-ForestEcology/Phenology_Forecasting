@@ -74,25 +74,24 @@ lat.list <- lat.list[sapply(lat.list, function(x) is.list(x))]
 
 #----------------------------------------------------#
 #This is not strictly for npn data but how the loop for the model must change when it is included.
-#This is not its own script but a saved loop to be reinserted into Frequentist_GDD5-burst.R later on
 #----------------------------------------------------#
 
 #Start of loop to pull out the GDD5.cum of the bud burst date fore every tree and location
 #Progress bar
-pb <- txtProgressBar(min=0, max=length(lat.list)*((yend-ystart)+1), style=3)
+
+yrlength <- ((yend-ystart)+1)
+pb <- txtProgressBar(min=0, max=length(lat.list)*yrlength, style=3)
 pb.ind=0
 
 #Creating a dataframe to hold weather summary statistics
-df.loc <- data.frame(latitude=rep(lat.list[[1]]$latitude, ((yend-ystart)+1)) ,
-                     longitude=rep(lat.list[[1]]$longitude, ((yend-ystart)+1)))
-
-#Making sure we only go through relevant years we are calculating gdd5 for
-dat.npn <- dat.npn[dat.npn$Year >= ystart, ]
+df.loc <- data.frame(latitude=rep(lat.list[[1]]$latitude, 365* yrlength) ,
+                     longitude=rep(lat.list[[1]]$longitude, 365 * yrlength))
 
 #Looping to pull out the GDD5.cum of the bud burst date fore every tree and location
 count <- 1
 i <- 1
 YR <- ystart
+gcount <- 1
 for(i in seq_along(lat.list)){
   df.tmp <- lat.list[[i]]$data
   df.tmp$TMEAN <- (df.tmp$tmax..deg.c. + df.tmp$tmin..deg.c.)/2
@@ -104,14 +103,14 @@ for(i in seq_along(lat.list)){
   #Setting the parameters of the growing season length for the growing season temp mean
   g_start <- 1
   g_end <- 120
-  
   met.gtmean <- df.tmp[(df.tmp$yday>=g_start & df.tmp$yday<=g_end), ]
   
   #Calculating the mean temp of the growing season for each years
   for(YR in unique(met.gtmean$year)){
     dat.tmp <- met.gtmean[met.gtmean$year==YR, ]
     dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
-    met.gtmean[met.gtmean$year==YR, "GTmean"] <- dat.tmp$GTmean
+    df.loc[gcount:(gcount+364), "GTmean"] <- rep(dat.tmp[1, "GTmean"], 365)
+    gcount <- gcount + 365
   }
   
   #Loop that goes through every year for each point
@@ -142,50 +141,81 @@ for(i in seq_along(lat.list)){
     }
     df.tmp[df.tmp$year==YR, "GDD5.cum"] <- df.yr$GDD5.cum
     df.tmp[df.tmp$year==YR, "NCD"] <- df.yr$NCD
-
-    loc.sum <- df.yr %>% summarise(TMAX = max(tmax..deg.c.),
-                                   TMIN = min(tmin..deg.c.),
-                                   TMEAN = mean(TMEAN),
-                                   PRCP = mean(prcp..mm.day.),
-                                   SNOW = mean(srad..W.m.2.))
-    
-    
-    df.loc[count, "latitude"] <- lat.list[[i]]$latitude
-    df.loc[count, "longitude"] <- lat.list[[i]]$longitude
-    df.loc[count, "year"] <- YR
-    df.loc[count, "TMAX"] <- loc.sum$TMAX
-    df.loc[count, "TMIN"] <- loc.sum$TMIN
-    df.loc[count, "TMEAN"] <- loc.sum$TMEAN
-    df.loc[count, "PRCP"] <- loc.sum$PRCP
-    df.loc[count, "SNOW"] <- loc.sum$SNOW
-    
-    count <- count + 1
-    
-  }
-  dat.npn$GDD5.cum <- NA
-  dat.npn$NCD <- NA
-  dat.npn$GTmean <- NA
-  for(DAT in paste(dat.npn$Date)){
-    if(length(df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]) > 0){
-    dat.npn[dat.npn$Date==as.Date(DAT),"GDD5.cum"] <- df.tmp[df.tmp$Date==as.Date(DAT), "GDD5.cum"]
-    }
-    if(length(df.tmp[df.tmp$Date==as.Date(DAT), "NCD"]) > 0){ 
-      dat.npn[dat.npn$Date==as.Date(DAT),"NCD"] <- df.tmp[df.tmp$Date==as.Date(DAT), "NCD"]
-    }
-    YR <- lubridate::year(DAT)
-    dat.npn[dat.npn$Date==as.Date(DAT),"GTmean"] <- mean(met.gtmean[met.gtmean$year == YR, "GTmean"])
   }
   
+  df.loc[count:((count-1) + (365 * yrlength)), "latitude"] <- lat.list[[i]]$latitude
+  df.loc[count:((count-1) + (365 * yrlength)), "longitude"] <- lat.list[[i]]$longitude
+  df.loc[count:((count-1) + (365 * yrlength)), "year"] <- df.tmp$year
+  df.loc[count:((count-1) + (365 * yrlength)), "TMAX"] <- df.tmp$tmax..deg.c.
+  df.loc[count:((count-1) + (365 * yrlength)), "TMIN"] <- df.tmp$tmin..deg.c.
+  df.loc[count:((count-1) + (365 * yrlength)), "TMEAN"] <- df.tmp$TMEAN
+  df.loc[count:((count-1) + (365 * yrlength)), "PRCP"] <- df.tmp$prcp..mm.day.
+  df.loc[count:((count-1) + (365 * yrlength)), "SNOW"] <- df.tmp$srad..W.m.2.
+  df.loc[count:((count-1) + (365 * yrlength)), "YDAY"] <- df.tmp$yday
+  df.loc[count:((count-1) + (365 * yrlength)), "Date"] <- df.tmp$Date
+  df.loc[count:((count-1) + (365 * yrlength)), "GDD5"] <- df.tmp$GDD5
+  df.loc[count:((count-1) + (365 * yrlength)), "GDD5.cum"] <- df.tmp$GDD5.cum
+  df.loc[count:((count-1) + (365 * yrlength)), "NCD"] <- df.tmp$NCD
+  
+  count <- count + (365 * yrlength)
+  
 }
+setwd("../")
+write.csv(df.loc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
 
-dat.comb <- dat.npn
 
-dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
+#Making sure we only go through relevant years we are calculating gdd5 for
+dat.npn <- dat.npn[dat.npn$Year >= ystart, ]
+
+#Our occurence points are rounded becasue daymet rounds them to 6 digits. 
+#Unfortunately we need to round them to 4 becasue otherwise they don't macth as a few points will round differently
+dat.npn$Latitude <- signif(dat.npn$Latitude, digits = 7) 
+dat.npn$Longitude <- signif(dat.npn$Longitude, digits = 7) 
+
+#This can be removed if down the line I figure out a way to match the locations back without rounding
+df.loc$latitude <- signif(df.loc$latitude, digits = 7) 
+df.loc$longitude <- signif(df.loc$longitude, digits = 7)
+
+
+#This section is a gross solution so I can leave it in a working state
+#For some reason if you start the rounding at 6 digits, they round differently and won't match
+#If you round them to 7 and then to 6 they will all match
+#Since this rounding solution needs to be fully removed this is my current bad solution
+dat.npn$Latitude <- signif(dat.npn$Latitude, digits = 6) 
+dat.npn$Longitude <- signif(dat.npn$Longitude, digits = 6) 
+
+
+df.loc$latitude <- signif(df.loc$latitude, digits = 6) 
+df.loc$longitude <- signif(df.loc$longitude, digits = 6)
+
+
+dat.npn$Location <- paste(dat.npn$Latitude, dat.npn$Longitude, sep= " ")
+df.loc$location <- paste(df.loc$latitude, df.loc$longitude, sep= " ")
+
+dat.comb <- data.frame()
+pcount <- 1
+for(LOC in unique(as.character(dat.npn$Location))){
+  npn.tmp <- dat.npn[dat.npn$Location == LOC,]
+  npn.tmp$GDD5.cum <- NA
+  npn.tmp$NCD <- NA
+  npn.tmp$GTmean <- NA
+  for(DAT in paste(npn.tmp$Date)){
+    if(length(df.loc[df.loc$Date==as.Date(DAT), "GDD5.cum"]) > 0){
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD5.cum"] <- df.loc[df.loc$Date==as.Date(DAT) & df.loc$location == LOC, "GDD5.cum"]
+    }
+    if(length(df.loc[df.loc$Date==as.Date(DAT), "NCD"]) > 0){ 
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"NCD"] <- df.loc[df.loc$Date==as.Date(DAT) & df.loc$location == LOC, "NCD"]
+    }
+    if(length(df.loc[df.loc$Date==as.Date(DAT), "NCD"]) > 0){ 
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"GTmean"] <- df.loc[df.loc$Date==as.Date(DAT)& df.loc$location == LOC, "GTmean"]
+    }
+  }
+  dat.comb <- rbind(dat.comb, npn.tmp)
+}
 
 dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "NCD")] <- NA
 summary(dat.comb)
 
-setwd("../")
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_NPN_combined.csv", row.names=F)
