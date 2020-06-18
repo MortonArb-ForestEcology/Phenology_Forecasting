@@ -14,6 +14,7 @@
 #dplyr for the summarise function
 library(dplyr)
 library(rnpn)
+library(data.table)
 
 #Retrieving npn data
 #The Species ID's are currently for imbricaria falcata, and stellata respectively. Phenophase is breakign leaf buds
@@ -59,7 +60,6 @@ q.lat <- unique(q.lat)
 
 #Writing the csv file of lat and longs because batch function needs to read a file instead of a dataframe
 write.csv(q.lat, file.path(path.doc, file = pointsfile), row.names=FALSE)
-
 
 setwd(path.doc)
 #Downloading all of the damet data for each point. Internal =TRUE means it creates a nested list. Set false to actually download a file
@@ -162,11 +162,12 @@ for(i in seq_along(lat.list)){
 }
 setwd("../")
 write.csv(df.loc, "../data_processed/Daymet_clean_data.csv", row.names=F)
-
+df.loc <- read.csv( "../data_processed/Daymet_clean_data.csv")
 
 
 #Making sure we only go through relevant years we are calculating gdd5 for
 dat.npn <- dat.npn[dat.npn$Year >= ystart, ]
+
 
 #Our occurence points are rounded becasue daymet rounds them to 6 digits. 
 #Unfortunately we need to round them to 4 becasue otherwise they don't macth as a few points will round differently
@@ -207,7 +208,7 @@ for(LOC in unique(as.character(dat.npn$Location))){
     if(length(df.loc[df.loc$Date==as.Date(DAT), "NCD"]) > 0){ 
       npn.tmp[npn.tmp$Date==as.Date(DAT),"NCD"] <- df.loc[df.loc$Date==as.Date(DAT) & df.loc$location == LOC, "NCD"]
     }
-    if(length(df.loc[df.loc$Date==as.Date(DAT), "NCD"]) > 0){ 
+    if(length(df.loc[df.loc$Date==as.Date(DAT), "GTmean"]) > 0){ 
       npn.tmp[npn.tmp$Date==as.Date(DAT),"GTmean"] <- df.loc[df.loc$Date==as.Date(DAT)& df.loc$location == LOC, "GTmean"]
     }
   }
@@ -219,3 +220,4 @@ summary(dat.comb)
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_NPN_combined.csv", row.names=F)
+
