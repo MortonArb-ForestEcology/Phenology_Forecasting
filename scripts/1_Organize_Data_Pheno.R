@@ -16,6 +16,10 @@
 #loading ggplot for visualization 
 library(ggplot2)
 
+path.hub <- "C:/Users/lucie/Documents/GitHub/"
+#path.hub <- "../.."
+
+
 path.g <- "G:/My Drive"
 #path.g <- "/Volumes/GoogleDrive/My Drive"
 dir.create("../data_processed/", recursive = T, showWarnings = F)
@@ -44,79 +48,19 @@ range(met.new$TMAX, na.rm=T)
 # Combine the old and the new datasets into a new data frame.  We don't want all columns, so just take the ones we care about
 met.all <- rbind(met.old[,c("STATION", "DATE", "PRCP", "SNOW", "SNWD", "TMAX", "TMIN")],
                  met.new[,c("STATION", "DATE", "PRCP", "SNOW", "SNWD", "TMAX", "TMIN")])
-met.all$YEAR <- lubridate::year(met.all$DATE)
-met.all$MONTH <- lubridate::month(met.all$DATE)
-met.all$DAY <- lubridate::day(met.all$DATE)
-met.all$YDAY <- lubridate::yday(met.all$DATE)
-met.all <- met.all[met.all$YEAR>1895 & met.all$YEAR<2020,]
-met.all$TMEAN <- (met.all$TMAX + met.all$TMIN)/2
-summary(met.all)
 
-# Adding in growing degree-days with base temp of 5
-met.all$GDD5 <- ifelse(met.all$TMEAN>5, met.all$TMEAN-5, 0)
-met.all$GDD5.cum <- NA
-met.all$GDD0 <- ifelse(met.all$TMEAN>0, met.all$TMEAN, 0)
-met.all$GDD0.cum <- NA
-met.all$NCD <- NA
-summary(met.all)
+#Reading in our function for calculating weather statistics of interest
+source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
+
+#Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
+met.fin <- weather_calc(met.all)
 
 
-# Calculating the Tmean for the growing season of that year
-g_start <- 1
-g_end <- 120
-
-met.gtmean <- met.all[(met.all$YDAY>=g_start & met.all$YDAY<=g_end), ]
-
-for(YR in unique(met.gtmean$YEAR)){
-  dat.tmp <- met.gtmean[met.gtmean$YEAR==YR, ]
-  dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
-  met.gtmean[met.gtmean$YEAR==YR, "GTmean"] <- dat.tmp$GTmean
-}
-
-# Calculate the cumulative growing degree days for each day/year
-for(YR in unique(met.all$YEAR)){
-  dat.tmp <- met.all[met.all$YEAR==YR, ]
-  
-  if(min(dat.tmp$DATE)>as.Date(paste0(YR, "-01-01"))) next
-  gdd5.cum=0; gdd0.cum=0
-  d5.miss = 0; d0.miss=0
-  ncd = 0
-  for(i in 1:nrow(dat.tmp)){
-    if(is.na(dat.tmp$GDD5[i]) & d5.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
-      d5.miss <- d5.miss+1 # Let us miss up to 3 consecutive days
-      gdd5.cum <- gdd5.cum+0
-    } else {
-      d5.miss = 0 # reset to 0
-      gdd5.cum <- gdd5.cum+dat.tmp$GDD5[i] 
-    }
-    
-    if(is.na(dat.tmp$GDD0[i]) & d0.miss<=7){ #YOU CHANGED THIS TO 7 FOR NOW BUT CHANGE BACK
-      d0.miss <- d0.miss+1 # Let us miss up to 3 consecutive days
-      gdd0.cum <- gdd0.cum+0
-    } else {
-      d0.miss = 0 # reset to 0
-      gdd0.cum <- gdd5.cum+dat.tmp$GDD0[i] 
-    }
-    if(!is.na(dat.tmp$TMEAN[i]) & dat.tmp$TMEAN[i] < 0){
-      ncd <- ncd + 1
-    }
-    
-    dat.tmp[i,"GDD5.cum"] <- gdd5.cum
-    dat.tmp[i,"GDD0.cum"] <- gdd0.cum
-    dat.tmp[i, "NCD"] <- ncd
-  }
-  met.all[met.all$YEAR==YR, "GDD5.cum"] <- dat.tmp$GDD5.cum
-  met.all[met.all$YEAR==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
-  met.all[met.all$YEAR==YR, "NCD"] <- dat.tmp$NCD
-}
-summary(met.all)
-write.csv(met.all, "../data_processed/GHCN_met_all.csv", row.names=F)
+write.csv(met.fin, "../data_processed/GHCN_met_all.csv", row.names=F)
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
-path.hub <- "C:/Users/lucie/Documents/GitHub/"
-#path.hub <- "../.."
 
 #Calling in the clean.google function
 source(file.path(path.hub, "Phenology_LivingCollections/scripts/clean_google_form.R"))
@@ -135,12 +79,7 @@ dat.pheno <- group.google(Genus, StartYear, EndYear)
 #--------------------------------------------------------#
 # Here is where you pick out your species of interest
 #--------------------------------------------------------#
-#Enter chosen species here. Genus must be capitalized, one space between genus and species, and species is lower case
-# species <- c("Quercus macrocarpa")
-# species <- c("Quercus macrocarpa", "Quercus alba", "Acer rubrum", "Acer saccharum")
-
 #Seperating out our chosen species
-# dat.oak <- dat.pheno[dat.pheno$Species %in% species, ]
 dat.oak <- dat.pheno
 dat.oak$Date.Observed <- as.Date(dat.oak$Date.Observed)
 dat.oak$Bud <- as.factor(dat.oak$leaf.buds.observed)
