@@ -14,6 +14,14 @@
 #dplyr for the summarise function
 library(dplyr)
 library(rnpn)
+
+path.hub <- "C:/Users/lucie/Documents/GitHub/"
+#path.hub <- "../.."
+
+path.daymet <- "../data_raw/DAYMET"
+if(!dir.exists(path.daymet)) dir.create(path.daymet)
+
+
 library(data.table)
 
 #Retrieving npn data
@@ -39,129 +47,44 @@ for(YR in dat.npn$Year){
   dat.npn$Date <- as.Date((dat.npn$Yday-1), origin = start)
 }
 
+# Note: We will probably want this to go by species, rather than site, but for now this works
+dat.npn$Site <- 'NPN'
 
-#Setting the points to download the daymet data from
-path.doc <- "C:/Users/lucie/Documents/NPN_data/"
-species <- "Chosen_Oaks"
-ystart <- min(dat.npn$Year)
 
-#make sure the yend of the data matches what you enter. Sometimes daymet truncates and this varibale will become wrong later in the script
-yend <- max(dat.npn$Year)
+# Creating a point list and time range that matches your MODIS dataset
+# Note: This will probably change down the road
+NPN.pts <- aggregate(Year~Site+Latitude+Longitude, data=dat.npn, 
+                       FUN=min)
+names(NPN.pts)[4] <- "yr.start"
+NPN.pts$yr.end <- aggregate(Year~Site+Latitude+Longitude, data=dat.npn, 
+                              FUN=max)[,4]
+NPN.pts
 
-pointsfile <- paste(species, "_npn_points.csv", sep="")
 
-#Subsetting to only include lat and long (and for now the first rows to make testing easier)
-q.lat <- dat.npn[,(c=1:2)]
+#Writing the csv file of lat and longs because daymetr batch function needs to read a file instead of a dataframe
+write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
 
-#creating a proxy "site" column because the batch function needs it
-q.lat$site <- "Daymet"
-q.lat <- q.lat[,c(3,1,2)]
-q.lat <- unique(q.lat)
-
-#Writing the csv file of lat and longs because batch function needs to read a file instead of a dataframe
-write.csv(q.lat, file.path(path.doc, file = pointsfile), row.names=FALSE)
-
-setwd(path.doc)
+# if(!dir.exist(path.daymet)) dir.create(path.daymet)
 #Downloading all of the damet data for each point. Internal =TRUE means it creates a nested list. Set false to actually download a file
-lat.list <- daymetr::download_daymet_batch(file_location = pointsfile,
-                                           start = ystart,
-                                           end = yend,
+lat.list <- daymetr::download_daymet_batch(file_location = file.path(path.daymet, "NPN_points.csv"),
+                                           start = min(NPN.pts$yr.start),
+                                           end = max(NPN.pts$yr.end),
                                            internal = T)
+
 
 #removing failed downloads 
 lat.list <- lat.list[sapply(lat.list, function(x) is.list(x))]
 
+#Reading in our function for calculating weather statistics of interest
+source(file.path(path.hub, "Phenology_Forecasting/scripts/NPN scripts/Daymetr_weather_calc.R"))
 
-#----------------------------------------------------#
-#This is not strictly for npn data but how the loop for the model must change when it is included.
-#----------------------------------------------------#
+#Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
+lat.calc<- Daymetr_weather_calc(lat.list)
 
-#Start of loop to pull out the GDD5.cum of the bud burst date fore every tree and location
-#Progress bar
 
-yrlength <- ((yend-ystart)+1)
-pb <- txtProgressBar(min=0, max=length(lat.list)*yrlength, style=3)
-pb.ind=0
+write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
-#Creating a dataframe to hold weather summary statistics
-df.loc <- data.frame(latitude=rep(lat.list[[1]]$latitude, 365* yrlength) ,
-                     longitude=rep(lat.list[[1]]$longitude, 365 * yrlength))
 
-#Looping to pull out the GDD5.cum of the bud burst date fore every tree and location
-count <- 1
-i <- 1
-YR <- ystart
-gcount <- 1
-for(i in seq_along(lat.list)){
-  df.tmp <- lat.list[[i]]$data
-  df.tmp$TMEAN <- (df.tmp$tmax..deg.c. + df.tmp$tmin..deg.c.)/2
-  df.tmp$GDD5 <- ifelse(df.tmp$TMEAN>5, df.tmp$TMEAN-5, 0)
-  df.tmp$GDD5.cum <- NA
-  df.tmp$NCD <- NA
-  df.tmp$GTmean <- NA
-  
-  #Setting the parameters of the growing season length for the growing season temp mean
-  g_start <- 1
-  g_end <- 120
-  met.gtmean <- df.tmp[(df.tmp$yday>=g_start & df.tmp$yday<=g_end), ]
-  
-  #Calculating the mean temp of the growing season for each years
-  for(YR in unique(met.gtmean$year)){
-    dat.tmp <- met.gtmean[met.gtmean$year==YR, ]
-    dat.tmp$GTmean <- mean(dat.tmp$TMEAN, na.rm = TRUE)
-    df.loc[gcount:(gcount+364), "GTmean"] <- rep(dat.tmp[1, "GTmean"], 365)
-    gcount <- gcount + 365
-  }
-  
-  #Loop that goes through every year for each point
-  for(YR in min(df.tmp$year):max(df.tmp$year)){
-    setTxtProgressBar(pb, pb.ind); pb.ind=pb.ind+1
-    
-    df.yr <- df.tmp[df.tmp$year==YR,]
-    start <- paste(as.character(df.tmp$year), "-01-01", sep="")
-    df.tmp$Date <- as.Date((df.yr$yday-1), origin = start)
-    
-    g_end = 120
-    gdd.cum=0
-    d.miss = 0
-    ncd = 0
-    for(j in 1:nrow(df.yr)){
-      if(is.na(df.yr$GDD5[j]) & d.miss<=3){
-        d.miss <- d.miss+1 # Let us miss up to 3 consecutive days
-        gdd.cum <- gdd.cum+0
-      } else {
-        d.miss = 0 # reset to 0
-        gdd.cum <- gdd.cum+df.yr$GDD5[j] 
-      }
-      if(!is.na(df.yr$TMEAN[j]) & df.yr$TMEAN[j] < 0){
-        ncd <- ncd + 1
-      }
-      df.yr[j, "NCD"] <- ncd
-      df.yr[j,"GDD5.cum"] <- gdd.cum
-    }
-    df.tmp[df.tmp$year==YR, "GDD5.cum"] <- df.yr$GDD5.cum
-    df.tmp[df.tmp$year==YR, "NCD"] <- df.yr$NCD
-  }
-  
-  df.loc[count:((count-1) + (365 * yrlength)), "latitude"] <- lat.list[[i]]$latitude
-  df.loc[count:((count-1) + (365 * yrlength)), "longitude"] <- lat.list[[i]]$longitude
-  df.loc[count:((count-1) + (365 * yrlength)), "year"] <- df.tmp$year
-  df.loc[count:((count-1) + (365 * yrlength)), "TMAX"] <- df.tmp$tmax..deg.c.
-  df.loc[count:((count-1) + (365 * yrlength)), "TMIN"] <- df.tmp$tmin..deg.c.
-  df.loc[count:((count-1) + (365 * yrlength)), "TMEAN"] <- df.tmp$TMEAN
-  df.loc[count:((count-1) + (365 * yrlength)), "PRCP"] <- df.tmp$prcp..mm.day.
-  df.loc[count:((count-1) + (365 * yrlength)), "SNOW"] <- df.tmp$srad..W.m.2.
-  df.loc[count:((count-1) + (365 * yrlength)), "YDAY"] <- df.tmp$yday
-  df.loc[count:((count-1) + (365 * yrlength)), "Date"] <- df.tmp$Date
-  df.loc[count:((count-1) + (365 * yrlength)), "GDD5"] <- df.tmp$GDD5
-  df.loc[count:((count-1) + (365 * yrlength)), "GDD5.cum"] <- df.tmp$GDD5.cum
-  df.loc[count:((count-1) + (365 * yrlength)), "NCD"] <- df.tmp$NCD
-  
-  count <- count + (365 * yrlength)
-  
-}
-setwd("../")
-write.csv(df.loc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 df.loc <- read.csv( "../data_processed/Daymet_clean_data.csv")
 
 
