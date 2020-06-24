@@ -14,6 +14,7 @@
 #dplyr for the summarise function
 library(dplyr)
 library(rnpn)
+library(data.table)
 
 path.hub <- "C:/Users/lucie/Documents/GitHub/"
 #path.hub <- "../.."
@@ -95,66 +96,43 @@ rm(lat.list) # Removing lat.list to save memory
 source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
 
 #Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
-lat.calc<- lapply(list.met, weather_calc)
+list.met<- lapply(list.met, weather_calc)
 
 
-write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)
+write.csv(list.met, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
+#IF YOU READ IN THE CV YOU DON"T NEED THE rbindlist LINE AS IT IS READ IN AS A DATa FRAME
+#list.met <- read.csv( "../data_processed/Daymet_clean_data.csv")
 
-df.loc <- read.csv( "../data_processed/Daymet_clean_data.csv")
+lat.calc <- rbindlist(list.met)
 
-
-#Making sure we only go through relevant years we are calculating gdd5 for
-dat.npn <- dat.npn[dat.npn$Year >= ystart, ]
-
-
-#Our occurence points are rounded becasue daymet rounds them to 6 digits. 
-#Unfortunately we need to round them to 4 becasue otherwise they don't macth as a few points will round differently
-dat.npn$Latitude <- signif(dat.npn$Latitude, digits = 7) 
-dat.npn$Longitude <- signif(dat.npn$Longitude, digits = 7) 
-
-#This can be removed if down the line I figure out a way to match the locations back without rounding
-df.loc$latitude <- signif(df.loc$latitude, digits = 7) 
-df.loc$longitude <- signif(df.loc$longitude, digits = 7)
-
-
-#This section is a gross solution so I can leave it in a working state
-#For some reason if you start the rounding at 6 digits, they round differently and won't match
-#If you round them to 7 and then to 6 they will all match
-#Since this rounding solution needs to be fully removed this is my current bad solution
-dat.npn$Latitude <- signif(dat.npn$Latitude, digits = 6) 
-dat.npn$Longitude <- signif(dat.npn$Longitude, digits = 6) 
-
-
-df.loc$latitude <- signif(df.loc$latitude, digits = 6) 
-df.loc$longitude <- signif(df.loc$longitude, digits = 6)
-
-
-dat.npn$Location <- paste(dat.npn$Latitude, dat.npn$Longitude, sep= " ")
-df.loc$location <- paste(df.loc$latitude, df.loc$longitude, sep= " ")
+rm(list.met)
 
 dat.comb <- data.frame()
 pcount <- 1
-for(LOC in unique(as.character(dat.npn$Location))){
-  npn.tmp <- dat.npn[dat.npn$Location == LOC,]
+for(LOC in unique(as.numeric(dat.npn$Site))){
+  npn.tmp <- dat.npn[dat.npn$Site == LOC,]
   npn.tmp$GDD5.cum <- NA
+  npn.tmp$GDD0.cum <- NA
   npn.tmp$NCD <- NA
   npn.tmp$GTmean <- NA
   for(DAT in paste(npn.tmp$Date)){
-    if(length(df.loc[df.loc$Date==as.Date(DAT), "GDD5.cum"]) > 0){
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD5.cum"] <- df.loc[df.loc$Date==as.Date(DAT) & df.loc$location == LOC, "GDD5.cum"]
+    if(length(lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD5.cum"]) > 0){
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD5.cum"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD5.cum"]
     }
-    if(length(df.loc[df.loc$Date==as.Date(DAT), "NCD"]) > 0){ 
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"NCD"] <- df.loc[df.loc$Date==as.Date(DAT) & df.loc$location == LOC, "NCD"]
+    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GDD0.cum"]) > 0){
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD0.cum"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD0.cum"]
     }
-    if(length(df.loc[df.loc$Date==as.Date(DAT), "GTmean"]) > 0){ 
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"GTmean"] <- df.loc[df.loc$Date==as.Date(DAT)& df.loc$location == LOC, "GTmean"]
+    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "NCD"]) > 0){ 
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"NCD"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "NCD"]
+    }
+    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GTmean"]) > 0){ 
+      npn.tmp[npn.tmp$Date==as.Date(DAT),"GTmean"] <- lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GTmean"]
     }
   }
   dat.comb <- rbind(dat.comb, npn.tmp)
 }
 
-dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "NCD")] <- NA
 summary(dat.comb)
 
 # Save dat.comb 

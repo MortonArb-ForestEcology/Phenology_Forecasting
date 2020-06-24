@@ -75,6 +75,7 @@ for(YR in unique(met.all$year)){
   met.all[met.all$year==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
   met.all[met.all$year==YR, "NCD"] <- dat.tmp$NCD
   met.all[met.all$year==YR, "GTmean"] <- dat.tmp$GTmean
+  met.all[met.all$year==YR, "Date"] <- dat.tmp$Date
 }
 return(met.all)
 }
