@@ -16,19 +16,18 @@ hierarchical_regression <- "
   model{
     
     for(k in 1:nObs){
-      mu[k] <- Ex[acc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dnorm(mu[k], S)
+      mu[k] <- Base + Ex[acc[k]] + Species[sp[k]]  #Combination of species Threshold and individual effect
+      y[k] ~ dnorm(mu[k], sPrec)
     }
     
     for(k in 1:nObs){
-      Ynew[k]  ~ dnorm(munew[k], S)
-      munew[k] <- Ex[acc[k]] + THRESH[sp[k]]
+      Ynew[k]  ~ dnorm(munew[k], sPrec)
+      munew[k] <- Base + Ex[acc[k]] + Species[sp[k]]
     }
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    THRESH[j] ~ dnorm(0, tPrec)
-    THRESHY[j] <- exp(THRESH[j])
+    Species[j] ~ dnorm(0, tPrec)
     }
     
     for(t in 1:nAcc){
@@ -43,7 +42,8 @@ hierarchical_regression <- "
     tPrec ~ dgamma(0.1, 0.1)
     aPrec ~ dgamma(0.1, 0.1)
     bPrec ~ dgamma(0.1, 0.1)
-    S ~ dgamma(s1, s2)
+    sPrec ~ dgamma(s1, s2)
+    Base ~ dnorm(100, .01)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
@@ -69,8 +69,8 @@ nchain = 10
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
-                     THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
-                     S = runif(1,1/200,30))
+                     Species=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+                     sPrec = runif(1,1/200,30))
 }
 
 #---------------------------------------------------------#
@@ -84,13 +84,14 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESH"),
+                             variable.names = c("Base", "Species", "Ex"),
                              n.iter = 100000)
 
 
 # #Checking that convergence happened
 gelman.diag(burst.out)
 
+DIC <- dic.samples(burst.model, 50000)
 
 # #Checking where convergence occured
 #GBR <- gelman.plot(burst.out)
