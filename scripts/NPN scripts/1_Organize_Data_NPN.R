@@ -22,8 +22,6 @@ path.daymet <- "../data_raw/DAYMET"
 if(!dir.exists(path.daymet)) dir.create(path.daymet)
 
 
-library(data.table)
-
 #Retrieving npn data
 #The Species ID's are currently for imbricaria falcata, and stellata respectively. Phenophase is breakign leaf buds
 #rnpn packages has tools to show the corresponding id's for these queries. Request source is your name/affiliation
@@ -33,23 +31,19 @@ dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2
 dat.npn$year <- lubridate::year(dat.npn$observation_date)
 
 dat.npn <- aggregate(dat.npn[dat.npn$phenophase_status==1, "day_of_year"], 
-                     by=dat.npn[dat.npn$phenophase_status==1, c("latitude", "longitude", "individual_id", "year", "genus", "species" )], 
+                     by=dat.npn[dat.npn$phenophase_status==1, c("latitude", "longitude", "individual_id", "year", "genus", "species", "site_id" )], 
                      FUN=min)
 
 dat.npn$species <- paste(dat.npn$genus, dat.npn$species, sep= " ")
 
 
-colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Yday")
+colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Site", "Yday")
 dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
 
 for(YR in dat.npn$Year){
   start <- paste(as.character(dat.npn$Year), "-01-01", sep="")
   dat.npn$Date <- as.Date((dat.npn$Yday-1), origin = start)
 }
-
-# Note: We will probably want this to go by species, rather than site, but for now this works
-dat.npn$Site <- 'NPN'
-
 
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
@@ -75,11 +69,33 @@ lat.list <- daymetr::download_daymet_batch(file_location = file.path(path.daymet
 #removing failed downloads 
 lat.list <- lat.list[sapply(lat.list, function(x) is.list(x))]
 
+
+# This gives us a list with one layer per site (I think)
+length(lat.list)
+names(lat.list) <- NPN.pts$site # Giving the different layers of the list the site names they correspond to
+
+#Lets look at the structure of what we are given
+summary(lat.list)
+
+#As you might notice we have a "List of 1" containing a nested "List of 7"
+#Within that "List of 7" there is a data frame called data that has the data we want
+#Well we know where it is now but how do we access it?
+
+# Creating a new simplified list that won't make Christy cranky
+list.met <- list()
+for(i in seq_along(lat.list)){
+  list.met[[i]] <- data.frame(site=NPN.pts$Site[i], latitude=NPN.pts$Latitude[i], longitude=NPN.pts$Longitude[i], lat.list[[i]]$data)
+}
+names(list.met) <-  NPN.pts$site
+
+rm(lat.list) # Removing lat.list to save memory
+
+
 #Reading in our function for calculating weather statistics of interest
-source(file.path(path.hub, "Phenology_Forecasting/scripts/NPN scripts/Daymetr_weather_calc.R"))
+source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
 
 #Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
-lat.calc<- Daymetr_weather_calc(lat.list)
+lat.calc<- lapply(list.met, weather_calc)
 
 
 write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)

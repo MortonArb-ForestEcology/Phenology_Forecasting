@@ -18,19 +18,11 @@
 #
 #-----------------------------------------------------------------------------------------------------------------------------------#
 # Calculating the Tmean for the growing season of that year
-weather_calc <- function(met.all, y_start=1975, y_end=2019, g_start=1, g_end=120){
+weather_calc <- function(met.all, g_start=1, g_end=120){
   
-#Pulling out useful date statistics. Only YDAY and YEAR are used in this function but others are added to the output data frame for future use
-met.all$YEAR <- lubridate::year(met.all$DATE)
-met.all$MONTH <- lubridate::month(met.all$DATE)
-met.all$DAY <- lubridate::day(met.all$DATE)
-met.all$YDAY <- lubridate::yday(met.all$DATE)
-
-#Subsetting to a useful range of years. Currently the max so doesn't do much
-met.all <- met.all[met.all$YEAR>=y_start & met.all$YEAR<=y_end,]
 
 #Calculating mean temperature, growing degree days using 5C, and gorwing degree days using 0c
-met.all$TMEAN <- (met.all$TMAX + met.all$TMIN)/2
+met.all$TMEAN <- (met.all$tmax..deg.c. + met.all$tmin..deg.c.)/2
 met.all$GDD5 <- ifelse(met.all$TMEAN>5, met.all$TMEAN-5, 0)
 met.all$GDD0 <- ifelse(met.all$TMEAN>0, met.all$TMEAN, 0)
 
@@ -45,12 +37,11 @@ g_end <- 120
 
 
 # Calculate the cumulative growing degree days for each day/year
-for(YR in unique(met.all$YEAR)){
-  dat.tmp <- met.all[met.all$YEAR==YR, ]
-  dat.gtmean <- dat.tmp[(dat.tmp$YDAY>=g_start & dat.tmp$YDAY<=g_end), ]
+for(YR in unique(met.all$year)){
+  dat.tmp <- met.all[met.all$year==YR, ]
+  dat.gtmean <- dat.tmp[(dat.tmp$yday>=g_start & dat.tmp$yday<=g_end), ]
   gtmean <- mean(dat.gtmean$TMEAN, na.rm = TRUE)
-  
-  if(min(dat.tmp$DATE)>as.Date(paste0(YR, "-01-01"))) next
+  dat.tmp$Date <- as.Date(paste(dat.tmp$year, dat.tmp$yday, sep="-"), format="%Y-%j")
   gdd5.cum=0; gdd0.cum=0
   d5.miss = 0; d0.miss=0
   ncd = 0
@@ -80,10 +71,10 @@ for(YR in unique(met.all$YEAR)){
     dat.tmp[i, "GTmean"] <- gtmean
   }
     
-  met.all[met.all$YEAR==YR, "GDD5.cum"] <- dat.tmp$GDD5.cum
-  met.all[met.all$YEAR==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
-  met.all[met.all$YEAR==YR, "NCD"] <- dat.tmp$NCD
-  met.all[met.all$YEAR==YR, "GTmean"] <- dat.tmp$GTmean
+  met.all[met.all$year==YR, "GDD5.cum"] <- dat.tmp$GDD5.cum
+  met.all[met.all$year==YR, "GDD0.cum"] <- dat.tmp$GDD0.cum
+  met.all[met.all$year==YR, "NCD"] <- dat.tmp$NCD
+  met.all[met.all$year==YR, "GTmean"] <- dat.tmp$GTmean
 }
 return(met.all)
 }

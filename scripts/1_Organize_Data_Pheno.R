@@ -49,14 +49,30 @@ range(met.new$TMAX, na.rm=T)
 met.all <- rbind(met.old[,c("STATION", "DATE", "PRCP", "SNOW", "SNWD", "TMAX", "TMIN")],
                  met.new[,c("STATION", "DATE", "PRCP", "SNOW", "SNWD", "TMAX", "TMIN")])
 
+#These names help match daymet data so we can have one funciton to transform both
+#These temp names are bulkier the products use clear names regardless
+colnames(met.all) <- c("Station", "Date", "PRCP", "SNOW", "SNWD", "tmax..deg.c.", "tmin..deg.c.")
+
+
+#Pulling out useful date statistics. Only YDAY and YEAR are used in this function but others are added to the output data frame for future use
+met.all$year <- lubridate::year(met.all$Date)
+met.all$yday <- lubridate::yday(met.all$Date)
+
+y_start <- 1975
+y_end <- 2019
+
+#Subsetting to a useful range of years. Currently the max so doesn't do much
+met.all <- met.all[met.all$year>=y_start & met.all$year<=y_end,]
+
+
 #Reading in our function for calculating weather statistics of interest
 source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
 
 #Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
-met.fin <- weather_calc(met.all)
+met.all <- weather_calc(met.all)
 
 
-write.csv(met.fin, "../data_processed/GHCN_met_all.csv", row.names=F)
+write.csv(met.all, "../data_processed/GHCN_met_all.csv", row.names=F)
 # -----------------------------
 # This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want
@@ -114,22 +130,20 @@ dat.comb$GDD0.cum <- NA
 dat.comb$NCD <- NA
 dat.comb$GTmean <- NA
 for(DAT in paste(dat.comb$Date)){
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD5.cum"]
+  if(length(met.all[met.all$Date==as.Date(DAT), "GDD5.cum"])>0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$Date==as.Date(DAT), "GDD5.cum"]
   }
-  if(length(met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD0.cum"] <- met.all[met.all$DATE==as.Date(DAT), "GDD0.cum"]
+  if(length(met.all[met.all$Date==as.Date(DAT), "GDD0.cum"])>0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"GDD0.cum"] <- met.all[met.all$Date==as.Date(DAT), "GDD0.cum"]
   }
-  if(length(met.all[met.all$DATE==as.Date(DAT), "NCD"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"NCD"] <- met.all[met.all$DATE==as.Date(DAT), "NCD"]
+  if(length(met.all[met.all$Date==as.Date(DAT), "NCD"])>0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"NCD"] <- met.all[met.all$Date==as.Date(DAT), "NCD"]
   } 
-  YR <- lubridate::year(DAT)
-  dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- mean(met.gtmean[met.gtmean$YEAR == YR, "GTmean"])
+  if(length(met.all[met.all$Date==as.Date(DAT), "GTmean"]) > 0){ 
+    dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- met.all[met.all$Date==as.Date(DAT), "GTmean"]
+  }
 }
 
-#Removing some outliers for now so sd doesn't go negative. REMEMBER TO COME BACK AND CHANGE THIS
-dat.comb[dat.comb$Yday>=171, c("Yday", "GDD5.cum", "GDD0.cum", "NCD", "GTmean")] <- NA
-summary(dat.comb)
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Phenology_Met_combined.csv", row.names=F)
