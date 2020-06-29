@@ -17,22 +17,18 @@ hierarchical_regression <- "
   model{
     
     for(k in 1:nObs){
-      mu[k] <- Ex[loc[k]] + THRESH[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dlnorm(mu[k], S)
+      mu[k] <- Base + Ex[loc[k]] + Species[sp[k]]  #Combination of species Threshold and individual effect
+      y[k] ~ dnorm(mu[k], sPrec)
     }
     
-    #Posterior predictive check
     for(k in 1:nObs){
-      Ynew[k]  ~ dlnorm(munew[k], S)
-      munew[k] <- Ex[loc[k]] + THRESH[sp[k]]
+      Ynew[k]  ~ dnorm(munew[k], sPrec)
+      munew[k] <- Base + Ex[loc[k]] + Species[sp[k]]
     }
-
-    
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    THRESH[j] ~ dnorm(0, lPrec)
-    THRESHY[j] <- exp(THRESH[j])
+    Species[j] ~ dnorm(0, tPrec)
     }
     
     for(t in 1:nLoc){
@@ -44,10 +40,12 @@ hierarchical_regression <- "
         ind[i] <-  b[i]
         b[i] ~ dnorm(0, bPrec)
     }
-    lPrec ~ dgamma(0.1, 0.1)
+    tPrec ~ dgamma(0.1, 0.1)
     aPrec ~ dgamma(0.1, 0.1)
     bPrec ~ dgamma(0.1, 0.1)
-    S ~ dgamma(s1, s2)
+    sPrec ~ dgamma(s1, s2)
+    Base ~ dnorm(100, .01)
+    
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
     d[3] <- max(Ynew[])-min(Ynew[])
@@ -58,7 +56,7 @@ hierarchical_regression <- "
 
 burst.list <- list(y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Species)),
                    pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)),
-                   loc = as.numeric(factor(dat.comb$Location)), nLoc = length(unique(dat.comb$Location)),
+                   loc = as.numeric(factor(dat.comb$Site)), nLoc = length(unique(dat.comb$Site)),
                    nSp = length(unique(dat.comb$Species)), nObs = length(dat.comb$GDD5.cum))
 
 #Setting our uniformative priors
@@ -72,8 +70,8 @@ nchain = 10
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
-                     THRESH=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
-                     S = runif(1,1/200,30))
+                     Species=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+                     sPrec = runif(1,1/200,30))
 }
 
 #---------------------------------------------------------#
@@ -87,7 +85,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("THRESHY"),
+                             variable.names = c("Species", "Base", "Ex"),
                              n.iter = 100000)
 
 

@@ -24,10 +24,9 @@ if(!dir.exists(path.daymet)) dir.create(path.daymet)
 
 
 #Retrieving npn data
-#The Species ID's are currently for imbricaria falcata, and stellata respectively. Phenophase is breakign leaf buds
+#The Genus ID is currently for Quercus respectively. Phenophase is breaking leaf buds
 #rnpn packages has tools to show the corresponding id's for these queries. Request source is your name/affiliation
-dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2010:2019), 
-                                    species_id=c(1190, 1484, 1755), phenophase_ids =c(371))
+dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2010:2019), genus_ids = c(946),phenophase_ids =c(371))
 
 dat.npn$year <- lubridate::year(dat.npn$observation_date)
 
