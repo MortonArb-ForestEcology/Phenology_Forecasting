@@ -4,12 +4,12 @@ library(rjags)
 library(coda)
 
 # Read in output of previous script
-dat.all <- read.csv("../data_processed/Phenology_NPN_combined.csv")
+dat.all <- read.csv("../data_processed/Full_Phenology_NPN_combined.csv")
 dat.all$Date <- as.Date(dat.all$Date)
 
 
 #These two lines aren't really neccessary but helps me keep track of what I'm working with
-species <- c("Quercus imbricaria", "Quercus falcata", "Quercus stellata")
+species <- c("Quercus imbricaria", "Quercus falcata", "Quercus stellata", "Quercus rubra", "Quercus macrocarpa", "Quercus alba")
 dat.comb <- dat.all[dat.all$Species %in% species, ]
 
 

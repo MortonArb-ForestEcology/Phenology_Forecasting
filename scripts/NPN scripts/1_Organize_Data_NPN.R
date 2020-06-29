@@ -95,17 +95,15 @@ rm(lat.list) # Removing lat.list to save memory
 source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
 
 #Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
+
 list.met<- lapply(list.met, weather_calc)
 
+lat.calc <- dplyr::bind_rows(list.met)
 
-write.csv(list.met, "../data_processed/Daymet_clean_data.csv", row.names=F)
+write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
-#IF YOU READ IN THE CV YOU DON"T NEED THE rbindlist LINE AS IT IS READ IN AS A DATa FRAME
-#list.met <- read.csv( "../data_processed/Daymet_clean_data.csv")
+rm(df.met)
 
-lat.calc <- rbindlist(list.met)
-
-rm(list.met)
 
 dat.comb <- data.frame()
 pcount <- 1
@@ -135,5 +133,5 @@ for(LOC in unique(as.numeric(dat.npn$Site))){
 summary(dat.comb)
 
 # Save dat.comb 
-write.csv(dat.comb, "../data_processed/Phenology_NPN_combined.csv", row.names=F)
+write.csv(dat.comb, "../data_processed/Full_Phenology_NPN_combined.csv", row.names=F)
 
