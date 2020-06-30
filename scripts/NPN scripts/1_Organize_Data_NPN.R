@@ -14,7 +14,7 @@
 #dplyr for the summarise function
 library(dplyr)
 library(rnpn)
-library(data.table)
+
 
 path.hub <- "C:/Users/lucie/Documents/GitHub/"
 #path.hub <- "../.."
@@ -109,24 +109,11 @@ dat.comb <- data.frame()
 pcount <- 1
 for(LOC in unique(as.numeric(dat.npn$Site))){
   npn.tmp <- dat.npn[dat.npn$Site == LOC,]
-  npn.tmp$GDD5.cum <- NA
-  npn.tmp$GDD0.cum <- NA
-  npn.tmp$NCD <- NA
-  npn.tmp$GTmean <- NA
-  for(DAT in paste(npn.tmp$Date)){
-    if(length(lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD5.cum"]) > 0){
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD5.cum"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD5.cum"]
-    }
-    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GDD0.cum"]) > 0){
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"GDD0.cum"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "GDD0.cum"]
-    }
-    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "NCD"]) > 0){ 
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"NCD"] <- lat.calc[lat.calc$Date==as.Date(DAT) & lat.calc$site == LOC, "NCD"]
-    }
-    if(length(lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GTmean"]) > 0){ 
-      npn.tmp[npn.tmp$Date==as.Date(DAT),"GTmean"] <- lat.calc[lat.calc$Date==as.Date(DAT)& lat.calc$site == LOC, "GTmean"]
-    }
-  }
+  lat.tmp <- lat.calc[lat.calc$site == LOC,]
+  npn.tmp$GDD5.cum <- lat.tmp$GDD5.cum[match(npn.tmp$Date, lat.tmp$Date)]
+  npn.tmp$GDD0.cum <- lat.tmp$GDD0.cum[match(npn.tmp$Date, lat.tmp$Date)]
+  npn.tmp$NCD <- lat.tmp$NCD[match(npn.tmp$Date, lat.tmp$Date)]
+  npn.tmp$GTmean <- lat.tmp$GTmean[match(npn.tmp$Date, lat.tmp$Date)]
   dat.comb <- rbind(dat.comb, npn.tmp)
 }
 

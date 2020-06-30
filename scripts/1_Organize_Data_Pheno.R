@@ -125,24 +125,11 @@ dat.comb <- dat.burst
 dat.comb$Location <- paste(dat.comb$Latitude, dat.comb$Longitude, sep= " ")
 
 #Creating a new column in our phenology data frame that takes the date of earliest burst and gives us the cumulative gdd of that date from the met data
-dat.comb$GDD5.cum <- NA
-dat.comb$GDD0.cum <- NA
-dat.comb$NCD <- NA
-dat.comb$GTmean <- NA
-for(DAT in paste(dat.comb$Date)){
-  if(length(met.all[met.all$Date==as.Date(DAT), "GDD5.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD5.cum"] <- met.all[met.all$Date==as.Date(DAT), "GDD5.cum"]
-  }
-  if(length(met.all[met.all$Date==as.Date(DAT), "GDD0.cum"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GDD0.cum"] <- met.all[met.all$Date==as.Date(DAT), "GDD0.cum"]
-  }
-  if(length(met.all[met.all$Date==as.Date(DAT), "NCD"])>0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"NCD"] <- met.all[met.all$Date==as.Date(DAT), "NCD"]
-  } 
-  if(length(met.all[met.all$Date==as.Date(DAT), "GTmean"]) > 0){ 
-    dat.comb[dat.comb$Date==as.Date(DAT),"GTmean"] <- met.all[met.all$Date==as.Date(DAT), "GTmean"]
-  }
-}
+dat.comb$GDD5.cum <- met.all$GDD5.cum[match(dat.comb$Date, met.all$Date)]
+dat.comb$GDD0.cum <- met.all$GDD0.cum[match(dat.comb$Date, met.all$Date)]
+dat.comb$NCD <- met.all$NCD[match(dat.comb$Date, met.all$Date)]
+dat.comb$GTmean <- met.all$GTmean[match(dat.comb$Date, met.all$Date)]
+
 
 
 # Save dat.comb 
