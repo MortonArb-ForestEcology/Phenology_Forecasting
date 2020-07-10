@@ -59,7 +59,7 @@ for(YR in unique(met.all$year)){
       gdd0.cum <- gdd0.cum+0
     } else {
       d0.miss = 0 # reset to 0
-      gdd0.cum <- gdd5.cum+dat.tmp$GDD0[i] 
+      gdd0.cum <- gdd0.cum+dat.tmp$GDD0[i] 
     }
     if(!is.na(dat.tmp$TMEAN[i]) & dat.tmp$TMEAN[i] < 0){
       ncd <- ncd + 1

@@ -2,6 +2,7 @@
 
 library(rjags)
 library(coda)
+library(data.table)
 
 # Read in output of previous script
 dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
@@ -9,7 +10,12 @@ dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), fu
 dat.all$Date <- as.Date(dat.all$Date)
 
 species <- c("Quercus acutissima", "Quercus georgiana", "Quercus imbricaria", "Quercus stellata")
-dat.comb <- dat.all[dat.all$Species %in% species, ]
+#dat.comb <- dat.all[dat.all$Species %in% species, ]
+dat.comb <- dat.all[dat.all$Species %like% "Quercus",]
+
+SP <- as.data.frame(table(dat.comb$Species))
+colnames(SP) <- c("Species", "Freq")
+
 
 
 hierarchical_regression <- "
@@ -27,7 +33,8 @@ hierarchical_regression <- "
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    Species[j] ~ dnorm(0, tPrec)
+    Species[j] ~ dnorm(0, tPrec[j])
+    tPrec[j] ~ dgamma(0.1, 0.1)
     }
     
     for(t in 1:nAcc){
@@ -39,11 +46,10 @@ hierarchical_regression <- "
         ind[i] <-  b[i]
         b[i] ~ dnorm(0, bPrec)
     }
-    tPrec ~ dgamma(0.1, 0.1)
     aPrec ~ dgamma(0.1, 0.1)
     bPrec ~ dgamma(0.1, 0.1)
-    sPrec ~ dgamma(s1, s2)
-    Base ~ dnorm(100, .01)
+    sPrec ~ dgamma(0.1, 0.1)
+    Base ~ dnorm(100, .0001)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
@@ -58,18 +64,12 @@ burst.list <- list(y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Specie
                    acc = as.numeric(factor(dat.comb$Accession)), nAcc = length(unique(dat.comb$Accession)),
                    nSp = length(unique(dat.comb$Species)), nObs = length(dat.comb$GDD5.cum))
 
-#Setting our uniformative priors
-burst.list$s1 <- 0.1                    ## error prior n/2
-burst.list$s2 <- 0.1                    ## error prior SS/2
-
-
 
 #Setting the number of MCMC chains and their parameters
 nchain = 10
 inits <- list()
 for(i in 1:nchain){
-  inits[[i]] <- list(b=rnorm(burst.list$nPln,0,5),
-                     Species=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+  inits[[i]] <- list(Species=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
                      sPrec = runif(1,1/200,30))
 }
 
@@ -84,7 +84,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("Base", "Species", "Ex"),
+                             variable.names = c("Species", "tPrec"),
                              n.iter = 100000)
 
 
@@ -101,6 +101,17 @@ burnin = 90000                                ## determine convergence from GBR 
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
 plot(burst.burn)
 summary(burst.burn)
+
+
+#Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
+varnames(burst.burn) <- c(paste(as.character(SP$Species), "_effect", sep=""), paste(as.character(SP$Species), "_Prec", sep=""))
+
+df <- ggs(burst.burn)
+
+ggs_density(df, family = "Quercus macrocarpa")
+
+ggs_caterpillar(df, family =  "effect")
+
 
 
 burst.df2 <- as.data.frame(as.matrix(burst.burn))

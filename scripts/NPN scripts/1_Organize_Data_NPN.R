@@ -26,31 +26,87 @@ if(!dir.exists(path.daymet)) dir.create(path.daymet)
 #Retrieving npn data
 #The Genus ID is currently for Quercus respectively. Phenophase is breaking leaf buds
 #rnpn packages has tools to show the corresponding id's for these queries. Request source is your name/affiliation
-dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2010:2019), genus_ids = c(946),phenophase_ids =c(371))
+#dat.npn <- npn_download_status_data(request_source='Morton Arboretum', years=c(2010:2019), genus_ids = c(946),phenophase_ids =c(371))
 
-dat.npn$year <- lubridate::year(dat.npn$observation_date)
+dat.npn <- npn_download_individual_phenometrics(phenophase_ids =c(371),  years=2000:2019, genus_ids = c(946), request_source="The Morton Arboretum")
+dat.npn[dat.npn==-9999] <- NA
 
-dat.npn <- aggregate(dat.npn[dat.npn$phenophase_status==1, "day_of_year"], 
-                     by=dat.npn[dat.npn$phenophase_status==1, c("latitude", "longitude", "individual_id", "year", "genus", "species", "site_id" )], 
-                     FUN=min)
+dat.npn$species <- as.factor(dat.npn$species)
+dat.npn$species_id <- as.factor(dat.npn$species_id)
+dat.npn$individual_id <- as.factor(dat.npn$individual_id)
+dat.npn$phenophase_id <- as.factor(dat.npn$phenophase_id)
+dat.npn$phenophase_description <- as.factor(dat.npn$phenophase_description)
 
-dat.npn$species <- paste(dat.npn$genus, dat.npn$species, sep= " ")
+
+# ------------------------------------------
+# Deciding what data is "good" or "bad"
+# ------------------------------------------
+# Using a 10-day thresholds since prior/next no as an indicator of questionable data  or if there is no value for that (first obs of the year)
+# What this code says data[ROWS, COLUMNS]
+# if the days since last no is greather than 10 OR (| mean OR) there is no "no" observation before a yes
+dat.npn[dat.npn$numdays_since_prior_no>10 | is.na(dat.npn$numdays_since_prior_no), c("first_yes_doy", "first_yes_julian_date")] <- NA
+
+dat.npn[dat.npn$numdays_until_next_no>10 | is.na(dat.npn$numdays_until_next_no), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
 
-colnames(dat.npn) <- c("Latitude", "Longitude", "PlantNumber", "Year","Genus", "Species", "Site", "Yday")
-dat.npn$PlantNumber <- as.factor(dat.npn$PlantNumber)
+# Getting rid of bud burst after July 1 (~182) because we just want SPRING budburst
+dat.npn[dat.npn$first_yes_doy>182 & !is.na(dat.npn$first_yes_doy), c("first_yes_doy", "first_yes_julian_date")] <- NA
+dat.npn[dat.npn$last_yes_doy>182 & !is.na(dat.npn$last_yes_doy), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
-for(YR in dat.npn$Year){
-  start <- paste(as.character(dat.npn$Year), "-01-01", sep="")
-  dat.npn$Date <- as.Date((dat.npn$Yday-1), origin = start)
+# Aggregateing using a formula; in R, y=mx+b is y ~ m*x + b 
+dat.budburst <- data.frame(individual_id=rep(unique(dat.npn$individual_id), each=length(unique(dat.npn$first_yes_year))),
+                           year=unique(dat.npn$first_yes_year))
+summary(dat.budburst)                           
+
+for(IND in unique(dat.budburst$individual_id)){
+  # adding some individual metadata -- this only needs to be done for each tree; we dont' care about which year it is
+  dat.budburst[dat.budburst$individual_id==IND, c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")] <- unique(dat.npn[dat.npn$individual_id==IND,c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")])
+  
+  for(YR in unique(dat.budburst$year[dat.budburst$individual_id==IND])){
+    # creating a handy index for what row we're working with
+    row.now <- which(dat.budburst$individual_id==IND & dat.budburst$year==YR)
+    
+    # Just narrowing the data frame down to just the part we want to work with
+    dat.tmp <- dat.npn[dat.npn$individual_id==IND & dat.npn$first_yes_year==YR,]
+    
+    if(nrow(dat.tmp)==0) next # skips through if there's no data
+    
+    if(nrow(dat.tmp)==1){
+      dat.budburst[row.now, c("first.mean", "first.min", "first.max")] <- dat.tmp$first_yes_doy
+      dat.budburst[row.now, c("last.mean", "last.min", "last.max")] <- dat.tmp$last_yes_doy
+    } else {
+      dat.budburst[row.now, "first.mean"] <- mean(dat.tmp$first_yes_doy, na.rm=T)
+      dat.budburst[row.now, "first.min" ] <- min(dat.tmp$first_yes_doy, na.rm=T)
+      dat.budburst[row.now, "first.max" ] <- max(dat.tmp$first_yes_doy, na.rm=T)
+      
+      dat.budburst[row.now, "last.mean"] <- mean(dat.tmp$last_yes_doy, na.rm=T)
+      dat.budburst[row.now, "last.min" ] <- min(dat.tmp$last_yes_doy, na.rm=T)
+      dat.budburst[row.now, "last.max" ] <- max(dat.tmp$last_yes_doy, na.rm=T)
+    }
+  }
 }
 
+dat.budburst$Yday <- (dat.budburst$first.mean + dat.budburst$last.mean)/2
+dat.budburst$Yday <- round(dat.budburst$Yday)
+
+for(YR in dat.budburst$year){
+  start <- paste(as.character(dat.budburst$year), "-01-01", sep="")
+  dat.budburst$Date <- as.Date((dat.budburst$Yday-1), origin = start)
+}
+
+
+dim(dat.budburst)
+
+
+write.csv(dat.budburst, "../data_raw/Raw_Phenology_NPN_combined.csv", row.names=F)
+#FOR NO I AM REMOVING NA VALUES SINCE THEY INCREASE THE LENGTH OF DAYMET PULLS
+dat.budburst <- na.omit(dat.budburst)
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
-NPN.pts <- aggregate(Year~Site+Latitude+Longitude, data=dat.npn, 
+NPN.pts <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                        FUN=min)
 names(NPN.pts)[4] <- "yr.start"
-NPN.pts$yr.end <- aggregate(Year~Site+Latitude+Longitude, data=dat.npn, 
+NPN.pts$yr.end <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                               FUN=max)[,4]
 NPN.pts
 
@@ -77,14 +133,9 @@ names(lat.list) <- NPN.pts$site # Giving the different layers of the list the si
 #Lets look at the structure of what we are given
 summary(lat.list)
 
-#As you might notice we have a "List of 1" containing a nested "List of 7"
-#Within that "List of 7" there is a data frame called data that has the data we want
-#Well we know where it is now but how do we access it?
-
-# Creating a new simplified list that won't make Christy cranky
 list.met <- list()
 for(i in seq_along(lat.list)){
-  list.met[[i]] <- data.frame(site=NPN.pts$Site[i], latitude=NPN.pts$Latitude[i], longitude=NPN.pts$Longitude[i], lat.list[[i]]$data)
+  list.met[[i]] <- data.frame(site=NPN.pts$site_id[i], latitude=NPN.pts$latitude[i], longitude=NPN.pts$longitude[i], lat.list[[i]]$data)
 }
 names(list.met) <-  NPN.pts$site
 
@@ -102,13 +153,12 @@ lat.calc <- dplyr::bind_rows(list.met)
 
 write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
-rm(df.met)
-
+dat.budburst$Date <- as.Date(dat.budburst$Date)
+lat.calc$Date <- as.Date(lat.calc$Date)
 
 dat.comb <- data.frame()
-pcount <- 1
-for(LOC in unique(as.numeric(dat.npn$Site))){
-  npn.tmp <- dat.npn[dat.npn$Site == LOC,]
+for(LOC in unique(as.numeric(dat.budburst$site_id))){
+  npn.tmp <- dat.budburst[dat.budburst$site_id == LOC,]
   lat.tmp <- lat.calc[lat.calc$site == LOC,]
   npn.tmp$GDD5.cum <- lat.tmp$GDD5.cum[match(npn.tmp$Date, lat.tmp$Date)]
   npn.tmp$GDD0.cum <- lat.tmp$GDD0.cum[match(npn.tmp$Date, lat.tmp$Date)]
