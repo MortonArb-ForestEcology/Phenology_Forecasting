@@ -54,7 +54,7 @@ vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
 path.ghcn=c("../data_raw/meteorology/GHCN_extracted/")
 dir.raw="../data_raw/meteorology/GHCN_raw/"
 
-source("met_download_GHCN.R")
+source("met_download_GHCN.R"); source("met_gapfill.R")
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
 # -------------------------------------
 
