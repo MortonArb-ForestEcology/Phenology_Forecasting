@@ -37,6 +37,9 @@ dat.npn$individual_id <- as.factor(dat.npn$individual_id)
 dat.npn$phenophase_id <- as.factor(dat.npn$phenophase_id)
 dat.npn$phenophase_description <- as.factor(dat.npn$phenophase_description)
 
+#Pulling in names for use
+
+site_names <- npn_stations()
 
 # ------------------------------------------
 # Deciding what data is "good" or "bad"
@@ -86,9 +89,9 @@ for(IND in unique(dat.budburst$individual_id)){
   }
 }
 
-dat.budburst$Yday <- (dat.budburst$first.mean + dat.budburst$last.mean)/2
-dat.budburst$Yday <- round(dat.budburst$Yday)
+dat.budburst$Yday <- dat.budburst$first.min
 
+#This loop freezes at the end and needs to be manuall stopped but also fully works?
 for(YR in dat.budburst$year){
   start <- paste(as.character(dat.budburst$year), "-01-01", sep="")
   dat.budburst$Date <- as.Date((dat.budburst$Yday-1), origin = start)
@@ -97,10 +100,8 @@ for(YR in dat.budburst$year){
 
 dim(dat.budburst)
 
-
 write.csv(dat.budburst, "../data_raw/Raw_Phenology_NPN_combined.csv", row.names=F)
-#FOR NO I AM REMOVING NA VALUES SINCE THEY INCREASE THE LENGTH OF DAYMET PULLS
-dat.budburst <- na.omit(dat.budburst)
+
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
 NPN.pts <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
@@ -153,6 +154,8 @@ lat.calc <- dplyr::bind_rows(list.met)
 
 write.csv(lat.calc, "../data_processed/Daymet_clean_data.csv", row.names=F)
 
+lat.calc <- read.csv("../data_processed/Daymet_clean_data.csv")
+
 dat.budburst$Date <- as.Date(dat.budburst$Date)
 lat.calc$Date <- as.Date(lat.calc$Date)
 
@@ -168,6 +171,20 @@ for(LOC in unique(as.numeric(dat.budburst$site_id))){
 }
 
 summary(dat.comb)
+dat.comb <- dat.comb[!is.na(dat.comb$Yday),] 
+dat.comb <- dat.comb[is.finite(dat.comb$Yday),]
+
+dat.comb$site_name <- site_names$station_name[match(dat.comb$site_id, site_names$station_id)]
+
+#Makigns ure different locations with the same name are given unique names by adding site_id
+for(Name in unique(dat.comb$site_name)){
+  dat.tmp <- dat.comb[dat.comb$site_name == Name,]
+  if(length(unique(dat.tmp$site_id)) >1){
+    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
+  }
+  dat.comb[dat.comb$site_name==Name, "site_name"] <- dat.tmp$site_name
+}
+
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/Full_Phenology_NPN_combined.csv", row.names=F)
