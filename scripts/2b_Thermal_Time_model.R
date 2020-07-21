@@ -16,24 +16,26 @@ dat.comb <- dat.all[dat.all$Species %like% "Quercus",]
 SP <- as.data.frame(table(dat.comb$Species))
 colnames(SP) <- c("Species", "Freq")
 
+ind <- as.data.frame(table(dat.comb$PlantNumber))
 
 
 hierarchical_regression <- "
   model{
     
     for(k in 1:nObs){
-      mu[k] <- Base + Ex[acc[k]] + Species[sp[k]]  #Combination of species Threshold and individual effect
+      mu[k] <- Species[sp[k]]  #Combination of species Threshold and individual effect
       y[k] ~ dnorm(mu[k], sPrec)
     }
     
     for(k in 1:nObs){
       Ynew[k]  ~ dnorm(munew[k], sPrec)
-      munew[k] <- Base + Ex[acc[k]] + Species[sp[k]]
+      munew[k] <- Species[sp[k]]
     }
     
     # Priors
     for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    Species[j] ~ dnorm(0, tPrec[j])
+    Species[j] <- Ex[acc[j]] +Spec[j]
+    Spec[j] ~ dnorm(0, tPrec[j])
     tPrec[j] ~ dgamma(0.1, 0.1)
     }
     
@@ -47,9 +49,8 @@ hierarchical_regression <- "
         b[i] ~ dnorm(0, bPrec)
     }
     aPrec ~ dgamma(0.1, 0.1)
-    bPrec ~ dgamma(0.1, 0.1)
+    bPrec ~ dgamma(1, 0.1)
     sPrec ~ dgamma(0.1, 0.1)
-    Base ~ dnorm(100, .0001)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
@@ -69,7 +70,7 @@ burst.list <- list(y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Specie
 nchain = 10
 inits <- list()
 for(i in 1:nchain){
-  inits[[i]] <- list(Species=rnorm(length(unique(dat.comb$Species)), 0, 5),  #Added length equal to number of species
+  inits[[i]] <- list(  #Added length equal to number of species
                      sPrec = runif(1,1/200,30))
 }
 
@@ -84,7 +85,7 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("Species", "tPrec"),
+                             variable.names = c("Species"),
                              n.iter = 100000)
 
 
@@ -104,7 +105,7 @@ summary(burst.burn)
 
 
 #Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
-varnames(burst.burn) <- c(paste(as.character(SP$Species), "_effect", sep=""), paste(as.character(SP$Species), "_Prec", sep=""))
+varnames(burst.burn) <- c(paste(as.character(SP$Species), sep=""))
 
 df <- ggs(burst.burn)
 
