@@ -75,6 +75,15 @@ Inputs: dat.comb dataframe that is created by the Organize_Data_NPN.R script
 
 Outputs: A US map showing the sites of our NPN data
 
+## 2_Linear_NPN.R
+
+Purpose: Short script to visualize where our NPN points are coming from
+
+Inputs: dat.comb dataframe that is created by the Organize_Data_NPN.R script
+
+Outputs: Currently a rough version of the linear model using GTmean. Still rough (likely because linear model isn't accurate)
+
+
 
 # Functions
 
@@ -86,3 +95,8 @@ Inputs: 2018 to present phenology monitoring data from the googlesheet "Phenolog
          The clean_google_form.r script which defines the clean.google function
         
 Outputs: A dataframe containing the information from all desired google forms.
+
+
+# Test Models Folder
+
+Purpose: A folder to contain old or experimental models whose code might be used down the line.
