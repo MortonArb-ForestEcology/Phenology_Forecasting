@@ -49,7 +49,7 @@ Inputs:
         
 Outputs: dat.comb dataframe that can be used in the Frequentist GDD5-burst.R and the Bayesian_GDD5-burst.r script in this repository
 
-## 2b_Thermal_Time_model.R
+## 2_NPN_Thermal_Time_model.R
 
 Purpose: To use NPN weather data and phenology monitoring data to create a predicitve model of bud burst timing
          This script serves as the Bayesian model which will become the final product
