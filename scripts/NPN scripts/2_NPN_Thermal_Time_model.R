@@ -15,7 +15,6 @@ for(Name in unique(dat.all$site_name)){
   dat.all[dat.all$site_name == Name, "Num_sp"] <- Num_sp
 }
 
-dat.MODIS <- read.csv("../data_processed/Full_MODIS_NPN_combined.csv")
 
 trees <- as.data.frame(table(dat.all$species))
 
@@ -29,40 +28,46 @@ colnames(Obs) <- c("Site", "Freq")
 size <- Obs[Obs$Freq > 0, ]
 
 dat.comb <- dat.comb[dat.comb$site_name %in% size$Site,]
-dat.MODIS <- dat.MODIS[dat.MODIS$site_name %in% size$Site,]
 dat.comb <- dat.comb[dat.comb$site_name %in% dat.MODIS$site_name,] 
+
+ind <- aggregate(site_name~individual_id, data=dat.comb,
+                     FUN=min)
 
 
 hierarchical_regression <- "
   model{
-    
+  
     for(k in 1:nObs){
-      mu[k] <- Ex[loc[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dnorm(mu[k], sPrec)
+        mu[k] <- ind[pln[k]]  
+        y[k] ~ dnorm(mu[k], sPrec)
+    }
+      
+    for(j in 1:nSp){
+      THRESH[j] <-  a[j]
+      a[j] ~ dnorm(0, aPrec)
     }
 
     for(t in 1:nLoc){
-    Ex[t] <-  c[t] + ind[pln[t]]
-    c[t] ~ dnorm(0, aPrec[t])
-    aPrec[t] ~ dgamma(0.1, 0.1)
+      Site[t] <-  THRESH[sp[t]] + b[t]
+      b[t] ~ dnorm(0, bPrec[t])
+      bPrec[t] ~ dgamma(0.1, 0.1)
     }
     
     for(i in 1:nPln){
-        ind[i] <-  b[i]
-        b[i] ~ dnorm(0, bPrec)
+        ind[i] <-  Site[loc[i]] + c[i]
+        c[i] ~ dnorm(0, cPrec)
     }
-    bPrec ~ dgamma(0.1, 0.1)
+    
     sPrec ~ dgamma(0.1, 0.1)
+    aPrec ~ dgamma(0.1, 0.1)
+    cPrec ~ dgamma(0.1, 0.1)
   }
-  "
-
+"
 burst.list <- list(y = dat.comb$GDD5.cum, nObs = length(dat.comb$GDD5.cum),
-                   loc = as.numeric(factor(dat.comb$site_name)), nLoc = length(unique(dat.comb$site_name)),
-                   pln = as.numeric(factor(dat.comb$individual_id)), nPln = length(unique(dat.comb$individual_id)))
+                   loc = as.numeric(factor(ind$site_name)), nLoc = length(unique(dat.comb$site_name)),
+                   pln = as.numeric(factor(dat.comb$individual_id)), nPln = length(unique(dat.comb$individual_id)),
+                   sp = as.numeric(factor(dat.comb$species)), nSp = length(unique(dat.comb$species)))
 
-green.list <- list(y= dat.MODIS$GDD5.cum, nObs = length(dat.MODIS$GDD5.cum),
-                   loc = as.numeric(factor(dat.MODIS$site_name)), nLoc = length(unique(dat.MODIS$site_name)),
-                   pln = as.numeric(factor(dat.MODIS$greenup.year)), nPln = length(unique(dat.MODIS$greenup.year)))
 
 
 #Setting the number of MCMC chains and their parameters
@@ -88,12 +93,12 @@ green.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("Ex"),
+                             variable.names = c("Site"),
                              n.iter = 300000)
 
 #Converting the ooutput into a workable format
 green.out   <- coda.samples (model = green.model,
-                             variable.names = c("Ex"),
+                             variable.names = c("Site"),
                              n.iter = 300000)
 
 

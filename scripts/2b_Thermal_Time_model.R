@@ -16,41 +16,44 @@ dat.comb <- dat.all[dat.all$Species %like% "Quercus",]
 SP <- as.data.frame(table(dat.comb$Species))
 colnames(SP) <- c("Species", "Freq")
 
-ind <- as.data.frame(table(dat.comb$PlantNumber))
+df.ind <- aggregate(Accession~PlantNumber, data=dat.comb,
+                     FUN=min)
+
+df.acc <- aggregate(Species~Accession, data=dat.comb,
+                    Fun=min)
 
 
 hierarchical_regression <- "
   model{
-    
-    for(k in 1:nObs){
-      mu[k] <- Species[sp[k]]  #Combination of species Threshold and individual effect
-      y[k] ~ dnorm(mu[k], sPrec)
+    for(k in 1:n){
+        mu[k] <- ind[pln[k]]  
+        y[k] ~ dnorm(mu[k], sPrec)
     }
     
-    for(k in 1:nObs){
-      Ynew[k]  ~ dnorm(munew[k], sPrec)
-      munew[k] <- Species[sp[k]]
+    for(k in 1:n){
+        munew[k] <- ind[pln[k]]  
+        Ynew[k] ~ dnorm(munew[k], sPrec)
     }
-    
-    # Priors
-    for(j in 1:nSp){                      #This loop adds the species effect on Threshold
-    Species[j] <- Ex[acc[j]] +Spec[j]
-    Spec[j] ~ dnorm(0, tPrec[j])
-    tPrec[j] ~ dgamma(0.1, 0.1)
+      
+    for(j in 1:nSp){
+      THRESH[j] <-  a[j]
+      a[j] ~ dnorm(0, aPrec)
     }
-    
+
     for(t in 1:nAcc){
-    Ex[t] <- ind[pln[t]] + c[t]
-    c[t] ~ dnorm(0, aPrec)
+      Accession[t] <-  THRESH[sp[t]] + b[t]
+      b[t] ~ dnorm(0, bPrec[t])
+      bPrec[t] ~ dgamma(0.1, 0.1)
     }
     
     for(i in 1:nPln){
-        ind[i] <-  b[i]
-        b[i] ~ dnorm(0, bPrec)
+        ind[i] <-  Accession[acc[i]] + c[i]
+        c[i] ~ dnorm(0, cPrec)
     }
-    aPrec ~ dgamma(0.1, 0.1)
-    bPrec ~ dgamma(1, 0.1)
+    
     sPrec ~ dgamma(0.1, 0.1)
+    aPrec ~ dgamma(0.1, 0.1)
+    cPrec ~ dgamma(0.1, 0.1)
     
     d[1] <- max(Ynew[])
     d[2] <- min(Ynew[])
@@ -60,10 +63,10 @@ hierarchical_regression <- "
   }
   "
 
-burst.list <- list(y = dat.comb$GDD5.cum, sp = as.numeric(factor(dat.comb$Species)),
+burst.list <- list(y = dat.comb$GDD5.cum, nObs = length(dat.comb$GDD5.cum),
                    pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)),
-                   acc = as.numeric(factor(dat.comb$Accession)), nAcc = length(unique(dat.comb$Accession)),
-                   nSp = length(unique(dat.comb$Species)), nObs = length(dat.comb$GDD5.cum))
+                   acc = as.numeric(factor(df.ind$Accession)), nAcc = length(unique(dat.comb$Accession)),
+                   sp = as.numeric(factor(df.acc$Species)), nSp = length(unique(dat.comb$Species)))
 
 
 #Setting the number of MCMC chains and their parameters
