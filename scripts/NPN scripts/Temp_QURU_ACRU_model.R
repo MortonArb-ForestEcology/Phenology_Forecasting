@@ -3,12 +3,27 @@ library(coda)
 library(ggmcmc)
 library(dplyr)
 
+# path.g <- "G:/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
+path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
+
 # Read in output of previous script
-dat.all <- read.csv("../data_processed/QURU_ACRU_NPN_combined.csv")
+dat.all <- read.csv("../../data_processed/QURU_ACRU_NPN_combined.csv")
 dat.all$Date <- as.Date(dat.all$Date)
+
+dat.sites <- read.csv("../../data_raw/DAYMET/NPN_points.csv")
+summary(dat.sites)
+dat.sites[dat.sites$n.obs>100,] # This is the Harvard Forest. Because of course it's the Harvard Forest
+hist(dat.sites$n.obs[dat.sites$n.obs<200])
+length(which(dat.sites$n.obs>3));nrow(dat.sites)
+
+dat.all$species_name <- as.factor(dat.all$species_name)
+summary(dat.all[dat.all$site_id=="35875",])
+summary(dat.all[dat.all$site_id=="35875",])
+length(unique(dat.all$individual_id[dat.all$site_id=="35875"]))
 
 summary(dat.all)
 dat.all <- dat.all[dat.all$GDD5.cum > 0,]
+dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>3],]
 
 dat.all$site_name <- site_names$station_name[match(dat.all$site_id, site_names$station_id)]
 
@@ -21,10 +36,22 @@ for(Name in unique(dat.all$site_name)){
   dat.all[dat.all$site_name==Name, "site_name"] <- dat.tmp$site_name
 }
 
+png(paste0(path.g, "Histograms_NPN_data_yday.png"), height=6, width=6, units="in", res=220)
+ggplot(data=dat.all) +
+  facet_grid(species_name~.) +
+  geom_histogram(aes(x=Yday, fill=site_name)) +
+  guides(fill=F)
+dev.off()
 
+png(paste0(path.g, "Histograms_NPN_data_gdd5.png"), height=6, width=6, units="in", res=220)
+ggplot(data=dat.all) +
+  facet_grid(species_name~.) +
+  geom_histogram(aes(x=GDD5.cum, fill=site_name)) +
+  guides(fill=F)
+dev.off()
 
-dat.quru <- dat.all[dat.all$species == "rubra", ]
-dat.acru <- dat.all[dat.all$species == "rubrum", ]
+dat.quru <- dat.all[dat.all$species_name == "Quercus rubra", ]
+dat.acru <- dat.all[dat.all$species_name == "Acer rubrum", ]
 
 #--------------------------------------------#
 #Pulling out unique sites
@@ -142,6 +169,15 @@ gelman.diag(acru.out)
 burnin = 150000                                ## determine convergence from GBR output
 quru.burn <- window(quru.out,start=burnin)## remove burn-in
 acru.burn <- window(acru.out,start=burnin)
+summary(quru.burn)
+summary(acru.burn)
+
+quru.stats.all <- as.data.frame(as.matrix(quru.burn))
+acru.stats.all <- as.data.frame(as.matrix(acru.burn))
+summary(acru.stats.all)
+
+write.csv(quru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
+write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
 
 #-------------------------------------------------------------------------------#
 #Here begins the NPN map visualisation#
@@ -150,6 +186,7 @@ df.quru <- ggs(quru.burn)
 df.acru <- ggs(acru.burn)
 df.quru$Species <- 'Quercus rubra'
 df.acru$Species <- 'Acer rubrum'
+# summary(df.quru)
 
 df <- rbind(df.quru, df.acru)
 dat.vis <- aggregate(df$value,
@@ -187,18 +224,17 @@ dat.vis$Longitude <- dat.all$longitude[match(dat.vis$Site, dat.all$site_name)]
 
 #SPATAIL VISUALZATIONS WHICH NEED WORK
 
-path.g <- "G:/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
 
 map.us <- map_data("state")
-png(paste(path.g, "QURU_ACRU_BudBurst.png", sep=""), height=6, width=8, units="in", res=180)
+png(paste(path.g, "QURU_ACRU_BudBurst_log.png", sep=""), height=6, width=8, units="in", res=180)
 ggplot() +
   facet_wrap(~Species)+
-  coord_fixed(1.3) +
+  coord_fixed(1.3, xlim=range(dat.vis$Longitude)+c(-1,1)) +
   ggtitle(paste("Breaking Leaf Buds", sep=" ")) +
   geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
   geom_point(data=dat.vis, aes(x=Longitude, y=Latitude, color=log(Mean)), alpha=0.75) +
   scale_color_continuous(type = "viridis") +
-  labs(color = "Log of GDD5.cum THreshold") +
+  labs(color = "Log GDD5\nThreshold") +
   theme(panel.background = element_blank(),
         panel.grid = element_blank(),
         axis.text=element_blank(),
@@ -206,6 +242,22 @@ ggplot() +
         axis.ticks = element_blank())
 dev.off()
 
+png(paste(path.g, "QURU_ACRU_BudBurst.png", sep=""), height=6, width=8, units="in", res=180)
+ggplot() +
+  facet_wrap(~Species)+
+  # coord_fixed(1.3) +
+  coord_fixed(1.3, xlim=range(dat.vis$Longitude)+c(-1,1)) +
+  ggtitle(paste("Breaking Leaf Buds", sep=" ")) +
+  geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
+  geom_point(data=dat.vis, aes(x=Longitude, y=Latitude, color=Mean), alpha=0.75) +
+  scale_color_continuous(type = "viridis") +
+  labs(color = "GDD5\nThreshold") +
+  theme(panel.background = element_blank(),
+        panel.grid = element_blank(),
+        axis.text=element_blank(),
+        axis.title=element_blank(),
+        axis.ticks = element_blank())
+dev.off()
 
 #-------------------------------------------------------------------------#
 #Here begins the THRESHOLD visualization
@@ -213,6 +265,7 @@ dev.off()
 #Making them data frames
 quru.stats <- as.data.frame(as.matrix(quru.burn))
 acru.stats <- as.data.frame(as.matrix(acru.burn))
+summary(acru.stats)
 
 #Converting back into sd
 quru.stats$sd <- 1/sqrt(quru.stats[,"aPrec"])
