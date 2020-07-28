@@ -50,29 +50,10 @@ for(Name in unique(dat.npn$site_name)){
   dat.npn[dat.npn$site_name==Name, "site_name"] <- dat.tmp$site_name
 }
 
-dat.quru <- dat.npn[dat.npn$species == "rubra", ]
-dat.acru <- dat.npn[dat.npn$species == "rubrum", ]
-
+dat.bind <- dat.npn
 #--------------------------------------------#
 #This section that pulls out matching sites and matches their names is very rough I apologize. It does work though
 
-#Pulling out unique sites
-quru.sites <- as.data.frame(table(dat.quru$site_name))
-colnames(quru.sites) <- c("Site", "Freq")
-
-acru.sites <- as.data.frame(table(dat.acru$site_name))
-colnames(acru.sites) <- c("Site", "Freq")
-
-#Making sure they only use matching sites
-dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
-dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
-
-dat.bind <- rbind(dat.quru, dat.acru) 
-
-ggplot(data=dat.bind[!is.na(dat.bind$first_yes_doy),]) +
-  coord_equal() +
-  geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
-  geom_point(aes(x=longitude, y=latitude), color="red")
 
 # ------------------------------------------
 # Deciding what data is "good" or "bad"
@@ -114,21 +95,67 @@ ggplot(data=dat.budburst) +
 # if(!dir.exists("../data_raw"))
 write.csv(dat.budburst, "../../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F)
 
-# Creating a point list and time range that matches your MODIS dataset
-# Note: This will probably change down the road
+
+# ----------------------------
+#Making sure they only use matching sites
+# Note: Name isn't good enough because it excludes the Arb; probably want spatial proximity!
+# ----------------------------
+summary(dat.budburst)
+dat.budburst[dat.budburst$site_name=="Maple Collection",][1,]
+dat.budburst[dat.budburst$site_name=="Oak Collection",][1,]
+
+# Rounding 
 NPN.pts <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                      FUN=min)
 names(NPN.pts)[4] <- "yr.start"
 NPN.pts$yr.end <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                             FUN=max)[,4]
 NPN.pts$n.obs <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
-                            FUN=length)[,4]
-dim(NPN.pts)
+                           FUN=length)[,4]
+
+NPN.pts$lat.round <- round(NPN.pts$latitude*2,2)/2
+NPN.pts$lon.round <- round(NPN.pts$latitude*2,2)/2
 head(NPN.pts)
+dim(NPN.pts)
 summary(NPN.pts)
 
-#Writing the csv file of lat and longs because daymetr batch function needs to read a file instead of a dataframe
+NPN.pts2 <- aggregate(site_id ~ lat.round + lon.round, data=NPN.pts, FUN=length)
+NPN.pts2$site_id2 <- paste0("RoundSite", 1:nrow(NPN.pts2))
+summary(NPN.pts2)
+
+NPN.pts <- merge(NPN.pts, NPN.pts2[,c("lat.round", "lon.round", "site_id2")])
+summary(NPN.pts)
+
 write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
+
+
+# Now figuring out which budburst data to keep
+dat.budburst <- merge(dat.budburst, NPN.pts[,c("latitude", "longitude", "site_id", "site_id2")], all.x=T)
+summary(dat.budburst)
+dat.orig <- dat.budburst
+dim(dat.orig)
+
+dat.quru <- dat.budburst[dat.budburst$species == "rubra", ]
+dat.acru <- dat.budburst[dat.budburst$species == "rubrum", ]
+
+dat.quru <- dat.quru[dat.quru$site_id2 %in% unique(dat.acru$site_id2),]
+dat.acru <- dat.acru[dat.acru$site_id2 %in% unique(dat.quru$site_id2),]
+
+dat.budburst <- rbind(dat.quru, dat.acru) 
+dim(dat.budburst)
+
+ggplot(data=dat.budburst[!is.na(dat.budburst$first_yes_doy),]) +
+  coord_equal() +
+  geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
+  geom_point(aes(x=longitude, y=latitude), color="red")
+
+
+# Creating a point list and time range that matches your MODIS dataset
+# Note: This will probably change down the road
+# ----------------------------
+
+
+#Writing the csv file of lat and longs because daymetr batch function needs to read a file instead of a dataframe
 
 # if(!dir.exist(path.daymet)) dir.create(path.daymet)
 #Downloading all of the damet data for each point. Internal =TRUE means it creates a nested list. Set false to actually download a file
