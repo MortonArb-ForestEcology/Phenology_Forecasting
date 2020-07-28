@@ -152,6 +152,7 @@ write.csv(dat.budburst, "../../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
 NPN.pts <- NPN.pts[NPN.pts$site_id2 %in% dat.budburst$site_id2,]
+NPN.pts <- NPN.pts[,c("site_id", "latitude", "longitude", "lat.round", "lon.round", "n.obs", "yr.start", "yr.end")]
 summary(NPN.pts)
 
 write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
