@@ -16,11 +16,13 @@ dat.comb <- dat.all[dat.all$Species %like% "Quercus",]
 SP <- as.data.frame(table(dat.comb$Species))
 colnames(SP) <- c("Species", "Freq")
 
+dat.comb[dat.comb$Species == "Quercus macranthera",]
+
 df.ind <- aggregate(Accession~PlantNumber, data=dat.comb,
                      FUN=min)
 
 df.acc <- aggregate(Species~Accession, data=dat.comb,
-                    Fun=min)
+                    FUN=min)
 
 
 hierarchical_regression <- "
@@ -37,8 +39,8 @@ hierarchical_regression <- "
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(0, aPrec[j])
-      aPrec[j] ~ dgamma(0.1, 0.1)
+      a[j] ~ dnorm(120, aPrec[j])
+      aPrec[j] ~ dgamma(1, 0.1)
     }
 
     for(t in 1:nAcc){
@@ -48,8 +50,8 @@ hierarchical_regression <- "
     }
     
     for(i in 1:nPln){
-        ind[i] <-  Accession[acc[i]] + c[i]
-        c[i] ~ dnorm(0, cPrec)
+        ind[i] <-  Accession[acc[i]] * c[i]
+        c[i] ~ dnorm(1, cPrec)
     }
     
     sPrec ~ dgamma(0.1, 0.1)
@@ -63,14 +65,14 @@ hierarchical_regression <- "
   }
   "
 
-burst.list <- list(y = dat.comb$GDD5.cum, nObs = length(dat.comb$GDD5.cum),
+burst.list <- list(y = dat.comb$GDD5.cum, n = length(dat.comb$GDD5.cum),
                    pln = as.numeric(factor(dat.comb$PlantNumber)), nPln = length(unique(dat.comb$PlantNumber)),
                    acc = as.numeric(factor(df.ind$Accession)), nAcc = length(unique(dat.comb$Accession)),
                    sp = as.numeric(factor(df.acc$Species)), nSp = length(unique(dat.comb$Species)))
 
 
 #Setting the number of MCMC chains and their parameters
-nchain = 10
+nchain = 3
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(  #Added length equal to number of species
@@ -83,13 +85,13 @@ for(i in 1:nchain){
 burst.model   <- jags.model (file = textConnection(hierarchical_regression),
                              data = burst.list,
                              inits = inits,
-                             n.chains = 10)
+                             n.chains = 3)
 
 
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("Species"),
-                             n.iter = 100000)
+                             variable.names = c("THRESH", "aPrec"),
+                             n.iter = 300000)
 
 
 # #Checking that convergence happened
