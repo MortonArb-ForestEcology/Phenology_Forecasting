@@ -200,6 +200,18 @@ dat.comb <- dat.comb[!is.na(dat.comb$Yday),]
 dat.comb <- dat.comb[is.finite(dat.comb$Yday),]
 summary(dat.comb)
 
+dat.comb$site_name <- site_names$station_name[match(dat.comb$site_id, site_names$station_id)]
+
+#Makigns ure different locations with the same name are given unique names by adding site_id
+for(Name in unique(dat.comb$site_name)){
+  dat.tmp <- dat.comb[dat.comb$site_name == Name,]
+  if(length(unique(dat.tmp$site_id)) >1){
+    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
+  }
+  dat.comb[dat.comb$site_name==Name, "site_name"] <- dat.tmp$site_name
+}
+
+
 
 # Save dat.comb 
 write.csv(dat.comb, "../data_processed/QURU_ACRU_NPN_combined.csv", row.names=F)

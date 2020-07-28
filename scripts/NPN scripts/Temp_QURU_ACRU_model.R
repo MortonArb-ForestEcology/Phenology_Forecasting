@@ -10,23 +10,34 @@ dat.all$Date <- as.Date(dat.all$Date)
 summary(dat.all)
 dat.all <- dat.all[dat.all$GDD5.cum > 0,]
 
+dat.all$site_name <- site_names$station_name[match(dat.all$site_id, site_names$station_id)]
+
+#Making sure different locations with the same name are given unique names by adding site_id
+for(Name in unique(dat.all$site_name)){
+  dat.tmp <- dat.all[dat.all$site_name == Name,]
+  if(length(unique(dat.tmp$site_id)) >1){
+    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
+  }
+  dat.all[dat.all$site_name==Name, "site_name"] <- dat.tmp$site_name
+}
+
+
 
 dat.quru <- dat.all[dat.all$species == "rubra", ]
 dat.acru <- dat.all[dat.all$species == "rubrum", ]
 
 #--------------------------------------------#
-#Old but I haven't redownloaded to check it's not needed just yet
-
 #Pulling out unique sites
-#quru.sites <- as.data.frame(table(dat.quru$site_name))
-#colnames(quru.sites) <- c("Site", "Freq")
+quru.sites <- as.data.frame(table(dat.quru$site_name))
+colnames(quru.sites) <- c("Site", "Freq")
 
-#acru.sites <- as.data.frame(table(dat.acru$site_name))
-#colnames(acru.sites) <- c("Site", "Freq")
+acru.sites <- as.data.frame(table(dat.acru$site_name))
+colnames(acru.sites) <- c("Site", "Freq")
 
 #Making sure they only use matching sites
-#dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
-#dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
+#This is the second removal because some sites may ahve clean data for one species but not the other
+dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
+dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
 
 summary(dat.quru)
 summary(dat.acru)
@@ -51,7 +62,7 @@ hierarchical_regression <- "
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(140, aPrec[j])
+      a[j] ~ dnorm(Tprior, aPrec[j])
       aPrec[j] ~ dgamma(1, 0.1)
     }
 
@@ -71,6 +82,7 @@ hierarchical_regression <- "
         y[k] ~ dnorm(mu[k], sPrec)
     }
     
+    Tprior ~dunif(100,180)
     sPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
   }
