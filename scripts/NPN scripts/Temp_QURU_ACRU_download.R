@@ -36,36 +36,66 @@ dat.npn$phenophase_description <- as.factor(dat.npn$phenophase_description)
 #IGNORE THE WARNING
 site_names <- npn_stations()
 
+dat.npn$site_name <- site_names$station_name[match(dat.npn$site_id, site_names$station_id)]
+
+#Makigns ure different locations with the same name are given unique names by adding site_id
+for(Name in unique(dat.npn$site_name)){
+  dat.tmp <- dat.npn[dat.npn$site_name == Name,]
+  if(length(unique(dat.tmp$site_id)) >1){
+    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
+  }
+  dat.npn[dat.npn$site_name==Name, "site_name"] <- dat.tmp$site_name
+}
+
+dat.quru <- dat.npn[dat.npn$species == "rubra", ]
+dat.acru <- dat.npn[dat.npn$species == "rubrum", ]
+
+#--------------------------------------------#
+#This section that pulls out matching sites and matches their names is very rough I apologize. It does work though
+
+#Pulling out unique sites
+quru.sites <- as.data.frame(table(dat.quru$site_name))
+colnames(quru.sites) <- c("Site", "Freq")
+
+acru.sites <- as.data.frame(table(dat.acru$site_name))
+colnames(acru.sites) <- c("Site", "Freq")
+
+#Making sure they only use matching sites
+dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
+dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
+
+dat.bind <- rbind(dat.quru, dat.acru) 
+
 # ------------------------------------------
 # Deciding what data is "good" or "bad"
 # ------------------------------------------
 # Using a 10-day thresholds since prior/next no as an indicator of questionable data  or if there is no value for that (first obs of the year)
 # What this code says data[ROWS, COLUMNS]
 # if the days since last no is greather than 10 OR (| mean OR) there is no "no" observation before a yes
-dat.npn[dat.npn$numdays_since_prior_no>10 | is.na(dat.npn$numdays_since_prior_no), c("first_yes_doy", "first_yes_julian_date")] <- NA
+dat.bind[dat.bind$numdays_since_prior_no>10 | is.na(dat.bind$numdays_since_prior_no), c("first_yes_doy", "first_yes_julian_date")] <- NA
 
-dat.npn[dat.npn$numdays_until_next_no>10 | is.na(dat.npn$numdays_until_next_no), c("last_yes_doy", "last_yes_julian_date")] <- NA
+dat.bind[dat.bind$numdays_until_next_no>10 | is.na(dat.bind$numdays_until_next_no), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
 
 # Getting rid of bud burst after July 1 (~182) because we just want SPRING budburst
-dat.npn[dat.npn$first_yes_doy>182 & !is.na(dat.npn$first_yes_doy), c("first_yes_doy", "first_yes_julian_date")] <- NA
-dat.npn[dat.npn$last_yes_doy>182 & !is.na(dat.npn$last_yes_doy), c("last_yes_doy", "last_yes_julian_date")] <- NA
+dat.bind[dat.bind$first_yes_doy>182 & !is.na(dat.bind$first_yes_doy), c("first_yes_doy", "first_yes_julian_date")] <- NA
+dat.bind[dat.bind$last_yes_doy>182 & !is.na(dat.bind$last_yes_doy), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
 # Aggregateing using a formula; in R, y=mx+b is y ~ m*x + b 
-dat.budburst <- data.frame(individual_id=rep(unique(dat.npn$individual_id), each=length(unique(dat.npn$first_yes_year))),
-                           year=unique(dat.npn$first_yes_year))
+dat.budburst <- data.frame(individual_id=rep(unique(dat.bind$individual_id), each=length(unique(dat.bind$first_yes_year))),
+                           year=unique(dat.bind$first_yes_year))
 summary(dat.budburst)                           
 
 for(IND in unique(dat.budburst$individual_id)){
   # adding some individual metadata -- this only needs to be done for each tree; we dont' care about which year it is
-  dat.budburst[dat.budburst$individual_id==IND, c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")] <- unique(dat.npn[dat.npn$individual_id==IND,c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")])
+  dat.budburst[dat.budburst$individual_id==IND, c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")] <- unique(dat.bind[dat.bind$individual_id==IND,c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")])
   
   for(YR in unique(dat.budburst$year[dat.budburst$individual_id==IND])){
     # creating a handy index for what row we're working with
     row.now <- which(dat.budburst$individual_id==IND & dat.budburst$year==YR)
     
     # Just narrowing the data frame down to just the part we want to work with
-    dat.tmp <- dat.npn[dat.npn$individual_id==IND & dat.npn$first_yes_year==YR,]
+    dat.tmp <- dat.bind[dat.bind$individual_id==IND & dat.bind$first_yes_year==YR,]
     
     if(nrow(dat.tmp)==0) next # skips through if there's no data
     
@@ -87,7 +117,7 @@ for(IND in unique(dat.budburst$individual_id)){
 dat.budburst$Yday <- dat.budburst$first.min
 
 #This loop freezes at the end and needs to be manuall stopped but also fully works?
-for(YR in dat.budburst$year){
+for(YR in unique(dat.budburst$year)){
   start <- paste(as.character(dat.budburst$year), "-01-01", sep="")
   dat.budburst$Date <- as.Date((dat.budburst$Yday-1), origin = start)
 }
@@ -169,17 +199,6 @@ for(LOC in unique(as.numeric(dat.budburst$site_id))){
 dat.comb <- dat.comb[!is.na(dat.comb$Yday),] 
 dat.comb <- dat.comb[is.finite(dat.comb$Yday),]
 summary(dat.comb)
-
-dat.comb$site_name <- site_names$station_name[match(dat.comb$site_id, site_names$station_id)]
-
-#Makigns ure different locations with the same name are given unique names by adding site_id
-for(Name in unique(dat.comb$site_name)){
-  dat.tmp <- dat.comb[dat.comb$site_name == Name,]
-  if(length(unique(dat.tmp$site_id)) >1){
-    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
-  }
-  dat.comb[dat.comb$site_name==Name, "site_name"] <- dat.tmp$site_name
-}
 
 
 # Save dat.comb 

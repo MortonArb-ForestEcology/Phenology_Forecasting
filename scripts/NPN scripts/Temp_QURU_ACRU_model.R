@@ -15,29 +15,30 @@ dat.quru <- dat.all[dat.all$species == "rubra", ]
 dat.acru <- dat.all[dat.all$species == "rubrum", ]
 
 #--------------------------------------------#
-#This section that pulls out matching sites and matches their names is very rough I apologize. It does work though
+#Old but I haven't redownloaded to check it's not needed just yet
 
 #Pulling out unique sites
-quru.sites <- as.data.frame(table(dat.quru$site_name))
-colnames(quru.sites) <- c("Site", "Freq")
+#quru.sites <- as.data.frame(table(dat.quru$site_name))
+#colnames(quru.sites) <- c("Site", "Freq")
 
-acru.sites <- as.data.frame(table(dat.acru$site_name))
-colnames(acru.sites) <- c("Site", "Freq")
+#acru.sites <- as.data.frame(table(dat.acru$site_name))
+#colnames(acru.sites) <- c("Site", "Freq")
 
 #Making sure they only use matching sites
-dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
-dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
+#dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
+#dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
 
 summary(dat.quru)
 summary(dat.acru)
 
+#Pulled out for matching the Site names to the JAGS output
 quru.match <- as.data.frame(table(dat.quru$site_name))
 colnames(quru.match) <- c("Site", "Freq")
 
 acru.match <- as.data.frame(table(dat.acru$site_name))
 colnames(acru.match) <- c("Site", "Freq")
 
-#Pulling site locations for hierarchy indexing
+#Pulling site locations for each individual to help hierarchy indexing
 quru.ind <- aggregate(site_name~individual_id, data=dat.quru,
                  FUN=min)
 
@@ -50,7 +51,7 @@ hierarchical_regression <- "
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(120, aPrec[j])
+      a[j] ~ dnorm(140, aPrec[j])
       aPrec[j] ~ dgamma(1, 0.1)
     }
 
@@ -61,8 +62,8 @@ hierarchical_regression <- "
     }
     
     for(i in 1:nPln){
-        ind[i] <-  Site[loc[i]] + c[i]
-        c[i] ~ dnorm(0, cPrec)
+        ind[i] <-  Site[loc[i]] * c[i]
+        c[i] ~ dnorm(1, cPrec)
     }
     
     for(k in 1:n){
@@ -239,7 +240,7 @@ summary(NPN.stats)
 library(ggplot2)
 path.figures <- "../figures"
 if(!dir.exists(path.figures)) dir.create(path.figures)
-png(width= 750, filename= file.path(path.figures, paste0('Thresh_NPN_GDD5' '.png')))
+png(width= 750, filename= file.path(path.figures, paste0('Thresh_NPN_GDD5', '.png')))
 ggplot(data= NPN.stats) +
   ggtitle('Thermal Time Thresholds of Quercus rubra and Acer rubrum') +
   geom_density(mapping = aes(x= THRESH, fill = Species, color = Species), alpha=0.5) +
