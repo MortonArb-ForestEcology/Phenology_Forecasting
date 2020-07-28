@@ -93,7 +93,6 @@ ggplot(data=dat.budburst) +
   geom_histogram(aes(x=Yday, fill=as.factor(year)))
 
 # if(!dir.exists("../data_raw"))
-write.csv(dat.budburst, "../../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F)
 
 
 # ----------------------------
@@ -113,8 +112,8 @@ NPN.pts$yr.end <- aggregate(year~site_id+latitude+longitude, data=dat.budburst,
 NPN.pts$n.obs <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                            FUN=length)[,4]
 
-NPN.pts$lat.round <- round(NPN.pts$latitude*2,2)/2
-NPN.pts$lon.round <- round(NPN.pts$latitude*2,2)/2
+NPN.pts$lat.round <- round(NPN.pts$latitude,2)
+NPN.pts$lon.round <- round(NPN.pts$latitude,2)
 head(NPN.pts)
 dim(NPN.pts)
 summary(NPN.pts)
@@ -122,12 +121,10 @@ summary(NPN.pts)
 NPN.pts2 <- aggregate(site_id ~ lat.round + lon.round, data=NPN.pts, FUN=length)
 NPN.pts2$site_id2 <- paste0("RoundSite", 1:nrow(NPN.pts2))
 summary(NPN.pts2)
+dim(NPN.pts2)
 
 NPN.pts <- merge(NPN.pts, NPN.pts2[,c("lat.round", "lon.round", "site_id2")])
-summary(NPN.pts)
-
-write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
-
+dim(NPN.pts)
 
 # Now figuring out which budburst data to keep
 dat.budburst <- merge(dat.budburst, NPN.pts[,c("latitude", "longitude", "site_id", "site_id2")], all.x=T)
@@ -143,15 +140,22 @@ dat.acru <- dat.acru[dat.acru$site_id2 %in% unique(dat.quru$site_id2),]
 
 dat.budburst <- rbind(dat.quru, dat.acru) 
 dim(dat.budburst)
+length(unique(dat.budburst$site_id))
 
 ggplot(data=dat.budburst[!is.na(dat.budburst$first_yes_doy),]) +
   coord_equal() +
   geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
   geom_point(aes(x=longitude, y=latitude), color="red")
 
+write.csv(dat.budburst, "../../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F)
 
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
+NPN.pts <- NPN.pts[NPN.pts$site_id2 %in% dat.budburst$site_id2,]
+summary(NPN.pts)
+
+write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
+
 # ----------------------------
 
 
