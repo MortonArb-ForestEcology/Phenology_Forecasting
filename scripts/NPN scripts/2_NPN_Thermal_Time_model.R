@@ -9,12 +9,7 @@ library(dplyr)
 dat.all <- read.csv("../data_processed/Full_Phenology_NPN_combined.csv")
 dat.all$Date <- as.Date(dat.all$Date)
 
-for(Name in unique(dat.all$site_name)){
-  dat.tmp <- dat.all[dat.all$site_name == Name,]
-  Num_sp <- length(unique(dat.tmp$species))
-  dat.all[dat.all$site_name == Name, "Num_sp"] <- Num_sp
-}
-
+summary(dat.all)
 
 trees <- as.data.frame(table(dat.all$species))
 
@@ -22,13 +17,14 @@ trees <- as.data.frame(table(dat.all$species))
 species <- c("alba")
 dat.comb <- dat.all[dat.all$species %in% species, ]
 
-
 Obs <- as.data.frame(table(dat.comb$site_name))
 colnames(Obs) <- c("Site", "Freq")
 size <- Obs[Obs$Freq > 0, ]
 
 dat.comb <- dat.comb[dat.comb$site_name %in% size$Site,]
-dat.comb <- dat.comb[dat.comb$site_name %in% dat.MODIS$site_name,] 
+dat.comb <- dat.comb[dat.comb$GDD5.cum > 0,]
+
+summary(dat.comb)
 
 ind <- aggregate(site_name~individual_id, data=dat.comb,
                      FUN=min)
@@ -36,15 +32,11 @@ ind <- aggregate(site_name~individual_id, data=dat.comb,
 
 hierarchical_regression <- "
   model{
-  
-    for(k in 1:nObs){
-        mu[k] <- ind[pln[k]]  
-        y[k] ~ dnorm(mu[k], sPrec)
-    }
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(0, aPrec)
+      a[j] ~ dnorm(120, aPrec[j])
+      aPrec[j] ~ dgamma(1, 0.1)
     }
 
     for(t in 1:nLoc){
@@ -54,12 +46,16 @@ hierarchical_regression <- "
     }
     
     for(i in 1:nPln){
-        ind[i] <-  Site[loc[i]] + c[i]
-        c[i] ~ dnorm(0, cPrec)
+        ind[i] <-  Site[loc[i]] * c[i]
+        c[i] ~ dnorm(1, cPrec)
+    }
+    
+    for(k in 1:nObs){
+        mu[k] <- ind[pln[k]]  
+        y[k] ~ dnorm(mu[k], sPrec)
     }
     
     sPrec ~ dgamma(0.1, 0.1)
-    aPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
   }
 "
@@ -71,10 +67,10 @@ burst.list <- list(y = dat.comb$GDD5.cum, nObs = length(dat.comb$GDD5.cum),
 
 
 #Setting the number of MCMC chains and their parameters
-nchain = 5
+nchain = 3
 inits <- list()
 for(i in 1:nchain){
-  inits[[i]] <- list(sPrec = runif(1,1/200,30))
+  inits[[i]] <- list(sPrec = runif(1,1/200, 1/20))
 }
 
 #---------------------------------------------------------#
@@ -85,38 +81,37 @@ burst.model   <- jags.model (file = textConnection(hierarchical_regression),
                              inits = inits,
                              n.chains = nchain)
 
-green.model   <- jags.model (file = textConnection(hierarchical_regression),
-                             data = green.list,
-                             inits = inits,
-                             n.chains = nchain)
-
-
 #Converting the ooutput into a workable format
 burst.out   <- coda.samples (model = burst.model,
-                             variable.names = c("Site"),
-                             n.iter = 300000)
-
-#Converting the ooutput into a workable format
-green.out   <- coda.samples (model = green.model,
-                             variable.names = c("Site"),
+                             variable.names = c("THRESH", "aPrec"),
                              n.iter = 300000)
 
 
 #Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
-varnames(burst.out) <- c(paste(as.character(size$Site)))
-varnames(green.out) <- c(paste(as.character(size$Site)))
+#varnames(burst.out) <- c(paste(as.character(size$Site)))
 
 # #Checking that convergence happened
 gelman.diag(burst.out)
-gelman.diag(green.out)
 
 
 #Removing burnin before convergence occurred
-burnin = 290000                                ## determine convergence from GBR output
+burnin = 150000                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)## remove burn-in
-green.burn <- window(green.out,start=burnin)
 
-summary(green.burn)
+summary(burst.burn)
+
+#Converting back to sd
+
+#Creating a dataframe useful for a density plot visual
+burst.df <- as.data.frame(as.matrix(burst.burn))
+
+burst.df$sd <- 1/sqrt(burst.df[,"aPrec"])
+
+summary(burst.df)
+
+bud.density <- as.data.frame(apply(as.matrix(burst.df), 1 , function(x) rnorm(1, mean=x[1], sd=x[3])))
+
+bud.ci <- apply(as.matrix(bud.density),2,quantile,c(0.025,0.5,0.975))
 
 #Paths for figures
 path.g <- "G:/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/Site_effects/"
@@ -129,22 +124,13 @@ path.g <- "G:/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures
 #ggs_traceplot(df, family = "27305")
 
 
-#Creating a dataframe useful for a density plot visual
-burst.df <- as.data.frame(as.matrix(burst.burn))
-green.df <- as.data.frame(as.matrix(green.burn))
-
-
+#Creating density plot
 burst.density <- reshape::melt(burst.df)
 colnames(burst.density) <- c("Species", "Mean")
-green.density <- reshape::melt(green.df)
-colnames(green.density) <- c("Site", "Mean")
 
-burst.density$Type <- 'NPN'
-green.density$Type <- 'MODIS'
 
-spec <- c("Quercus alba", "Quercus acutissima", "Quercus macrocarpa", "Quercus saulii", "Quercus pyrenaica", "Quercus variabilis")
+#burst.density$Type <- 'NPN'
 
-density.all <- burst.density[burst.density$Species %in% spec,]
 #FOr when you pull out something else like precision
 #burst.density <- burst.density %>% separate(variable, into = c("Site", "Parameter"))
 

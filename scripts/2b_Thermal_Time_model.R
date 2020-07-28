@@ -37,7 +37,8 @@ hierarchical_regression <- "
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(0, aPrec)
+      a[j] ~ dnorm(0, aPrec[j])
+      aPrec[j] ~ dgamma(0.1, 0.1)
     }
 
     for(t in 1:nAcc){
@@ -52,7 +53,6 @@ hierarchical_regression <- "
     }
     
     sPrec ~ dgamma(0.1, 0.1)
-    aPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
     
     d[1] <- max(Ynew[])

@@ -20,7 +20,7 @@ d[5] <- sd(Ynew[])
 
 
 #Converting the ooutput into a workable format
-p.out   <- coda.samples (model = burst.model,
+p.out   <- coda.samples (model = bud.alba.mod,
                              variable.names = c("d"),
                              n.iter = 100000)
 
@@ -35,6 +35,9 @@ d  <- p.burn[[1]]
 
 do <- c(max(dat.comb$GDD5.cum, na.rm = TRUE),min(dat.comb$GDD5.cum, na.rm = TRUE),max(dat.comb$GDD5.cum, na.rm = TRUE)-min(dat.comb$GDD5.cum, na.rm = TRUE),
         mean(dat.comb$GDD5.cum, na.rm = TRUE),sd(dat.comb$GDD5.cum, na.rm = TRUE))
+
+do <- c(max(alba.budburst$MinGDD5.cum, na.rm = TRUE),min(alba.budburst$MinGDD5.cum, na.rm = TRUE),max(alba.budburst$MinGDD5.cum, na.rm = TRUE)-min(alba.budburst$MinGDD5.cum, na.rm = TRUE),
+        mean(alba.budburst$MinGDD5.cum, na.rm = TRUE),sd(alba.budburst$MinGDD5.cum, na.rm = TRUE))
 
 do <- c(max(dat.comb$Yday, na.rm = TRUE),min(dat.comb$Yday, na.rm = TRUE),max(dat.comb$Yday, na.rm = TRUE)-min(dat.comb$Yday, na.rm = TRUE),
         mean(dat.comb$Yday, na.rm = TRUE),sd(dat.comb$Yday, na.rm = TRUE))
