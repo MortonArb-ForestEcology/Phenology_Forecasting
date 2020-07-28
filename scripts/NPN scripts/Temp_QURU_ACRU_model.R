@@ -82,7 +82,7 @@ hierarchical_regression <- "
         y[k] ~ dnorm(mu[k], sPrec)
     }
     
-    Tprior ~dunif(100,180)
+    Tprior ~ dunif(100, 200)
     sPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
   }
@@ -250,9 +250,7 @@ summary(NPN.stats)
 
 
 library(ggplot2)
-path.figures <- "../figures"
-if(!dir.exists(path.figures)) dir.create(path.figures)
-png(width= 750, filename= file.path(path.figures, paste0('Thresh_NPN_GDD5', '.png')))
+png(width= 750, filename= file.path(path.g, paste0('Thresh_NPN_GDD5', '.png')))
 ggplot(data= NPN.stats) +
   ggtitle('Thermal Time Thresholds of Quercus rubra and Acer rubrum') +
   geom_density(mapping = aes(x= THRESH, fill = Species, color = Species), alpha=0.5) +
