@@ -14,12 +14,15 @@
 #dplyr for the summarise function
 library(dplyr)
 library(rnpn)
+library(ggplot2)
+
+map.us <- map_data("state")
 
 
-path.hub <- "C:/Users/lucie/Documents/GitHub/"
+# path.hub <- "C:/Users/lucie/Documents/GitHub/"
 #path.hub <- "../.."
 
-path.daymet <- "../data_raw/DAYMET"
+path.daymet <- "../../data_raw/DAYMET"
 if(!dir.exists(path.daymet)) dir.create(path.daymet)
 
 
@@ -38,7 +41,7 @@ site_names <- npn_stations()
 
 dat.npn$site_name <- site_names$station_name[match(dat.npn$site_id, site_names$station_id)]
 
-#Makigns ure different locations with the same name are given unique names by adding site_id
+#Making sure different locations with the same name are given unique names by adding site_id
 for(Name in unique(dat.npn$site_name)){
   dat.tmp <- dat.npn[dat.npn$site_name == Name,]
   if(length(unique(dat.tmp$site_id)) >1){
@@ -66,6 +69,11 @@ dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
 
 dat.bind <- rbind(dat.quru, dat.acru) 
 
+ggplot(data=dat.bind[!is.na(dat.bind$first_yes_doy),]) +
+  coord_equal() +
+  geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
+  geom_point(aes(x=longitude, y=latitude), color="red")
+
 # ------------------------------------------
 # Deciding what data is "good" or "bad"
 # ------------------------------------------
@@ -77,55 +85,34 @@ dat.bind[dat.bind$numdays_since_prior_no>10 | is.na(dat.bind$numdays_since_prior
 dat.bind[dat.bind$numdays_until_next_no>10 | is.na(dat.bind$numdays_until_next_no), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
 
+# Quickly 
+ggplot(data=dat.bind[!is.na(dat.bind$first_yes_doy) & dat.bind$first_yes_doy>172,]) +
+  coord_equal() +
+  geom_polygon(data=map.us, aes(x=long, y=lat, group=group), fill=NA, color="black") +
+  geom_point(aes(x=longitude, y=latitude, color=as.factor(first_yes_year)), position="jitter")
+
 # Getting rid of bud burst after July 1 (~182) because we just want SPRING budburst
-dat.bind[dat.bind$first_yes_doy>182 & !is.na(dat.bind$first_yes_doy), c("first_yes_doy", "first_yes_julian_date")] <- NA
-dat.bind[dat.bind$last_yes_doy>182 & !is.na(dat.bind$last_yes_doy), c("last_yes_doy", "last_yes_julian_date")] <- NA
+dat.bind[dat.bind$first_yes_doy>172 & !is.na(dat.bind$first_yes_doy), c("first_yes_doy", "first_yes_julian_date")] <- NA
+dat.bind[dat.bind$last_yes_doy>172 & !is.na(dat.bind$last_yes_doy), c("last_yes_doy", "last_yes_julian_date")] <- NA
 
 # Aggregateing using a formula; in R, y=mx+b is y ~ m*x + b 
-dat.budburst <- data.frame(individual_id=rep(unique(dat.bind$individual_id), each=length(unique(dat.bind$first_yes_year))),
-                           year=unique(dat.bind$first_yes_year))
-summary(dat.budburst)                           
+dat.budburst <- aggregate(first_yes_doy ~ site_id + site_name + latitude + longitude + species_id + genus + species + individual_id + phenophase_id + phenophase_description + first_yes_year, data=dat.bind, FUN=min, na.rm=T)
+summary(dat.budburst)
 
-for(IND in unique(dat.budburst$individual_id)){
-  # adding some individual metadata -- this only needs to be done for each tree; we dont' care about which year it is
-  dat.budburst[dat.budburst$individual_id==IND, c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")] <- unique(dat.bind[dat.bind$individual_id==IND,c("site_id", "latitude", "longitude", "species_id", "genus", "species", "common_name")])
-  
-  for(YR in unique(dat.budburst$year[dat.budburst$individual_id==IND])){
-    # creating a handy index for what row we're working with
-    row.now <- which(dat.budburst$individual_id==IND & dat.budburst$year==YR)
-    
-    # Just narrowing the data frame down to just the part we want to work with
-    dat.tmp <- dat.bind[dat.bind$individual_id==IND & dat.bind$first_yes_year==YR,]
-    
-    if(nrow(dat.tmp)==0) next # skips through if there's no data
-    
-    if(nrow(dat.tmp)==1){
-      dat.budburst[row.now, c("first.mean", "first.min", "first.max")] <- dat.tmp$first_yes_doy
-      dat.budburst[row.now, c("last.mean", "last.min", "last.max")] <- dat.tmp$last_yes_doy
-    } else {
-      dat.budburst[row.now, "first.mean"] <- mean(dat.tmp$first_yes_doy, na.rm=T)
-      dat.budburst[row.now, "first.min" ] <- min(dat.tmp$first_yes_doy, na.rm=T)
-      dat.budburst[row.now, "first.max" ] <- max(dat.tmp$first_yes_doy, na.rm=T)
-      
-      dat.budburst[row.now, "last.mean"] <- mean(dat.tmp$last_yes_doy, na.rm=T)
-      dat.budburst[row.now, "last.min" ] <- min(dat.tmp$last_yes_doy, na.rm=T)
-      dat.budburst[row.now, "last.max" ] <- max(dat.tmp$last_yes_doy, na.rm=T)
-    }
-  }
-}
-
-dat.budburst$Yday <- dat.budburst$first.min
-
+dat.budburst$Yday <- dat.budburst$first_yes_doy
+dat.budburst$year <- dat.budburst$first_yes_year
 #This loop freezes at the end and needs to be manuall stopped but also fully works?
-for(YR in unique(dat.budburst$year)){
-  start <- paste(as.character(dat.budburst$year), "-01-01", sep="")
-  dat.budburst$Date <- as.Date((dat.budburst$Yday-1), origin = start)
-}
-
+dat.budburst$Date <- as.Date(paste0(dat.budburst$first_yes_year, "-01-01"))+dat.budburst$first_yes_doy
+summary(dat.budburst)
 
 dim(dat.budburst)
+dat.budburst$species_name <- paste(dat.budburst$genus, dat.budburst$species)
+ggplot(data=dat.budburst) +
+  facet_grid(species_name~.) +
+  geom_histogram(aes(x=Yday, fill=as.factor(year)))
 
-write.csv(dat.budburst, "../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F)
+# if(!dir.exists("../data_raw"))
+write.csv(dat.budburst, "../../data_raw/QURU_ACRU_NPN_combined.csv", row.names=F)
 
 # Creating a point list and time range that matches your MODIS dataset
 # Note: This will probably change down the road
@@ -134,8 +121,11 @@ NPN.pts <- aggregate(year~site_id+latitude+longitude, data=dat.budburst,
 names(NPN.pts)[4] <- "yr.start"
 NPN.pts$yr.end <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
                             FUN=max)[,4]
-NPN.pts
-
+NPN.pts$n.obs <- aggregate(year~site_id+latitude+longitude, data=dat.budburst, 
+                            FUN=length)[,4]
+dim(NPN.pts)
+head(NPN.pts)
+summary(NPN.pts)
 
 #Writing the csv file of lat and longs because daymetr batch function needs to read a file instead of a dataframe
 write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
@@ -169,7 +159,7 @@ rm(lat.list) # Removing lat.list to save memory
 
 
 #Reading in our function for calculating weather statistics of interest
-source(file.path(path.hub, "Phenology_Forecasting/scripts/weather_calc.R"))
+source(file.path("../weather_calc.R"))
 
 #Running our function to calculate weather statistics. Default year range is 1975-2019. Growing seaosn is yday 1 to 120
 
@@ -177,9 +167,9 @@ list.met<- lapply(list.met, weather_calc)
 
 lat.calc <- dplyr::bind_rows(list.met)
 
-write.csv(lat.calc, "../data_processed/QURU_ACRU_Daymet_clean_data.csv", row.names=F)
+write.csv(lat.calc, "../../data_processed/QURU_ACRU_Daymet_clean_data.csv", row.names=F)
 
-lat.calc <- read.csv("../data_processed/QURU_ACRU_Daymet_clean_data.csv")
+lat.calc <- read.csv("../../data_processed/QURU_ACRU_Daymet_clean_data.csv")
 
 dat.budburst$Date <- as.Date(dat.budburst$Date)
 lat.calc$Date <- as.Date(lat.calc$Date)
@@ -202,5 +192,5 @@ summary(dat.comb)
 
 
 # Save dat.comb 
-write.csv(dat.comb, "../data_processed/QURU_ACRU_NPN_combined.csv", row.names=F)
+write.csv(dat.comb, "../../data_processed/QURU_ACRU_NPN_combined.csv", row.names=F)
 
