@@ -94,52 +94,53 @@ dat.maca <- dplyr::bind_rows(list.maca2)
 
 write.csv(dat.maca, "../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", row.names=F)
 
-dat.maca <- dat.maca[dat.maca$YEAR>=2070,]
 #---------------------------------------------
 
 
 #---------------------------------------------
 # Find the predicted buddburst with current and future RCP
 #---------------------------------------------
+dat.daymet <- read.csv("../../data_processed/CAREER_Met_Arb_Daymet_GDD.csv", stringsAsFactors = T)
+dat.maca <- read.csv("../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", stringsAsFactors = T)
+
+
+dat.maca <- dat.maca[dat.maca$YEAR>=2070,]
+# dat.maca <- dat.maca[dat.maca$YEAR>=2035 & dat.maca$YEAR<2065,]
+
+
 summary(mod.npn)
-pred.daymet <- list()
-for(YR in min(dat.daymet$year):max(dat.daymet$year)){
-  pred.daymet[[YR]] <- mod.npn[sample(1:nrow(mod.npn), 500),]
-  pred.daymet[[YR]]$year <- YR
-  pred.daymet[[YR]]$yday.pred <- apply(pred.daymet[[YR]], 1, FUN=function(x){min(dat.daymet[dat.daymet$year==YR & dat.daymet$GDD5.cum>=as.numeric(x["thresh.pred"]), "yday"])})
-}
-pred.daymet <- dplyr::bind_rows(pred.daymet)
-pred.daymet$model <- as.factor("Daymet")
-pred.daymet$scenario <- as.factor("historic")
-summary(pred.daymet)
+summary(dat.daymet)
+daymet.norm <- aggregate(GDD5.cum ~ yday, data=dat.daymet, FUN=mean)
+daymet.norm$model <- as.factor("Daymet")
+daymet.norm$scenario <- as.factor("historical")
+summary(daymet.norm)
 
-pred.maca <- list()
-for(MOD in unique(dat.maca$model)){
-  mod.list <- list()
-  dat.mod <- dat.maca[dat.maca$model==MOD,]
-  for(RCP in unique(dat.mod$scenario)){
-    rcp.list <- list()
-    dat.rcp <- dat.mod[dat.mod$scenario==RCP, ]
-    for(YR in min(dat.rcp$YEAR):max(dat.rcp$YEAR)){
-      rcp.list[[YR]] <- mod.npn[sample(1:nrow(mod.npn), 500),]
-      rcp.list[[YR]]$year <- YR
-      rcp.list[[YR]]$yday.pred <- apply(rcp.list[[YR]], 1, FUN=function(x){min(dat.rcp[dat.rcp$year==YR & dat.rcp$GDD5.cum>=as.numeric(x["thresh.pred"]), "YDAY"])}) 
-    }
-    mod.list[[RCP]] <- dplyr::bind_rows(rcp.list)
-    mod.list[[RCP]]$scenario <- RCP
+dat.maca$yday <- dat.maca$YDAY
+maca.norm <- aggregate(GDD5.cum ~ yday + model + scenario, data=dat.maca, FUN=mean)
+# maca.norm$model <- as.factor("ensemble mean") 
+summary(maca.norm)
+
+dat.met <- rbind(daymet.norm, maca.norm[,names(daymet.norm)])
+
+pred.list <- list()
+for(MOD in unique(dat.met$model)){
+  for(RCP in unique(dat.met[dat.met$model==MOD, "scenario"])){
+    met.now <- dat.met[dat.met$model==MOD & dat.met$scenario==RCP,]
+    npn.samp <- mod.npn[sample(1:nrow(mod.npn), 500),]
+    
+    pred.list[[paste(MOD, RCP, sep="-")]] <- npn.samp
+    pred.list[[paste(MOD, RCP, sep="-")]]$model <- as.factor(MOD)
+    pred.list[[paste(MOD, RCP, sep="-")]]$scenario <- as.factor(RCP)
+    pred.list[[paste(MOD, RCP, sep="-")]]$yday.pred <- apply(npn.samp, 1, FUN=function(x){min(met.now[met.now$GDD5.cum>=as.numeric(x["thresh.pred"]), "yday"])})
   }
-  pred.maca[[MOD]] <- dplyr::bind_rows(mod.list)
-  pred.maca[[MOD]]$model <- MOD
 }
-pred.maca <- dplyr::bind_rows(pred.maca)
-summary(pred.maca)
-
-yday.pred <- rbind(pred.daymet, pred.maca[,names(pred.daymet)])
+yday.pred <- dplyr::bind_rows(pred.list)
 summary(yday.pred)
+
 write.csv(yday.pred, "../../data_processed/CAREER_BudBurst_Predictions.csv", row.names=F)
 
 ggplot(data=yday.pred) +
   facet_grid(scenario~.) +
-  geom_density(aes(x=yday.pred, fill=Species), alpha=0.5)
+  geom_density(aes(x=yday.pred, fill=Species), alpha=0.5, adjust=3)
 #---------------------------------------------
 
