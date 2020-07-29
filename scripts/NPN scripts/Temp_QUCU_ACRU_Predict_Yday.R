@@ -104,8 +104,8 @@ dat.daymet <- read.csv("../../data_processed/CAREER_Met_Arb_Daymet_GDD.csv", str
 dat.maca <- read.csv("../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", stringsAsFactors = T)
 
 
-dat.maca <- dat.maca[dat.maca$YEAR>=2070,]
-# dat.maca <- dat.maca[dat.maca$YEAR>=2035 & dat.maca$YEAR<2065,]
+# dat.maca <- dat.maca[dat.maca$YEAR>=2070,]
+dat.maca <- dat.maca[dat.maca$YEAR>=2035 & dat.maca$YEAR<2065,]
 
 
 summary(mod.npn)
@@ -116,8 +116,8 @@ daymet.norm$scenario <- as.factor("historical")
 summary(daymet.norm)
 
 dat.maca$yday <- dat.maca$YDAY
-maca.norm <- aggregate(GDD5.cum ~ yday + model + scenario, data=dat.maca, FUN=mean)
-# maca.norm$model <- as.factor("ensemble mean") 
+maca.norm <- aggregate(GDD5.cum ~ yday + scenario, data=dat.maca, FUN=mean)
+maca.norm$model <- as.factor("ensemble mean")
 summary(maca.norm)
 
 dat.met <- rbind(daymet.norm, maca.norm[,names(daymet.norm)])
@@ -126,9 +126,10 @@ pred.list <- list()
 for(MOD in unique(dat.met$model)){
   for(RCP in unique(dat.met[dat.met$model==MOD, "scenario"])){
     met.now <- dat.met[dat.met$model==MOD & dat.met$scenario==RCP,]
-    npn.samp <- mod.npn[sample(1:nrow(mod.npn), 500),]
+    npn.samp <- mod.npn
+    # npn.samp <- mod.npn[sample(1:nrow(mod.npn), 500),]
     
-    pred.list[[paste(MOD, RCP, sep="-")]] <- npn.samp
+    pred.list[[paste(MOD, RCP, sep="-")]] <- mod.npn
     pred.list[[paste(MOD, RCP, sep="-")]]$model <- as.factor(MOD)
     pred.list[[paste(MOD, RCP, sep="-")]]$scenario <- as.factor(RCP)
     pred.list[[paste(MOD, RCP, sep="-")]]$yday.pred <- apply(npn.samp, 1, FUN=function(x){min(met.now[met.now$GDD5.cum>=as.numeric(x["thresh.pred"]), "yday"])})
@@ -142,5 +143,32 @@ write.csv(yday.pred, "../../data_processed/CAREER_BudBurst_Predictions.csv", row
 ggplot(data=yday.pred) +
   facet_grid(scenario~.) +
   geom_density(aes(x=yday.pred, fill=Species), alpha=0.5, adjust=3)
+
+day.labels <- data.frame(Date=seq.Date(as.Date("2020-01-01"), as.Date("2020-06-30"), by=7))
+day.labels$yday <- lubridate::yday(day.labels$Date)
+day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::day(day.labels$Date))
+summary(day.labels)
+
+plot.annotate <- data.frame(Species=rep(unique(yday.pred$Species), length(unique(yday.pred$scenario))),
+                            Scenario=rep(unique(yday.pred$scenario), each=length(unique(yday.pred$Species))))
+for(i in 1:nrow(plot.annotate)){
+  spp.now <- plot.annotate$Species[i]
+  rcp.now <- plot.annotate$Scenario[i]
+  plot.annotate[i,"median"] <- median(yday.pred[yday.pred$Species==spp.now & yday.pred$scenario==rcp.now, "yday.pred"])
+  plot.annotate[i,"mean"] <- mean(yday.pred[yday.pred$Species==spp.now & yday.pred$scenario==rcp.now, "yday.pred"])
+  
+}
+plot.annotate
+
+path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
+
+png(paste0(path.g, "ModelPredict_YDAY.png"), height=6, width=6, units="in", res=220)
+ggplot(data=yday.pred[yday.pred$scenario!="rcp85",]) +
+  # facet_grid(scenario~.) +
+  geom_density(aes(x=yday.pred, color=Species, linetype=scenario), fill=NA, adjust=3, size=3) +
+  scale_y_continuous(name="Probability", expand=c(0,0), limits=c(0,0.4)) +
+  scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[], labels=day.labels$Text[]) +
+  theme_minimal()
+dev.off()
 #---------------------------------------------
 
