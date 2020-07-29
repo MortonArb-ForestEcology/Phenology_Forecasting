@@ -9,14 +9,14 @@ dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
 dat.all$Accession <- unlist(lapply(strsplit(paste(dat.all$PlantNumber), "-"), function(x){x[1]}))
 dat.all$Date <- as.Date(dat.all$Date)
 
-species <- c("Quercus acutissima", "Quercus georgiana", "Quercus imbricaria", "Quercus stellata")
-#dat.comb <- dat.all[dat.all$Species %in% species, ]
-dat.comb <- dat.all[dat.all$Species %like% "Quercus",]
-
-SP <- as.data.frame(table(dat.comb$Species))
+SP <- as.data.frame(table(dat.all[dat.all$Species %like% "Quercus", "Species"]))
 colnames(SP) <- c("Species", "Freq")
 
-dat.comb[dat.comb$Species == "Quercus macranthera",]
+species <- c("Quercus alba")
+
+dat.comb <- dat.all[dat.all$Species == species, ]
+
+mean(dat.comb$GDD5.cum)
 
 df.ind <- aggregate(Accession~PlantNumber, data=dat.comb,
                      FUN=min)
@@ -39,8 +39,9 @@ hierarchical_regression <- "
       
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
-      a[j] ~ dnorm(120, aPrec[j])
-      aPrec[j] ~ dgamma(1, 0.1)
+      a[j] ~ dnorm(Tprior, aPrec[j])
+      aPrec[j] ~ dgamma(0.5, 0.1)
+      Tprior[j] ~ dunif(0,500)
     }
 
     for(t in 1:nAcc){
@@ -50,10 +51,9 @@ hierarchical_regression <- "
     }
     
     for(i in 1:nPln){
-        ind[i] <-  Accession[acc[i]] * c[i]
-        c[i] ~ dnorm(1, cPrec)
+        ind[i] <-  Accession[acc[i]] + c[i]
+        c[i] ~ dnorm(0, cPrec)
     }
-    
     sPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
     
@@ -76,7 +76,7 @@ nchain = 3
 inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(  #Added length equal to number of species
-                     sPrec = runif(1,1/200,30))
+                     Tprior = runif(1,100,200))
 }
 
 #---------------------------------------------------------#
@@ -97,16 +97,27 @@ burst.out   <- coda.samples (model = burst.model,
 # #Checking that convergence happened
 gelman.diag(burst.out)
 
-DIC <- dic.samples(burst.model, 50000)
-
 # #Checking where convergence occured
 #GBR <- gelman.plot(burst.out)
 
 #Removing burnin before convergence occurred
-burnin = 90000                                ## determine convergence from GBR output
+burnin = 290000                                ## determine convergence from GBR output
 burst.burn <- window(burst.out,start=burnin)  ## remove burn-in
-plot(burst.burn)
 summary(burst.burn)
+
+burst.df <- as.data.frame(as.matrix(burst.burn))
+
+burst.df$sd <- 1/sqrt(burst.df[,"aPrec"])
+summary(burst.df)
+
+bud.density <- as.data.frame(apply(as.matrix(burst.df), 1 , function(x) rnorm(1, mean=x[1], sd=x[3])))
+
+bud.ci <- apply(as.matrix(bud.density),2,quantile,c(0.025,0.5,0.975))
+
+bud.ci
+
+write.csv(burst.df, file.path("../data_processed/", paste0("ModelOut_", species, ".csv")), row.names=F)
+
 
 
 #Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
@@ -120,10 +131,6 @@ ggs_caterpillar(df, family =  "effect")
 
 
 
-burst.df2 <- as.data.frame(as.matrix(burst.burn))
-colnames(burst.df2) <- c(as.character(unique(dat.comb$Species)))
-
-write.csv(burst.df2, file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", "Chosen_Oaks_norm"), ".csv")), row.names=F)
 
 
 if(ncol(burst.df2)>2){
