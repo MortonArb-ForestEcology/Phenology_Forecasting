@@ -14,16 +14,17 @@ dat.sites <- read.csv("../../data_raw/DAYMET/NPN_points.csv")
 summary(dat.sites)
 dat.sites[dat.sites$n.obs>100,] # This is the Harvard Forest. Because of course it's the Harvard Forest
 hist(dat.sites$n.obs[dat.sites$n.obs<200])
-length(which(dat.sites$n.obs>3));nrow(dat.sites)
+length(which(dat.sites$n.obs>1));nrow(dat.sites)
 
 dat.all$species_name <- as.factor(dat.all$species_name)
 summary(dat.all[dat.all$site_id=="35875",])
 summary(dat.all[dat.all$site_id=="35875",])
 length(unique(dat.all$individual_id[dat.all$site_id=="35875"]))
+summary(dat.all[dat.all$site_name=="Maple Collection",])
 
 summary(dat.all)
 dat.all <- dat.all[dat.all$GDD5.cum > 0,]
-dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>3],]
+dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>1],]
 
 dat.all$site_name <- site_names$station_name[match(dat.all$site_id, site_names$station_id)]
 
@@ -53,23 +54,24 @@ dev.off()
 dat.quru <- dat.all[dat.all$species_name == "Quercus rubra", ]
 dat.acru <- dat.all[dat.all$species_name == "Acer rubrum", ]
 
+dat.quru <- dat.quru[dat.quru$site_id2 %in% unique(dat.acru$site_id2),]
+dat.acru <- dat.acru[dat.acru$site_id2 %in% unique(dat.quru$site_id2),]
+
 #--------------------------------------------#
-#Pulling out unique sites
+# #Pulling out unique sites
 quru.sites <- as.data.frame(table(dat.quru$site_name))
 colnames(quru.sites) <- c("Site", "Freq")
 
 acru.sites <- as.data.frame(table(dat.acru$site_name))
 colnames(acru.sites) <- c("Site", "Freq")
-
-#Making sure they only use matching sites
-#This is the second removal because some sites may ahve clean data for one species but not the other
-dat.quru <- dat.quru[dat.quru$site_name %in% acru.sites$Site,]
-dat.acru <- dat.acru[dat.acru$site_name %in% quru.sites$Site,]
-
-summary(dat.quru)
-summary(dat.acru)
-
-#Pulled out for matching the Site names to the JAGS output
+# 
+# #Making sure they only use matching sites
+# #This is the second removal because some sites may ahve clean data for one species but not the other
+# 
+# summary(dat.quru)
+# summary(dat.acru)
+# 
+# #Pulled out for matching the Site names to the JAGS output
 quru.match <- as.data.frame(table(dat.quru$site_name))
 colnames(quru.match) <- c("Site", "Freq")
 
@@ -148,12 +150,12 @@ acru.model   <- jags.model (file = textConnection(hierarchical_regression),
 #Converting the output into a workable format
 quru.out   <- coda.samples (model = quru.model,
                              variable.names = c("Site", "THRESH", "aPrec"),
-                             n.iter = 300000)
+                             n.iter = 500000)
 
 #Converting the output into a workable format
 acru.out   <- coda.samples (model = acru.model,
                             variable.names = c("Site", "THRESH", "aPrec"),
-                            n.iter = 300000)
+                            n.iter = 500000)
 
 
 #Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
@@ -166,7 +168,7 @@ gelman.diag(acru.out)
 
 
 #Removing burnin before convergence occurred
-burnin = 150000                                ## determine convergence from GBR output
+burnin = 490000   ## determine convergence from GBR output
 quru.burn <- window(quru.out,start=burnin)## remove burn-in
 acru.burn <- window(acru.out,start=burnin)
 summary(quru.burn)
@@ -177,7 +179,7 @@ acru.stats.all <- as.data.frame(as.matrix(acru.burn))
 summary(acru.stats.all)
 
 write.csv(quru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
-write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
+write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
 
 #-------------------------------------------------------------------------------#
 #Here begins the NPN map visualisation#
@@ -297,7 +299,10 @@ acru.density$Species <- 'Acer rubrum'
 
 
 #this is wonky! do not use unless you are Andrew for right now
-NPN.stats <- rbind(quru.density, acru.density)
+set.seed <- 072820
+rows.keep <- sample(1:nrow(quru.density), 1000)
+NPN.stats <- rbind(quru.density[rows.keep,], acru.density[rows.keep,])
+write.csv(NPN.stats, "../../data_processed/CAREER_ModelSummary_Thresh.csv", row.names=F)
 
 summary(NPN.stats)
 
