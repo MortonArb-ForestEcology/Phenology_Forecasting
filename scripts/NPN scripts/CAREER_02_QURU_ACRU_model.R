@@ -282,11 +282,11 @@ summary(quru.stats)
 summary(acru.stats)
 
 #Matching the THRESH and aPrec rows in the rnorm call here
-quru.density <- as.data.frame(apply(as.matrix(quru.stats), 1 , function(x) rnorm(1, mean=x[1], sd=x[3])))
-acru.density <- as.data.frame(apply(as.matrix(acru.stats), 1 , function(x) rnorm(1, mean=x[1], sd=x[3])))
+quru.density <- as.data.frame(apply(as.matrix(quru.stats), 1 , function(x) rnorm(1, mean=as.numeric(x["THRESH"]), sd=as.numeric(x["sd"]))))
+acru.density <- as.data.frame(apply(as.matrix(acru.stats), 1 , function(x) rnorm(1, mean=as.numeric(x["THRESH"]), sd=as.numeric(x["sd"]))))
 
-colnames(quru.density) <- c("THRESH")
-colnames(acru.density) <- c("THRESH")
+colnames(quru.density) <- c("thresh.pred")
+colnames(acru.density) <- c("thresh.pred")
 
 #This is currently just a check. Not currently used in the graphing
 quru.ci <- apply(as.matrix(quru.density),2,quantile,c(0.025,0.5,0.975))
@@ -302,6 +302,7 @@ acru.density$Species <- 'Acer rubrum'
 
 #this is wonky! do not use unless you are Andrew for right now
 set.seed <- 072820
+rows.keep <- 1:nrow(quru.density)
 # rows.keep <- sample(1:nrow(quru.density), 1000)
 NPN.stats <- rbind(quru.density[rows.keep,], acru.density[rows.keep,])
 write.csv(NPN.stats, "../../data_processed/CAREER_ModelSummary_Thresh.csv", row.names=F)
@@ -313,7 +314,7 @@ library(ggplot2)
 png(width= 750, filename= file.path(path.g, paste0('Thresh_NPN_GDD5', '.png')))
 ggplot(data= NPN.stats) +
   ggtitle('Thermal Time Thresholds of Quercus rubra and Acer rubrum') +
-  geom_density(mapping = aes(x= THRESH, fill = Species, color = Species), alpha=0.5) +
+  geom_density(mapping = aes(x= thresh.pred, fill = Species, color = Species), alpha=0.5) +
   scale_x_continuous('TT Threshold (5C Growing Degree Days)') +
   scale_y_continuous('DENSITY (Probability)')
 dev.off()

@@ -14,13 +14,13 @@ library(ggplot2)
 dat.quru <- read.csv("../../data_processed/CAREER_ModelOut_QURU_all.csv")
 dat.acru <- read.csv("../../data_processed/CAREER_ModelOut_ACRU_all.csv")
 
-set.seed(0728202015)
-dat.quru <- dat.quru[sample(1:nrow(dat.quru), 1e3), c("THRESH", "aPrec")]
-dat.acru <- dat.acru[sample(1:nrow(dat.acru), 1e3), c("THRESH", "aPrec")]
+# set.seed(0728202015)
+# dat.quru <- dat.quru[sample(1:nrow(dat.quru), 1e3), c("THRESH", "aPrec")]
+# dat.acru <- dat.acru[sample(1:nrow(dat.acru), 1e3), c("THRESH", "aPrec")]
 dat.quru$Species <- as.factor("Quercus rubra")
 dat.acru$Species <- as.factor("Acer rubrum")
 
-mod.npn <- rbind(dat.quru, dat.acru)
+mod.npn <- rbind(dat.quru[,c("THRESH", "aPrec", "Species")], dat.acru[,c("THRESH", "aPrec", "Species")])
 mod.npn$sd <- 1/sqrt(mod.npn[,"aPrec"])
 mod.npn$thresh.pred <- apply(mod.npn, 1, FUN=function(x){rnorm(1, as.numeric(x["THRESH"]), as.numeric(x["sd"]))})
 summary(mod.npn)
@@ -102,9 +102,9 @@ write.csv(dat.maca, "../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", row.name
 dat.quru <- read.csv("../../data_processed/CAREER_ModelOut_QURU_all.csv")
 dat.acru <- read.csv("../../data_processed/CAREER_ModelOut_ACRU_all.csv")
 
-set.seed(0728202015)
-dat.quru <- dat.quru[sample(1:nrow(dat.quru), 1e3), c("THRESH", "aPrec")]
-dat.acru <- dat.acru[sample(1:nrow(dat.acru), 1e3), c("THRESH", "aPrec")]
+# set.seed(0728202015)
+# dat.quru <- dat.quru[sample(1:nrow(dat.quru), 1e3), c("THRESH", "aPrec")]
+# dat.acru <- dat.acru[sample(1:nrow(dat.acru), 1e3), c("THRESH", "aPrec")]
 dat.quru$Species <- as.factor("Quercus rubra")
 dat.acru$Species <- as.factor("Acer rubrum")
 
