@@ -102,9 +102,9 @@ write.csv(dat.maca, "../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", row.name
 dat.quru <- read.csv("../../data_processed/CAREER_ModelOut_QURU_all.csv")
 dat.acru <- read.csv("../../data_processed/CAREER_ModelOut_ACRU_all.csv")
 
-# set.seed(0728202015)
-# dat.quru <- dat.quru[sample(1:nrow(dat.quru), 1e3), c("THRESH", "aPrec")]
-# dat.acru <- dat.acru[sample(1:nrow(dat.acru), 1e3), c("THRESH", "aPrec")]
+set.seed(0728202015)
+dat.quru <- dat.quru[sample(1:nrow(dat.quru), 2e3), c("THRESH", "aPrec")]
+dat.acru <- dat.acru[sample(1:nrow(dat.acru), 2e3), c("THRESH", "aPrec")]
 dat.quru$Species <- as.factor("Quercus rubra")
 dat.acru$Species <- as.factor("Acer rubrum")
 
@@ -118,6 +118,12 @@ dat.daymet <- read.csv("../../data_processed/CAREER_Met_Arb_Daymet_GDD.csv", str
 dat.maca <- read.csv("../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", stringsAsFactors = T)
 
 
+dat.daymet$Freeze <- ifelse(dat.daymet$tmin.C<0, 1, 0)
+summary(dat.daymet)
+
+dat.maca$Freeze <- ifelse(dat.maca$TMIN<0, 1, 0)
+summary(dat.maca)
+
 # dat.maca <- dat.maca[dat.maca$YEAR>=2070,]
 # dat.maca[dat.maca$YEAR<=2030,"scenario"] <- "modeled present"
 # dat.maca <- dat.maca[dat.maca$YEAR>=2035 & dat.maca$YEAR<2065,]
@@ -125,27 +131,31 @@ dat.maca <- read.csv("../../data_processed/CAREER_Met_Arb_MACA_GDD.csv", strings
 
 summary(mod.npn)
 summary(dat.daymet)
-daymet.norm <- aggregate(GDD5.cum ~ yday, data=dat.daymet[dat.daymet$year>=1998,], FUN=mean)
+daymet.norm <- aggregate(cbind(GDD5.cum, Freeze) ~ yday, data=dat.daymet[dat.daymet$year>=1998,], FUN=mean)
 daymet.norm$model <- as.factor("Daymet")
 daymet.norm$scenario <- as.factor("present")
 summary(daymet.norm)
 
 dat.maca$yday <- dat.maca$YDAY
-maca.norm.present <- aggregate(GDD5.cum ~ yday + scenario, data=dat.maca[dat.maca$YEAR<=2025,], FUN=mean)
+maca.norm.present <- aggregate(cbind(GDD5.cum, Freeze) ~ yday + scenario, data=dat.maca[dat.maca$YEAR<=2025,], FUN=mean)
 maca.norm.present$model <- as.factor("MACA present")
 # maca.norm.present$scenario <- as.factor("modeled present")
 summary(maca.norm.present)
 
-maca.norm.future <- aggregate(GDD5.cum ~ yday + scenario, data=dat.maca[dat.maca$YEAR>=2041 & dat.maca$YEAR<=2060,], FUN=mean)
+maca.norm.future <- aggregate(cbind(GDD5.cum, Freeze) ~ yday + scenario, data=dat.maca[dat.maca$YEAR>=2041 & dat.maca$YEAR<=2060,], FUN=mean)
+# maca.norm.future$TMIN <- aggregate(TMIN ~ yday + scenario, data=dat.maca[dat.maca$YEAR>=2041 & dat.maca$YEAR<=2060,], FUN=mean)
 maca.norm.future$model <- as.factor("MACA mid-century")
 summary(maca.norm.future)
 
-maca.norm.future2 <- aggregate(GDD5.cum ~ yday + scenario, data=dat.maca[dat.maca$YEAR>=2080,], FUN=mean)
+maca.norm.future2 <- aggregate(cbind(GDD5.cum, Freeze) ~ yday + scenario, data=dat.maca[dat.maca$YEAR>=2080,], FUN=mean)
 maca.norm.future2$model <- as.factor("MACA end-century")
 summary(maca.norm.future2)
 
 dat.met <- rbind(daymet.norm, maca.norm.present[,names(daymet.norm)], maca.norm.future[,names(daymet.norm)], maca.norm.future2[,names(daymet.norm)])
 summary(dat.met)
+
+write.csv(dat.met, "../../data_processed/CAREER_Met_Predictions.csv", row.names=F)
+
 
 pred.list <- list()
 for(MOD in unique(dat.met$model)){
@@ -158,6 +168,8 @@ for(MOD in unique(dat.met$model)){
     pred.list[[paste(MOD, RCP, sep="-")]]$model <- as.factor(MOD)
     pred.list[[paste(MOD, RCP, sep="-")]]$scenario <- as.factor(RCP)
     pred.list[[paste(MOD, RCP, sep="-")]]$yday.pred <- apply(npn.samp, 1, FUN=function(x){min(met.now[met.now$GDD5.cum>=as.numeric(x["thresh.pred"]), "yday"])})
+    
+    pred.list[[paste(MOD, RCP, sep="-")]]$freeze.prob <- apply(pred.list[[paste(MOD, RCP, sep="-")]], 1, FUN=function(x){met.now$Freeze[met.now$yday==round(as.numeric(x["yday.pred"]))]})
   }
 }
 yday.pred <- dplyr::bind_rows(pred.list)
@@ -165,9 +177,25 @@ summary(yday.pred)
 
 write.csv(yday.pred, "../../data_processed/CAREER_BudBurst_Predictions.csv", row.names=F)
 
+# finding different dates of last freeze
+freeze.time <- data.frame(model=rep(unique(dat.met$model), length(unique(dat.met$scenario))),
+                          scenario=rep(unique(dat.met$scenario), each=length(unique(dat.met$model))))
+for(i in 1:nrow(freeze.time)){
+  met.now <- dat.met[dat.met$model==freeze.time$model[i] & dat.met$scenario==freeze.time$scenario[i],]
+  d25 <- 0.25 - met.now$Freeze[met.now$yday<180]
+  d50 <- 0.50 - met.now$Freeze[met.now$yday<180]
+  d75 <- 0.75 - met.now$Freeze[met.now$yday<180]
+  
+  freeze.time[i,"p25"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
+  freeze.time[i,"p50"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
+  freeze.time[i,"p75"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
+  
+}
+
 ggplot(data=yday.pred) +
   facet_grid(model~scenario) +
-  geom_density(aes(x=yday.pred, fill=Species), alpha=0.5, adjust=3)
+  geom_density(aes(x=yday.pred, fill=Species), alpha=0.5, adjust=3) +
+  geom_vline(data=freeze.time, aes(xintercept=p25, linetype=scenario), color="black")
 
 ggplot(data=yday.pred[yday.pred$model %in% c("MACA present", "MACA mid-century") & yday.pred$scenario %in% c("rcp45"),]) +
   facet_grid(model~scenario) +
@@ -191,7 +219,8 @@ path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology F
 png(paste0(path.g, "ModelPredict_YDAY.png"), height=6, width=6, units="in", res=220)
 ggplot(data=yday.pred[yday.pred$model %in% c("MACA present", "MACA mid-century") & yday.pred$scenario %in% c("rcp45"),]) +
   # facet_grid(scenario~.) +
-  geom_density(aes(x=yday.pred, color=Species, linetype=model), fill=NA, adjust=3, size=3) +
+  geom_density(aes(x=yday.pred, color=Species, linetype=model), fill=NA, adjust=5, size=3) +
+  geom_vline(data=freeze.time[freeze.time$model %in% c("MACA present", "MACA mid-century") & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25, linetype=model), color="black") +
   scale_y_continuous(name="Probability", expand=c(0,0), limits=c(0,0.4)) +
   scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[], labels=day.labels$Text[]) +
   theme_minimal()
