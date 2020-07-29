@@ -14,7 +14,7 @@ dat.sites <- read.csv("../../data_raw/DAYMET/NPN_points.csv")
 summary(dat.sites)
 dat.sites[dat.sites$n.obs>100,] # This is the Harvard Forest. Because of course it's the Harvard Forest
 hist(dat.sites$n.obs[dat.sites$n.obs<200])
-length(which(dat.sites$n.obs>1));nrow(dat.sites)
+length(which(dat.sites$n.obs>2));nrow(dat.sites)
 
 dat.all$species_name <- as.factor(dat.all$species_name)
 summary(dat.all[dat.all$site_id=="35875",])
@@ -24,30 +24,30 @@ summary(dat.all[dat.all$site_id=="Maple Collection",])
 
 summary(dat.all)
 dat.all <- dat.all[dat.all$GDD5.cum > 0,]
-dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>1],]
+dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>2],]
 
-dat.all$site_id <- site_ids$station_name[match(dat.all$site_id, site_ids$station_id)]
+# dat.all$site_id <- site_ids$station_name[match(dat.all$site_id, site_ids$station_id)]
 
 #Making sure different locations with the same name are given unique names by adding site_id
-for(Name in unique(dat.all$site_id)){
-  dat.tmp <- dat.all[dat.all$site_id == Name,]
-  if(length(unique(dat.tmp$site_id)) >1){
-    dat.tmp$site_id <- paste(dat.tmp$site_id, dat.tmp$site_id, sep="_")
-  }
-  dat.all[dat.all$site_id==Name, "site_id"] <- dat.tmp$site_id
-}
+# for(Name in unique(dat.all$site_id)){
+#   dat.tmp <- dat.all[dat.all$site_id == Name,]
+#   if(length(unique(dat.tmp$site_id)) >1){
+#     dat.tmp$site_id <- paste(dat.tmp$site_id, dat.tmp$site_id, sep="_")
+#   }
+#   dat.all[dat.all$site_id==Name, "site_id"] <- dat.tmp$site_id
+# }
 
 png(paste0(path.g, "Histograms_NPN_data_yday.png"), height=6, width=6, units="in", res=220)
 ggplot(data=dat.all) +
   facet_grid(species_name~.) +
-  geom_histogram(aes(x=Yday, fill=site_id)) +
+  geom_histogram(aes(x=Yday, fill=as.factor(site_id))) +
   guides(fill=F)
 dev.off()
 
 png(paste0(path.g, "Histograms_NPN_data_gdd5.png"), height=6, width=6, units="in", res=220)
 ggplot(data=dat.all) +
   facet_grid(species_name~.) +
-  geom_histogram(aes(x=GDD5.cum, fill=site_id)) +
+  geom_histogram(aes(x=GDD5.cum, fill=as.factor(site_id))) +
   guides(fill=F)
 dev.off()
 
@@ -150,17 +150,18 @@ acru.model   <- jags.model (file = textConnection(hierarchical_regression),
 #Converting the output into a workable format
 quru.out   <- coda.samples (model = quru.model,
                              variable.names = c("site_id", "THRESH", "aPrec"),
-                             n.iter = 500000)
+                             n.iter = 200000)
 
 #Converting the output into a workable format
 acru.out   <- coda.samples (model = acru.model,
                             variable.names = c("site_id", "THRESH", "aPrec"),
-                            n.iter = 500000)
+                            n.iter = 200000)
 
 
 #Renaming parameters to properly match their effects (e.g. sites are renamed to their site_id, species to their species)
-varnames(quru.out) <- c(paste(as.character(quru.match$site_id)), "THRESH", "aPrec")
-varnames(acru.out) <- c(paste(as.character(acru.match$site_id)), "THRESH", "aPrec")
+# varnames(quru.out)
+varnames(quru.out)[grep("site", varnames(quru.out))] <- as.character(quru.match$site_id)
+varnames(acru.out)[grep("site", varnames(acru.out))] <- as.character(acru.match$site_id)
 
 # #Checking that convergence happened
 gelman.diag(quru.out)
@@ -168,7 +169,7 @@ gelman.diag(acru.out)
 
 
 #Removing burnin before convergence occurred
-burnin = 490000   ## determine convergence from GBR output
+burnin = 198000   ## determine convergence from GBR output
 quru.burn <- window(quru.out,start=burnin)## remove burn-in
 acru.burn <- window(acru.out,start=burnin)
 summary(quru.burn)
@@ -176,7 +177,7 @@ summary(acru.burn)
 
 quru.stats.all <- as.data.frame(as.matrix(quru.burn))
 acru.stats.all <- as.data.frame(as.matrix(acru.burn))
-summary(acru.stats.all)
+dim(acru.stats.all)
 
 write.csv(quru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
 write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
@@ -268,6 +269,7 @@ dev.off()
 quru.stats <- as.data.frame(as.matrix(quru.burn))
 acru.stats <- as.data.frame(as.matrix(acru.burn))
 summary(acru.stats)
+summary(quru.stats)
 
 #Converting back into sd
 quru.stats$sd <- 1/sqrt(quru.stats[,"aPrec"])
@@ -300,7 +302,7 @@ acru.density$Species <- 'Acer rubrum'
 
 #this is wonky! do not use unless you are Andrew for right now
 set.seed <- 072820
-rows.keep <- sample(1:nrow(quru.density), 1000)
+# rows.keep <- sample(1:nrow(quru.density), 1000)
 NPN.stats <- rbind(quru.density[rows.keep,], acru.density[rows.keep,])
 write.csv(NPN.stats, "../../data_processed/CAREER_ModelSummary_Thresh.csv", row.names=F)
 
