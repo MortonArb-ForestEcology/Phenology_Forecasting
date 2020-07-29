@@ -20,34 +20,34 @@ dat.all$species_name <- as.factor(dat.all$species_name)
 summary(dat.all[dat.all$site_id=="35875",])
 summary(dat.all[dat.all$site_id=="35875",])
 length(unique(dat.all$individual_id[dat.all$site_id=="35875"]))
-summary(dat.all[dat.all$site_name=="Maple Collection",])
+summary(dat.all[dat.all$site_id=="Maple Collection",])
 
 summary(dat.all)
 dat.all <- dat.all[dat.all$GDD5.cum > 0,]
 dat.all <- dat.all[dat.all$site_id %in% dat.sites$site_id[dat.sites$n.obs>1],]
 
-dat.all$site_name <- site_names$station_name[match(dat.all$site_id, site_names$station_id)]
+dat.all$site_id <- site_ids$station_name[match(dat.all$site_id, site_ids$station_id)]
 
 #Making sure different locations with the same name are given unique names by adding site_id
-for(Name in unique(dat.all$site_name)){
-  dat.tmp <- dat.all[dat.all$site_name == Name,]
+for(Name in unique(dat.all$site_id)){
+  dat.tmp <- dat.all[dat.all$site_id == Name,]
   if(length(unique(dat.tmp$site_id)) >1){
-    dat.tmp$site_name <- paste(dat.tmp$site_name, dat.tmp$site_id, sep="_")
+    dat.tmp$site_id <- paste(dat.tmp$site_id, dat.tmp$site_id, sep="_")
   }
-  dat.all[dat.all$site_name==Name, "site_name"] <- dat.tmp$site_name
+  dat.all[dat.all$site_id==Name, "site_id"] <- dat.tmp$site_id
 }
 
 png(paste0(path.g, "Histograms_NPN_data_yday.png"), height=6, width=6, units="in", res=220)
 ggplot(data=dat.all) +
   facet_grid(species_name~.) +
-  geom_histogram(aes(x=Yday, fill=site_name)) +
+  geom_histogram(aes(x=Yday, fill=site_id)) +
   guides(fill=F)
 dev.off()
 
 png(paste0(path.g, "Histograms_NPN_data_gdd5.png"), height=6, width=6, units="in", res=220)
 ggplot(data=dat.all) +
   facet_grid(species_name~.) +
-  geom_histogram(aes(x=GDD5.cum, fill=site_name)) +
+  geom_histogram(aes(x=GDD5.cum, fill=site_id)) +
   guides(fill=F)
 dev.off()
 
@@ -59,11 +59,11 @@ dat.acru <- dat.acru[dat.acru$site_id2 %in% unique(dat.quru$site_id2),]
 
 #--------------------------------------------#
 # #Pulling out unique sites
-quru.sites <- as.data.frame(table(dat.quru$site_name))
-colnames(quru.sites) <- c("Site", "Freq")
+quru.sites <- as.data.frame(table(dat.quru$site_id))
+colnames(quru.sites) <- c("site_id", "Freq")
 
-acru.sites <- as.data.frame(table(dat.acru$site_name))
-colnames(acru.sites) <- c("Site", "Freq")
+acru.sites <- as.data.frame(table(dat.acru$site_id))
+colnames(acru.sites) <- c("site_id", "Freq")
 # 
 # #Making sure they only use matching sites
 # #This is the second removal because some sites may ahve clean data for one species but not the other
@@ -71,18 +71,18 @@ colnames(acru.sites) <- c("Site", "Freq")
 # summary(dat.quru)
 # summary(dat.acru)
 # 
-# #Pulled out for matching the Site names to the JAGS output
-quru.match <- as.data.frame(table(dat.quru$site_name))
-colnames(quru.match) <- c("Site", "Freq")
+# #Pulled out for matching the site_id names to the JAGS output
+quru.match <- as.data.frame(table(dat.quru$site_id))
+colnames(quru.match) <- c("site_id", "Freq")
 
-acru.match <- as.data.frame(table(dat.acru$site_name))
-colnames(acru.match) <- c("Site", "Freq")
+acru.match <- as.data.frame(table(dat.acru$site_id))
+colnames(acru.match) <- c("site_id", "Freq")
 
 #Pulling site locations for each individual to help hierarchy indexing
-quru.ind <- aggregate(site_name~individual_id, data=dat.quru,
+quru.ind <- aggregate(site_id~individual_id, data=dat.quru,
                  FUN=min)
 
-acru.ind <- aggregate(site_name~individual_id, data=dat.acru,
+acru.ind <- aggregate(site_id~individual_id, data=dat.acru,
                       FUN=min)
 
 
@@ -96,13 +96,13 @@ hierarchical_regression <- "
     }
 
     for(t in 1:nLoc){
-      Site[t] <-  THRESH[sp[t]] + b[t]
+      site_id[t] <-  THRESH[sp[t]] + b[t]
       b[t] ~ dnorm(0, bPrec[t])
       bPrec[t] ~ dgamma(0.1, 0.1)
     }
     
     for(i in 1:nPln){
-        ind[i] <-  Site[loc[i]] * c[i]
+        ind[i] <-  site_id[loc[i]] * c[i]
         c[i] ~ dnorm(1, cPrec)
     }
     
@@ -117,12 +117,12 @@ hierarchical_regression <- "
   }
 "
 quru.list <- list(y = dat.quru$GDD5.cum, n = length(dat.quru$GDD5.cum),
-                   loc = as.numeric(factor(quru.ind$site_name)), nLoc = length(unique(dat.quru$site_name)),
+                   loc = as.numeric(factor(quru.ind$site_id)), nLoc = length(unique(dat.quru$site_id)),
                    pln = as.numeric(factor(dat.quru$individual_id)), nPln = length(unique(dat.quru$individual_id)),
                    sp = as.numeric(factor(dat.quru$species)), nSp = length(unique(dat.quru$species)))
 
 acru.list <- list(y = dat.acru$GDD5.cum, n = length(dat.acru$GDD5.cum),
-                  loc = as.numeric(factor(acru.ind$site_name)), nLoc = length(unique(dat.acru$site_name)),
+                  loc = as.numeric(factor(acru.ind$site_id)), nLoc = length(unique(dat.acru$site_id)),
                   pln = as.numeric(factor(dat.acru$individual_id)), nPln = length(unique(dat.acru$individual_id)),
                   sp = as.numeric(factor(dat.acru$species)), nSp = length(unique(dat.acru$species)))
 
@@ -149,18 +149,18 @@ acru.model   <- jags.model (file = textConnection(hierarchical_regression),
 
 #Converting the output into a workable format
 quru.out   <- coda.samples (model = quru.model,
-                             variable.names = c("Site", "THRESH", "aPrec"),
+                             variable.names = c("site_id", "THRESH", "aPrec"),
                              n.iter = 500000)
 
 #Converting the output into a workable format
 acru.out   <- coda.samples (model = acru.model,
-                            variable.names = c("Site", "THRESH", "aPrec"),
+                            variable.names = c("site_id", "THRESH", "aPrec"),
                             n.iter = 500000)
 
 
-#Renaming parameters to properly match their effects (e.g. sites are renamed to their Site, species to their species)
-varnames(quru.out) <- c(paste(as.character(quru.match$Site)), "THRESH", "aPrec")
-varnames(acru.out) <- c(paste(as.character(acru.match$Site)), "THRESH", "aPrec")
+#Renaming parameters to properly match their effects (e.g. sites are renamed to their site_id, species to their species)
+varnames(quru.out) <- c(paste(as.character(quru.match$site_id)), "THRESH", "aPrec")
+varnames(acru.out) <- c(paste(as.character(acru.match$site_id)), "THRESH", "aPrec")
 
 # #Checking that convergence happened
 gelman.diag(quru.out)
@@ -195,29 +195,29 @@ dat.vis <- aggregate(df$value,
                      by=list(df$Species, df$Parameter),
                      FUN=mean, na.rm=F)
 
-colnames(dat.vis) <- c("Species", "Site", "Mean")
+colnames(dat.vis) <- c("Species", "site_id", "Mean")
 
 
 #dat.sd <- aggregate(df$value,
 #                   by=list(df$Species, df$Parameter),
 #                    FUN=sd, na.rm=F)
 #
-#colnames(dat.sd) <- c("Species", "Site", "sd")
+#colnames(dat.sd) <- c("Species", "site_id", "sd")
 
 
 #dat.vis$sd <- dat.sd$sd[match(dat.vis$Species, dat.sd$Species)]
 
-dat.vis <- dat.vis[!(dat.vis$Site == "aPrec" | dat.vis$Site == "THRESH") ,]
+dat.vis <- dat.vis[!(dat.vis$site_id == "aPrec" | dat.vis$site_id == "THRESH") ,]
 
-dat.vis$Site <- as.character(dat.vis$Site)
+dat.vis$site_id <- as.character(dat.vis$site_id)
 
 #FOr when you pull out something else like precision
-#dat.vis <- dat.vis %>% separate(Site, into = c("Site", "Parameter"))
+#dat.vis <- dat.vis %>% separate(site_id, into = c("site_id", "Parameter"))
 
 #Use min here because there can be repeats that have both species
-dat.vis$Latitude <- dat.all$latitude[match(dat.vis$Site, dat.all$site_name)]
-dat.vis$Longitude <- dat.all$longitude[match(dat.vis$Site, dat.all$site_name)]
-#dat.vis$Freq <- size$Freq[match(dat.vis$Site, size$Site)]
+dat.vis$Latitude <- dat.all$latitude[match(dat.vis$site_id, dat.all$site_id)]
+dat.vis$Longitude <- dat.all$longitude[match(dat.vis$site_id, dat.all$site_id)]
+#dat.vis$Freq <- size$Freq[match(dat.vis$site_id, size$site_id)]
 #dat.vis$error <- qnorm(0.975)*dat.vis$sd/sqrt(dat.vis$Freq)
 #dat.vis$left <- dat.vis$Mean-dat.vis$error
 #dat.vis$right <- dat.vis$Mean+dat.vis$error
