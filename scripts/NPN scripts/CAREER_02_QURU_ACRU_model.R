@@ -7,10 +7,10 @@ library(dplyr)
 path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
 
 # Read in output of previous script
-dat.all <- read.csv("../data_processed/QURU_ACRU_NPN_combined.csv")
+dat.all <- read.csv("../../data_processed/QURU_ACRU_NPN_combined.csv")
 dat.all$Date <- as.Date(dat.all$Date)
 
-dat.sites <- read.csv("../data_raw/DAYMET/NPN_points.csv")
+dat.sites <- read.csv("../../data_raw/DAYMET/NPN_points.csv")
 summary(dat.sites)
 dat.sites[dat.sites$n.obs>100,] # This is the Harvard Forest. Because of course it's the Harvard Forest
 hist(dat.sites$n.obs[dat.sites$n.obs<200])
@@ -92,7 +92,7 @@ hierarchical_regression <- "
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
       a[j] ~ dnorm(Tprior, aPrec[j])
-      aPrec[j] ~ dgamma(0.5, 0.1)
+      aPrec[j] ~ dgamma(1, 0.1)
     }
 
     for(t in 1:nLoc){
@@ -111,7 +111,7 @@ hierarchical_regression <- "
         y[k] ~ dnorm(mu[k], sPrec)
     }
     
-    Tprior ~ dunif(0, 500)
+    Tprior ~ dunif(1, 300)
     sPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
   }
@@ -179,8 +179,8 @@ quru.stats.all <- as.data.frame(as.matrix(quru.burn))
 acru.stats.all <- as.data.frame(as.matrix(acru.burn))
 dim(acru.stats.all)
 
-write.csv(quru.stats.all, "../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
-write.csv(acru.stats.all, "../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
+write.csv(quru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
+write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
 
 #-------------------------------------------------------------------------------#
 #Here begins the NPN map visualisation#
