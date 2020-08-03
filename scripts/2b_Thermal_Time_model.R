@@ -3,6 +3,8 @@
 library(rjags)
 library(coda)
 library(data.table)
+library(dplyr)
+library(tidyr)
 
 # Read in output of previous script
 dat.all <- read.csv("../data_processed/Phenology_Met_combined.csv")
@@ -12,7 +14,7 @@ dat.all$Date <- as.Date(dat.all$Date)
 SP <- as.data.frame(table(dat.all[dat.all$Species %like% "Quercus", "Species"]))
 colnames(SP) <- c("Species", "Freq")
 
-species <- c("Quercus alba")
+species <- c("Quercus baronii")
 
 dat.comb <- dat.all[dat.all$Species == species, ]
 
@@ -41,7 +43,7 @@ hierarchical_regression <- "
       THRESH[j] <-  a[j]
       a[j] ~ dnorm(Tprior, aPrec[j])
       aPrec[j] ~ dgamma(0.5, 0.1)
-      Tprior[j] ~ dunif(0,500)
+      Tprior[j] ~ dunif(1, 400)
     }
 
     for(t in 1:nAcc){
@@ -61,7 +63,7 @@ hierarchical_regression <- "
     d[2] <- min(Ynew[])
     d[3] <- max(Ynew[])-min(Ynew[])
     d[4] <- mean(Ynew[])
-    d[5] <- sd(Ynew[])
+    #d[5] <- sd(Ynew[])
   }
   "
 
@@ -107,16 +109,54 @@ summary(burst.burn)
 
 burst.df <- as.data.frame(as.matrix(burst.burn))
 
+
 burst.df$sd <- 1/sqrt(burst.df[,"aPrec"])
 summary(burst.df)
 
+
 bud.density <- as.data.frame(apply(as.matrix(burst.df), 1 , function(x) rnorm(1, mean=x[1], sd=x[3])))
+
+burst.df$species <- species
 
 bud.ci <- apply(as.matrix(bud.density),2,quantile,c(0.025,0.5,0.975))
 
 bud.ci
 
-write.csv(burst.df, file.path("../data_processed/", paste0("ModelOut_", species, ".csv")), row.names=F)
+write.csv(burst.df, file.path("../data_processed/Arb_Pheno", paste0("ModelOut_", species, ".csv")), row.names=F)
+
+
+#Read in from master folder as one file
+files <- list.files(path = "../data_processed/Arb_Pheno", pattern = "*.csv", full.names = T)
+bud.stats <- as.data.frame(sapply(files, read.csv, simplify=FALSE) %>% 
+                             bind_rows(.id = "id"))
+
+bud.stats <- bud.stats[,c(2:5)]
+
+bud.stats$pred <- apply(as.matrix(bud.stats), 1 , function(x) rnorm(1, mean=as.numeric(x["THRESH"]), sd=as.numeric(x["sd"])))
+
+bud.summary <- aggregate(pred~species, data=bud.stats,
+                         FUN=function(x) quantile(x,c(0.025, 0.5, 0.975)))
+
+write.csv(bud.summary, file.path("../data_processed/Arb_Pheno", paste("Summary of oak collection.csv")), row.names=F)
+
+dat.section <- data.frame(googlesheets4::read_sheet(ss="https://docs.google.com/spreadsheets/d/14rJUVhJ2pDSskyEzMM7KX5p3LTvpxiSnDoOw2Ngu2PY/edit#gid=0", sheet="QuercusCollection", col_types="c"))
+
+
+bud.stats <- merge(bud.stats, dat.section[, c("Species", "Section")], by.x=c("species"), by.y=c("Species"))
+
+library(ggplot2)
+path.figures <- "../figures"
+if(!dir.exists(path.figures)) dir.create(path.figures)
+png(width= 750, filename= file.path(path.figures, paste0('Oak collection TT', '.png')))
+ggplot(data= bud.stats) +
+  facet_wrap(~Section)+
+ggtitle('Thermal Time Thresholds of Quercus species in the oak collection') +
+  geom_density(mapping = aes(x= pred, fill = species, color = species), alpha=0.5, ) +
+  scale_y_continuous('DENSITY (%)')+
+  theme(legend.position='none')+
+  xlim(-100, 500)
+dev.off()
+
 
 
 

@@ -92,7 +92,7 @@ hierarchical_regression <- "
     for(j in 1:nSp){
       THRESH[j] <-  a[j]
       a[j] ~ dnorm(Tprior, aPrec[j])
-      aPrec[j] ~ dgamma(0.5, 0.1)
+      aPrec[j] ~ dgamma(1, 0.1)
     }
 
     for(t in 1:nLoc){
@@ -111,7 +111,7 @@ hierarchical_regression <- "
         y[k] ~ dnorm(mu[k], sPrec)
     }
     
-    Tprior ~ dunif(0, 500)
+    Tprior ~ dunif(1, 300)
     sPrec ~ dgamma(0.1, 0.1)
     cPrec ~ dgamma(0.1, 0.1)
   }
