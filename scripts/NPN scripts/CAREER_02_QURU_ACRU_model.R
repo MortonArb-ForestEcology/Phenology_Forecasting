@@ -7,10 +7,10 @@ library(dplyr)
 path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
 
 # Read in output of previous script
-dat.all <- read.csv("../data_processed/QURU_ACRU_NPN_combined.csv")
+dat.all <- read.csv("../../data_processed/QURU_ACRU_NPN_combined.csv")
 dat.all$Date <- as.Date(dat.all$Date)
 
-dat.sites <- read.csv("../data_raw/DAYMET/NPN_points.csv")
+dat.sites <- read.csv("../../data_raw/DAYMET/NPN_points.csv")
 summary(dat.sites)
 dat.sites[dat.sites$n.obs>100,] # This is the Harvard Forest. Because of course it's the Harvard Forest
 hist(dat.sites$n.obs[dat.sites$n.obs<200])
@@ -179,8 +179,8 @@ quru.stats.all <- as.data.frame(as.matrix(quru.burn))
 acru.stats.all <- as.data.frame(as.matrix(acru.burn))
 dim(acru.stats.all)
 
-write.csv(quru.stats.all, "../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
-write.csv(acru.stats.all, "../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
+write.csv(quru.stats.all, "../../data_processed/CAREER_ModelOut_QURU_all.csv", row.names=F)
+write.csv(acru.stats.all, "../../data_processed/CAREER_ModelOut_ACRU_all.csv", row.names=F)
 
 #-------------------------------------------------------------------------------#
 #Here begins the NPN map visualisation#

@@ -82,9 +82,11 @@ mod.gdd$sd <- 1/sqrt(mod.gdd[,"aPrec"])
 mod.gdd$thresh.pred <- apply(mod.gdd, 1 , function(x) rnorm(1, mean=as.numeric(x["THRESH"]), sd=as.numeric(x["sd"])))
 summary(mod.gdd)
 
+# mod.gdd <- mod.gdd$thresh.pred>quantile(mod.gd$th)
+
 plot2 <- ggplot(data=mod.gdd) +
   geom_density(aes(x=thresh.pred, fill=Species, color=Species), alpha=0.5, size=3) +
-  scale_y_continuous(name="Prob.", expand=c(0,0), limits=c(0,0.077)) +
+  scale_y_continuous(name="Prob.", expand=c(0,0), limits=c(0,0.08)) +
   scale_x_continuous(name=c("GDD Threshold"), expand=c(0,0)) +
   scale_color_manual(values=c("#0072B2", "#D55E00")) +
   scale_fill_manual(values=c("#0072B2", "#D55E00")) +
@@ -133,15 +135,16 @@ yday.pred$Species <- factor(ypred$Species, levels=c("Acer rubrum", "Quercus rubr
 
 plot3 <- ggplot(data=yday.pred[yday.pred$model %in% c("MACA present", "MACA mid-century") & yday.pred$scenario %in% c("rcp45"),]) +
   # facet_grid(scenario~.) +
-  geom_density(aes(x=yday.pred, color=Species, linetype=model), fill=NA, adjust=5, size=3) +
-  geom_vline(data=freeze.time[freeze.time$model %in% c("MACA present", "MACA mid-century") & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25, linetype=model), color="black", size=2.5) +
-  # geom_vline(data=freeze.time[freeze.time$model=="MACA mid-century" & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25), linetype="dashed", color="black", size=3) +
-  # geom_vline(data=freeze.time[freeze.time$model=="MACA present" & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25), linetype="solid", color="black", size=3) +
-  scale_y_continuous(name="Prob.", expand=c(0,0), limits=c(0,0.4)) +
+  geom_density(aes(x=yday.pred, color=Species, linetype=model, alpha=model), fill=NA, adjust=5, size=3) +
+  # geom_vline(data=freeze.time[freeze.time$model %in% c("MACA present", "MACA mid-century") & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25, linetype=model), color="black", size=2.5) +
+  geom_vline(data=freeze.time[freeze.time$model=="MACA mid-century" & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25), linetype="solid", color="gray50", size=2) +
+  geom_vline(data=freeze.time[freeze.time$model=="MACA present" & freeze.time$scenario %in% c("rcp45"),], aes(xintercept=p25), linetype="solid", color="black", size=2) +
+  scale_y_continuous(name="Prob.", expand=c(0,0), limits=c(0,0.35)) +
   scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[], labels=day.labels$Text[]) +
   scale_color_manual(values=c("#0072B2", "#D55E00")) +
   scale_fill_manual(values=c("#0072B2", "#D55E00")) +
   scale_linetype_manual(name="Time", values=c("solid", "dotted"), labels=c("present", "mid-century")) +
+  scale_alpha_manual(name="Time", values=c(1, 0.5), labels=c("present", "mid-century")) +
   guides(color=F) +
   theme(panel.background=element_rect(fill=NA, color="black"),
         panel.grid = element_blank(),

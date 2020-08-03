@@ -20,6 +20,10 @@ dat.acru <- read.csv("../../data_processed/CAREER_ModelOut_ACRU_all.csv")
 dat.quru$Species <- as.factor("Quercus rubra")
 dat.acru$Species <- as.factor("Acer rubrum")
 
+quru.quant.thresh <- quantile(dat.quru$THRESH, c(0.005, 0.995))
+quru.quant.thresh <- quantile(dat.quru$THRESH, c(0.005, 0.995))
+dat.quru <- quantile
+
 mod.npn <- rbind(dat.quru[,c("THRESH", "aPrec", "Species")], dat.acru[,c("THRESH", "aPrec", "Species")])
 mod.npn$sd <- 1/sqrt(mod.npn[,"aPrec"])
 mod.npn$thresh.pred <- apply(mod.npn, 1, FUN=function(x){rnorm(1, as.numeric(x["THRESH"]), as.numeric(x["sd"]))})
@@ -182,15 +186,20 @@ freeze.time <- data.frame(model=rep(unique(dat.met$model), length(unique(dat.met
                           scenario=rep(unique(dat.met$scenario), each=length(unique(dat.met$model))))
 for(i in 1:nrow(freeze.time)){
   met.now <- dat.met[dat.met$model==freeze.time$model[i] & dat.met$scenario==freeze.time$scenario[i],]
+  d10 <- 0.10 - met.now$Freeze[met.now$yday<180]
+  d20 <- 0.20 - met.now$Freeze[met.now$yday<180]
   d25 <- 0.25 - met.now$Freeze[met.now$yday<180]
   d50 <- 0.50 - met.now$Freeze[met.now$yday<180]
   d75 <- 0.75 - met.now$Freeze[met.now$yday<180]
   
-  freeze.time[i,"p25"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
-  freeze.time[i,"p50"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
-  freeze.time[i,"p75"] <- median(met.now$yday[which(abs(d25)==min(abs(d25)))])
+  freeze.time[i,"p10"] <- max(met.now$yday[which(abs(d10)==min(abs(d10)))])
+  freeze.time[i,"p20"] <- max(met.now$yday[which(abs(d20)==min(abs(d20)))])
+  freeze.time[i,"p25"] <- max(met.now$yday[which(abs(d25)==min(abs(d25)))])
+  freeze.time[i,"p50"] <- max(met.now$yday[which(abs(d50)==min(abs(d50)))])
+  freeze.time[i,"p75"] <- max(met.now$yday[which(abs(d75)==min(abs(d75)))])
   
 }
+freeze.time <- freeze.time[freeze.time$p25 > -Inf, ]
 
 ggplot(data=yday.pred) +
   facet_grid(model~scenario) +
