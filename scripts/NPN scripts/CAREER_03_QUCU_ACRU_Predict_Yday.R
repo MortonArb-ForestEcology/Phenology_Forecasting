@@ -181,6 +181,11 @@ summary(yday.pred)
 
 write.csv(yday.pred, "../../data_processed/CAREER_BudBurst_Predictions.csv", row.names=F)
 
+
+###############################################
+yday.pred <- read.csv("../../data_processed/CAREER_BudBurst_Predictions.csv", stringsAsFactors = T)
+dat.met <- read.csv("../../data_processed/CAREER_Met_Predictions.csv", stringsAsFactors = T)
+
 # finding different dates of last freeze
 freeze.time <- data.frame(model=rep(unique(dat.met$model), length(unique(dat.met$scenario))),
                           scenario=rep(unique(dat.met$scenario), each=length(unique(dat.met$model))))
@@ -222,6 +227,17 @@ plot.annotate$yday.q05 <- aggregate(yday.pred ~ Species + model + scenario, data
 plot.annotate$yday.q95 <- aggregate(yday.pred ~ Species + model + scenario, data=yday.pred, FUN=quantile, 0.95)$yday.pred
 plot.annotate$yday.90range <- plot.annotate$yday.q95 - plot.annotate$yday.q05
 plot.annotate
+
+length(which(yday.pred$Species=="Quercus rubra" & yday.pred$model=="MACA present" & yday.pred$scenario=="rcp45" & yday.pred$yday.pred<=freeze.time$p25[freeze.time$model=="MACA present" & freeze.time$scenario=="rcp45"]))/length(which(yday.pred$Species=="Quercus rubra" & yday.pred$model=="MACA present" & yday.pred$scenario=="rcp45"))
+
+length(which(yday.pred$Species=="Quercus rubra" & yday.pred$model=="MACA mid-century" & yday.pred$scenario=="rcp45" & yday.pred$yday.pred<=freeze.time$p25[freeze.time$model=="MACA mid-century" & freeze.time$scenario=="rcp45"]))/length(which(yday.pred$Species=="Quercus rubra" & yday.pred$model=="MACA mid-century" & yday.pred$scenario=="rcp45"))
+
+
+length(which(yday.pred$Species=="Acer rubrum" & yday.pred$model=="MACA present" & yday.pred$scenario=="rcp45" & yday.pred$yday.pred<=freeze.time$p25[freeze.time$model=="MACA present" & freeze.time$scenario=="rcp45"]))/length(which(yday.pred$Species=="Acer rubrum" & yday.pred$model=="MACA present" & yday.pred$scenario=="rcp45"))
+
+length(which(yday.pred$Species=="Acer rubrum" & yday.pred$model=="MACA mid-century" & yday.pred$scenario=="rcp45" & yday.pred$yday.pred<=freeze.time$p25[freeze.time$model=="MACA mid-century" & freeze.time$scenario=="rcp45"]))/length(which(yday.pred$Species=="Acer rubrum" & yday.pred$model=="MACA mid-century" & yday.pred$scenario=="rcp45"))
+
+# summary(yday.pred[which(yday.pred$Species=="Acer rubrum" & yday.pred$model=="MACA mid-century" & yday.pred$scenario=="rcp45" & yday.pred$yday.pred<=plot.annotate$yday.median[plot.annotate$Species=="Acer rubrum" & plot.annotate$model=="MACA mid-century" & plot.annotate$scenario=="rcp45"]),])
 
 path.g <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting/figures/For NSF career grant/"
 
