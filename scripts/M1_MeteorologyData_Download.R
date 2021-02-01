@@ -129,7 +129,7 @@ for(YR in yr.min:yr.max){
 summary(dat.ghcn2)
 # dat.ghcn2[dat.ghcn2$DATE=="2020-04-09",]
 
-write.csv(dat.ghcn2, file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
+write.csv(dat.ghcn2, file.path(dir.met, "data", "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
 
 # Load and format the forecast ensembles data
 # 1. Load data -- need columns of YDAY, TMAX, TMIN, PRCP
@@ -138,11 +138,11 @@ write.csv(dat.ghcn2, file.path(path.out, "data", "Weather_ArbCOOP_historical_lat
 # 4. flatten and save
 
 # Read in GHCN as training data for bias-correction
-dat.ghcn2 <- read.csv(file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"))
+dat.ghcn2 <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv"))
 dat.ghcn2$DATE <- as.Date(dat.ghcn2$DATE)
 
 path.met <- "../data_raw/meteorology"
-forecast.gcm <- c("CCSM4", "CanCM4", "CFSV2")
+forecast.gcm <- c("CFSV2")
 met.ens <- list()
 for(GCM in forecast.gcm){
   path.gcm <- ifelse(GCM=="CFSV2", "CFS_Forecast", GCM)
@@ -151,7 +151,7 @@ for(GCM in forecast.gcm){
   if(GCM=="CFSV2"){
     mems=NA
   } else {
-    mems <- dir(file.path("../data_raw/meteorology/", GCM))
+    mems <- file.path("../data_raw/meteorology", GCM)
   }
   
     for(i in 1:length(mems)){
@@ -162,11 +162,11 @@ for(GCM in forecast.gcm){
         ens="01"
         path.mem <-file.path(path.met, path.gcm)
       }
-      fls <- dir(path.mem)
+      fls <- path.mem
       
-      dat.tmx <- read.csv(file.path(path.mem, fls[grep("tmax", fls)]))
-      dat.tmn <- read.csv(file.path(path.mem, fls[grep("tmin", fls)]))
-      dat.prp <- read.csv(file.path(path.mem, fls[grep(var.pcp, fls)]))
+      dat.tmx <- read.csv(file.path(path.mem, "tmax_cfs_latest.csv"))
+      dat.tmn <- read.csv(file.path(path.mem, "tmin_cfs_latest.csv"))
+      dat.prp <- read.csv(file.path(path.mem, "prate_cfs_latest.csv"))
       
       # Different models label things differently, but data should always be the last column
       dat.tmp <- data.frame(DATE=as.Date(substr(dat.tmx$time, 1, 10)),
@@ -258,21 +258,18 @@ for(GCM in forecast.gcm){
       
     }
 }
-summary(met.ens$`CCSM4-02`[met.ens$`CCSM4-02`$TYPE=="forecast",])
+summary(met.ens)
 # summary(dat.ghcn2$PRCP)
 
 # Calculate our indices using 
 met.ens2 <- lapply(met.ens, calc.indices)
-summary(met.ens2[[3]])
+summary(met.ens2[[1]])
 # plot(met.ens2[[5]]$PRCP.cum); abline(v=max(dat.ghcn2$YDAY[dat.ghcn2$YEAR==2020]), col="red")
 
 # Turn our forecast dataset into a long format to make it easier to save
 dat.forecast <- do.call(rbind, met.ens2)
 summary(dat.forecast)
 
-write.csv(dat.forecast, file.path(path.out, "data", "Weather_Arb_forecast_ensemble_latest.csv"), row.names=F)
+write.csv(dat.forecast, file.path(dir.met, "data", "Weather_Arb_forecast_ensemble_latest.csv"), row.names=F)
 # -------------------------------------
 
-
-
-# ---------------------------------
