@@ -2,17 +2,16 @@ library(ggplot2)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
-path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
-
-
+path.in <- "../data_raw/meteorology"
+path.fig <- "../figures"
 # ---------------
 # Met Data
 # ---------------
-dat.ghcn <- read.csv(file.path(path.out, "data", "Weather_ArbCOOP_historical_latest.csv"))
+dat.ghcn <- read.csv(file.path(path.in, "data", "Weather_ArbCOOP_historical_latest.csv"))
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 summary(dat.ghcn)
 
-dat.forecast <- read.csv(file.path(path.out, "data", "Weather_Arb_forecast_ensemble_latest.csv"))
+dat.forecast <- read.csv(file.path(path.in, "data", "Weather_Arb_forecast_ensemble_latest.csv"))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 # 
 summary(dat.forecast)
@@ -172,7 +171,7 @@ plot.title <- ggdraw() +
 plot.dat <- cowplot::plot_grid(plot.tmean, plot.prcp, plot.threshB, plot.threshA)
 
 
-png(file.path(path.out, "figures", "Weather_latest.png"), height=6, width=8, units="in", res=220)
+png(file.path(path.fig, "Weather_latest.png"), height=6, width=8, units="in", res=220)
 cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1))
 dev.off()
 
@@ -186,11 +185,13 @@ day.labels2$yday <- lubridate::yday(day.labels2$Date)
 day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate::day(day.labels2$Date))
 summary(day.labels2)
 
-spp.forecast <- "Quercus macrocarpa"
+dat.b <- read.csv("../data_processed/Oak_collection_budburst.csv")
+
+spp.forecast <- unique(dat.b$Species)
 ens <- unique(dat.forecast$ID)
 SPP=spp.forecast
 for(SPP in spp.forecast){
-  gdd.prior <- read.csv(file.path("../data_processed/", paste0("Posteriors_", gsub(" ", "_", SPP), ".csv")))
+  gdd.prior <- read.csv(file.path("../data_processed/model_output", paste0(SPP, "_TT_model_budburst.csv")))
   summary(gdd.prior)
   
   set.seed(902)
@@ -248,15 +249,15 @@ for(SPP in spp.forecast){
     )
   
   
-  png(file.path(path.out, "figures", paste0("Forecast_latest_", sub(" ", "_", SPP), ".png")), height=6, width=8, units="in", res=220)
+  png(file.path(path.fig, paste0("Forecast_latest_", sub(" ", "_", SPP), ".png")), height=6, width=8, units="in", res=220)
   print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
   dev.off()
 
-  png(file.path(path.out, "figures", paste0("Forecast_", sub(" ", "_", SPP), "_", Sys.Date(), ".png")), height=6, width=8, units="in", res=220)
+  png(file.path(path.fig, paste0("Forecast_", sub(" ", "_", SPP), "_", Sys.Date(), ".png")), height=6, width=8, units="in", res=220)
   print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
   dev.off()
 
-  png(file.path(path.out, "figures", paste0("Forecast_", sub(" ", "_", SPP), "_latest.png")), height=6, width=8, units="in", res=220)
+  png(file.path(path.fig, paste0("Forecast_", sub(" ", "_", SPP), "_latest.png")), height=6, width=8, units="in", res=220)
   print(cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1)))
   dev.off()
   
