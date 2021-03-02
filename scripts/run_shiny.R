@@ -22,9 +22,10 @@ sp.index <- rbind(sci, com)
 write.csv(sp.catalogue, "shiny_app/Species_Name_Catalogue.csv", row.names = F)
 write.csv(sp.index, "shiny_app/Species_Name_Index.csv", row.names = F)
 
+setwd("../")
 runApp("shiny_app")
 
-setwd("../")
+
 setwd("shiny_app")
 
 rsconnect::deployApp(forceUpdate = T, launch.browser = F)
