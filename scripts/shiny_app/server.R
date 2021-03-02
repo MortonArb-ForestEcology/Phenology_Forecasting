@@ -3,6 +3,8 @@ library(ggplot2)
 library(plotly)
 library(stringr)
 library(shinyWidgets)
+library(dplyr)
+library(dbplyr)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
@@ -176,12 +178,13 @@ summary(day.labels2)
 sp.catalogue <- read.csv("Species_Name_Catalogue.csv")
 sp.index <- read.csv("Species_Name_Index.csv")
 
-THRESH <- data.frame()
-for(i in unique(sp.catalogue$Scientific)){
-  temp <- read.csv(file.path("data_processed/model_output", paste0(i, "_TT_model_budburst.csv")))
-  THRESH <- rbind(THRESH, temp)
-}
-name.type <- c("Scientific")
+#THis is where I read in all of the dataframes which is probably the step that slows things down. SQL will hopefully fix this
+Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
+full <- tbl(Tconnect, "species_GDD_budburst")
+Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
+full <- tbl(Tconnect, "species_GDD_budburst")
+
+
 ens <- unique(dat.forecast$ID)
 function(input, output) { 
   
@@ -190,17 +193,16 @@ function(input, output) {
   spp.avail <- sp.catalogue$Scientific
   names(spp.avail) <- sp.catalogue$Common
   } else{
-    spp.avail <- unique(paste(sp.index$Name[sp.index$Type==input$Convention]))
+    spp.avail <- sort(unique(paste(sp.index$Name[sp.index$Type==input$Convention])))
   }
   pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= sort(spp.avail), options = list('live-search' = TRUE), multiple = F)
   })
 
-  observe({
-    print(str(input$Convention))
-  })
-
   output$plot1 <- renderPlot({
-    gdd.prior <- THRESH[THRESH$species == input$Species,]
+    gdd.prior <- full %>%
+      filter(species == !!input$Species)%>%
+      select(THRESH)%>%
+      collect()
     set.seed(902)
     thresh <- sample(gdd.prior$THRESH, 500)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
