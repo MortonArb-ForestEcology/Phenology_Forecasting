@@ -64,15 +64,15 @@ ggplot(data=met.day) +
 # -----------------------
 
 
-# This is SUPER slow because it's downloading ALL the data first BUT it would give us forecast out to 35 days in the future
-noaaGEFSpoint::noaa_gefs_download_downscale(site_list = paste0(site.name, "grid"),
-                                            lat_list = lat.in,
-                                            lon_list= lon.in,
-                                            output_directory = outdir,
-                                            forecast_time = "00",
-                                            forecast_date = Sys.Date(),
-                                            downscale = FALSE,
-                                            run_parallel = FALSE,
-                                            num_cores = 1,
-                                            method = "grid",
-                                            overwrite = FALSE)
+# # This is SUPER slow because it's downloading ALL the data first BUT it would give us forecast out to 35 days in the future
+# noaaGEFSpoint::noaa_gefs_download_downscale(site_list = paste0(site.name, "grid"),
+#                                             lat_list = lat.in,
+#                                             lon_list= lon.in,
+#                                             output_directory = outdir,
+#                                             forecast_time = "00",
+#                                             forecast_date = Sys.Date(),
+#                                             downscale = FALSE,
+#                                             run_parallel = FALSE,
+#                                             num_cores = 1,
+#                                             method = "grid",
+#                                             overwrite = FALSE)
