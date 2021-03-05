@@ -32,30 +32,31 @@ noaaGEFSpoint::noaa_gefs_download_downscale(site_list = neon_sites$site_id, lat_
 # Try syntax from eco4cast challenge: https://github.com/eco4cast/neon4cast-noaa-download/blob/master/launch_download_downscale.R
 # -----------------------
 # This works.  It's a little slow & only goes out 16 days, but it works.
-noaaGEFSpoint::noaa_gefs_download_downscale(site_list = paste0(site.name, 2),
+noaaGEFSpoint::noaa_gefs_download_downscale(site_list = paste0(site.name, 3),
                                             lat_list = lat.in,
                                             lon_list= lon.in,
                                             output_directory = outdir,
                                             forecast_time = "00",
                                             forecast_date = Sys.Date(),
-                                            downscale = FALSE,
+                                            downscale = TRUE,
                                             run_parallel = FALSE,
                                             num_cores = 1,
                                             method = "point",
                                             overwrite = FALSE)
 
 # Loading all of the different ensembles
-ftoday <- dir(file.path(outdir, "NOAAGEFS_6hr", paste0(site.name, 2), Sys.Date(), "00"))
+ftoday <- dir(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 3), Sys.Date(), "00"))
 
-ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_6hr", paste0(site.name, 2), Sys.Date(), "00", ftoday[1]))
+ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 2), Sys.Date(), "00", ftoday[1]))
 summary(ncT$var)
 ncT$dim$time
-length(ncT$dim$time$vals)
+nval <- length(ncT$dim$time$vals)
+ncdf4::nc_close(ncT)
 
 # Note: When I'm testing this, it gets wonky because of daylight savings. :face_palm:
-df.6hr <- data.frame(Timestamp=seq.POSIXt(as.POSIXct(paste(Sys.Date(), "00:00")), by="6 hour", length.out=65), ens=rep(1:length(ftoday), each=65), tair=NA, prcp=NA)
-df.6hr$Date <- as.Date(substr(df.6hr$Timestamp, 1, 10))
-df.6hr[1:12,]
+df.1hr <- data.frame(Timestamp=seq.POSIXt(as.POSIXct(paste(Sys.Date(), "00:00")), by="1 hour", length.out=nval), ens=rep(1:length(ftoday), each=nval), tair=NA, prcp=NA)
+df.1hr$Date <- as.Date(substr(df.1hr$Timestamp, 1, 10))
+df.1hr[1:12,]
 
 for(i in 1:length(ftoday)){
   row.ind <- which(df.6hr$ens==i)
@@ -70,7 +71,9 @@ for(i in 1:length(ftoday)){
 df.6hr$prcp[is.na(df.6hr$prcp)] <- 0
 summary(df.6hr)
 
-met.day <- aggregate(cbind(tair, prcp) ~ Date + ens, data=df.6hr, FUN=mean)
+met.day <- aggregate(cbind(tair, prcp) ~ Date + ens, data=df.1hr, FUN=mean)
+met.day$tmax <- aggregate(tair ~ Date + ens, data=df.1hr, FUN=max)$tair
+met.day$tmin <- aggregate(tair ~ Date + ens, data=df.1hr, FUN=min)$tair
 met.day$prcp.day <- met.day$prcp*60*60*24/4 # should convert to mm/day
 summary(met.day)
 
