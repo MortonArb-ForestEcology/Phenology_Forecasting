@@ -29,8 +29,9 @@ noaaGEFSpoint::noaa_gefs_download_downscale(site_list = paste0(site.name, 3),
 # Loading all of the different ensembles
 ftoday <- dir(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 3), Sys.Date(), "00"))
 
-ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 2), Sys.Date(), "00", ftoday[1]))
+ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 3), Sys.Date(), "00", ftoday[1]))
 summary(ncT$var)
+ncT$var$precipitation_flux$units
 ncT$dim$time
 nval <- length(ncT$dim$time$vals)
 ncdf4::nc_close(ncT)
@@ -41,26 +42,42 @@ df.1hr$Date <- as.Date(substr(df.1hr$Timestamp, 1, 10))
 df.1hr[1:12,]
 
 for(i in 1:length(ftoday)){
-  row.ind <- which(df.6hr$ens==i)
+  row.ind <- which(df.1hr$ens==i)
   
-  ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_6hr", paste0(site.name, 2), Sys.Date(), "00", ftoday[i]))
-  df.6hr$tair[row.ind] <- ncdf4::ncvar_get(ncT, "air_temperature")
-  df.6hr$prcp[row.ind] <- ncdf4::ncvar_get(ncT, "precipitation_flux")
+  ncT <- ncdf4::nc_open(file.path(outdir, "NOAAGEFS_1hr", paste0(site.name, 3), Sys.Date(), "00", ftoday[i]))
+  df.1hr$tair[row.ind] <- ncdf4::ncvar_get(ncT, "air_temperature")
+  df.1hr$prcp[row.ind] <- ncdf4::ncvar_get(ncT, "precipitation_flux")
   
   ncdf4::nc_close(ncT)
 }
 # the first value for all precip is NA, so let just make it 0 for our snaity
-df.6hr$prcp[is.na(df.6hr$prcp)] <- 0
-summary(df.6hr)
+df.1hr$prcp[is.na(df.1hr$prcp)] <- 0
+summary(df.1hr)
+
+ggplot(data=met.day) +
+  geom_line(aes(x=Date, y=prcp.day/25.4, group=ens))
+
+
 
 met.day <- aggregate(cbind(tair, prcp) ~ Date + ens, data=df.1hr, FUN=mean)
 met.day$tmax <- aggregate(tair ~ Date + ens, data=df.1hr, FUN=max)$tair
 met.day$tmin <- aggregate(tair ~ Date + ens, data=df.1hr, FUN=min)$tair
-met.day$prcp.day <- met.day$prcp*60*60*24/4 # should convert to mm/day
+met.day$prcp.day <- met.day$prcp*60*60*24 # should convert to mm/day 
 summary(met.day)
+
+# Thinking about my precip conversion above... I think 1 kg/m2 = 1 mm, but I'm getting some HIGH values
+# 1 g = 1 cm3 = 10*10*10 mm3 = 1000 mm3
+# 1000 g = 1000 cm3 = 0.1*0.1*0.1 m3
+# 
 
 ggplot(data=met.day) +
   geom_line(aes(x=Date, y=(tair-273.15)*9/5+32, group=ens))
+ggplot(data=met.day) +
+  geom_line(aes(x=Date, y=(tmax-273.15)*9/5+32, group=ens))
+ggplot(data=met.day) +
+  geom_line(aes(x=Date, y=(tmin-273.15)*9/5+32, group=ens))
+ggplot(data=met.day) +
+  geom_line(aes(x=Date, y=prcp.day/25.4, group=ens))
 # -----------------------
 
 
