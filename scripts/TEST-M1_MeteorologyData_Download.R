@@ -464,7 +464,9 @@ summary(bc.gefs2[,])
 ghcn.ens <- merge(data.frame(ENS=unique(bc.gefs2$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], all=T)
 
 dat.gefs2 <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs2[bc.gefs2$DATE>max(ghcn.ens$DATE),])
-dat.gefs2$MODEL <- "GEFS"
+dat.gefs2$MODEL[dat.gefs2$DATE %in% bc.gefs$DATE] <- "GEFS"
+dat.gefs2$MODEL[dat.gefs2$DATE > max(bc.gefs$DATE)] <- "CFS-adj"
+dat.gefs2$MODEL[dat.gefs2$DATE < min(bc.gefs$DATE)] <- "Observed"
 dat.gefs2 <- dat.gefs2[order(dat.gefs2$ENS, dat.gefs2$DATE),]
 head(dat.gefs2)
 
