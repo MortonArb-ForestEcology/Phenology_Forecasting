@@ -10,7 +10,8 @@
 # What needs to happen
 #   1. Download all datasets
 #       - For forecast products, keep past 7 days overlapping with Arb observations
-#   2. Format Bias-correct forecast products to better match Arb meteorology; 2 stages
+#   2. Format forecast products to bring into daily res
+#   2. Bias-correct forecast products to better match Arb meteorology; 2 stages
 #       Option 1: Simple means correction lm(Arb ~ Forecast)
 #       Option 2: Formal Data Assimilation with uncertainty propagation
 #       Stage 1: Correct all(? just GEFS?) products with Arb; one week overlap?
@@ -143,7 +144,7 @@ for(FCST in dates.gefs){
 # -------------------------------------------------
 
 # -------------------------------------------------
-# 2. Format & Bias-correct raw datasets
+# 2. Format raw datasets
 # -------------------------------------------------
 # ----------------
 # Base Data: GHCN
@@ -235,7 +236,254 @@ write.csv(gefs.day, file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.cs
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
 cfs.dates <- rev(as.character(cfs.dates[cfs.dates>=ghcn.overlap]))
 
-# cfs.tmp <- read.csv("")
+cfs.tmx <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "tmax_cfs_latest.csv"))
+cfs.tmn <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "tmin_cfs_latest.csv"))
+cfs.prp <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "prate_cfs_latest.csv"))
+
+# We'll just take the first 4 rows of each file
+for(i in 2:length(cfs.dates)){
+  tmx.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "tmax_cfs_latest.csv"))
+  tmn.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "tmin_cfs_latest.csv"))
+  prp.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "prate_cfs_latest.csv"))
+  cfs.tmx <- rbind(tmx.tmp[substr(tmx.tmp$time, 1, 10)==cfs.dates[i],], cfs.tmx)
+  cfs.tmn <- rbind(tmn.tmp[substr(tmn.tmp$time, 1, 10)==cfs.dates[i],], cfs.tmn)
+  cfs.prp <- rbind(prp.tmp[substr(prp.tmp$time, 1, 10)==cfs.dates[i],], cfs.prp)
+}
+head(cfs.tmx)
+
+dat.cfs <- data.frame(Timestamp=cfs.tmx$time, Date=as.Date(substr(cfs.tmx$time, 1, 10)), 
+                      tmax=cfs.tmx$Maximum_temperature_height_above_ground.unit.K., 
+                      tmin=cfs.tmn$Minimum_temperature_height_above_ground.unit.K.,
+                      prcp=cfs.prp$Precipitation_rate_surface.unit.kg.m.2.s.1.)
+dat.cfs$tair <- apply(dat.cfs[,c("tmax", "tmin")], 1, FUN=mean)
+summary(dat.cfs)
+
+cfs.day <- aggregate(cbind(tair, prcp) ~ Date, data=dat.cfs, FUN=mean)
+cfs.day$tmax <- aggregate(tmax ~ Date, data=dat.cfs, FUN=max)$tmax
+cfs.day$tmin <- aggregate(tmin ~ Date, data=dat.cfs, FUN=min)$tmin
+cfs.day$prcp.day <- cfs.day$prcp*60*60*24 # should convert to mm/day 
+summary(cfs.day)
+
+write.csv(cfs.day, file.path(out.cfs, paste0(site.name, "_CFS_daily_latest.csv")), row.names=F)
+# ----------------
+# -------------------------------------------------
+
+# -------------------------------------------------
+# 3. Bias-correct datasets & Calculate Indices
+# -------------------------------------------------
+calc.indices <- function(dat){
+  # Assumes upper case column names of: TMAX, TMIN, PRCP, YDAY
+  # For chilling days, only start after the solstice (June 20th)
+  dat$TMEAN <- apply(dat[,c("TMAX", "TMIN")], 1, mean)
+  dat$GDD0 <- ifelse(dat$TMEAN>0, dat$TMEAN-0, 0)
+  dat$GDD5 <- ifelse(dat$TMEAN>5, dat$TMEAN-5, 0)
+  dat$CDD0 <- ifelse(dat$YDAY>172 & dat$TMEAN<0, 0-dat$TMEAN, 0)
+  dat$CDD2 <- ifelse(dat$YDAY>172 & dat$TMEAN< -2, -2-dat$TMEAN, 0)
+  dat$DaysNoRain <- NA
+  
+  dat[, c("GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum", "PRCP.cum")] <- cumsum(dat[, c("GDD0", "GDD5", "CDD0", "CDD2", "PRCP")])
+  
+  dat[, c("NORAIN.cum")] <- cumsum(ifelse(dat[,"PRCP"]>0, 1, 0))
+  
+  # Calculating days since rain just in case
+  dat$DaysNoRain[1] <- ifelse(dat$PRCP[1]>0, 0, 1)
+  for(i in 2:nrow(dat)){
+    dat$DaysNoRain[i] <- ifelse(dat$PRCP[i]>0, dat$DaysNoRain[i-1]+1, 0)
+  }
+  return(dat)
+}
+
+# ----------------
+# Base Data: GHCN
+# ----------------
+met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
+met.ghcn$DATE <- as.Date(met.ghcn$DATE)
+met.ghcn$TYPE <- "observed"
+summary(met.ghcn)
+# ----------------
+
+# ----------------
+# CFS -- lets start simple
+# ----------------
+met.cfs <- read.csv(file.path(out.cfs, paste0(site.name, "_CFS_daily_latest.csv")))
+met.cfs[,c("tair", "tmax", "tmin")] <- met.cfs[,c("tair", "tmax", "tmin")]-273.15
+met.cfs$Date <- as.Date(met.cfs$Date)
+summary(met.cfs)
+
+# Loading the data we have to evaluate the forecast
+cfs.comp <- met.cfs[met.cfs$Date %in% met.ghcn$DATE,]
+cfs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% cfs.comp$Date, c("TMAX", "TMIN", "PRCP")]
+
+# Set up a bias-corrected data frame
+bc.cfs <- data.frame(TYPE="forecast", DATE=met.cfs$Date, YDAY=lubridate::yday(met.cfs$Date))
+summary(bc.cfs)
+# If there's only a tiny bit of data, just use the mean off-sets
+if(nrow(cfs.comp)<=3){
+  bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
+  bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
+  
+  if(all(cfs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
+    bc.cfs$PRCP <- met.cfs$prcp.day
+  } else {
+    row.rain <- which(cfs.comp$prcp.day>0)
+    bc.cfs$PRCP <- met.cfs$prcp.day*mean(cfs.comp$GHCN.PRCP[row.rain]/cfs.comp$prcp.day[row.rain])
+  }
+  
+} else {
+  mod.tmax <- lm(GHCN.tmax ~ tmax, data=cfs.comp)
+  mod.tmin <- lm(GHCN.tmin ~ tmin, data=cfs.comp)
+  mod.prcp <- lm(GHCN.prcp ~ prcp, data=cfs.comp)
+  bc.cfs$TMAX <- predict(mod.tmax, newdata = met.cfs)
+  bc.cfs$TMIN <- predict(mod.tmin, newdata = met.cfs)
+  bc.cfs$PRXP <- predict(mod.prcp, newdata = met.cfs)
+}
+summary(bc.cfs)
+
+dat.cfs <- rbind(met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], bc.cfs)
+dat.cfs$MODEL <- "CFS"
+dat.cfs$ENS <- "CFS1"
+
+summary(dat.cfs)
+
+dat.cfs <- calc.indices(dat.cfs)
+
+write.csv(dat.cfs, file.path(out.cfs, paste0(site.name, "_CFS_daily_FORECAST-READY.csv")))
+# ggplot(data=dat.cfs) +
+#   geom_line(aes(x=DATE, y=TMIN, color=TYPE))
+# ----------------
+
+# ----------------
+# GEFS -- The short-range ensemble
+# ----------------
+met.gefs <- read.csv(file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")))
+met.gefs[,c("tair", "tmax", "tmin")] <- met.gefs[,c("tair", "tmax", "tmin")]-273.15
+met.gefs$Date <- as.Date(met.gefs$Date)
+summary(met.gefs)
+
+# Loading the data we have to evaluate the forecast
+gefs.comp <- met.gefs[met.gefs$Date %in% met.ghcn$DATE,]
+gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
+
+# Set up a bias-corrected data frame
+bc.gefs <- data.frame(TYPE="forecast", ENS=met.gefs$ens, DATE=met.gefs$Date, YDAY=lubridate::yday(met.gefs$Date))
+summary(bc.gefs)
+
+# THis is a stage that would be a natural fit for data assimilation
+for(ENS in unique(met.gefs$ens)){
+  ens.row <- which(met.gefs$ens==ENS)
+  comp.row <- which(gefs.comp$ens==ENS)
+  
+  # If there's only a tiny bit of data, just use the mean off-sets
+  if(length(comp.row)<=3){
+    bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
+    bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
+    
+    if(all(gefs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
+      bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+    } else {
+      comp2 <- which(gefs.comp$ens==ENS & gefs.comp$prcp.day>0)
+      bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]*mean(gefs.comp$GHCN.PRCP[comp2]/gefs.comp$prcp.day[comp2])
+    }
+    
+  } else {
+    mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
+    mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
+    mod.prcp <- lm(GHCN.prcp ~ prcp, data=gefs.comp[comp.row,])
+    bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row])
+    bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row])
+    bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row])
+  }
+}
+summary(bc.gefs)
+
+ghcn.ens <- merge(data.frame(ENS=unique(bc.gefs$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], all=T)
+
+dat.gefs <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
+dat.gefs$MODEL <- "GEFS"
+dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
+head(dat.gefs)
+
+gefs.indices <- data.frame()
+for(ENS in unique(dat.gefs$ENS)){
+  row.ens <- which(dat.gefs$ENS==ENS)
+  gfs.tmp <- calc.indices(dat.gefs[row.ens,])
+  
+  gefs.indices <- rbind(gefs.indices, gfs.tmp)
+}
+
+summary(gefs.indices)
+
+write.csv(gefs.indices, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY.csv")))
+# ggplot(data=dat.gefs) +
+#   geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS))
+# ----------------
+
+
+# ----------------
+# Doing an extension of GFS with the CFS forecast
+# ----------------
+summary(bc.cfs)
+summary(bc.gefs)
+
+bc.gefs2 <- data.frame(TYPE="forecast", ENS=rep(unique(met.gefs$ens), each=nrow(bc.cfs)), DATE=bc.cfs$DATE, YDAY=bc.cfs$YDAY)
+summary(bc.gefs2)
+
+# This is a stage where we could shift to doing data assimliation
+for(ENS in unique(bc.gefs2$ENS)){
+  row.ens <- which(bc.gefs2$ENS==ENS & bc.gefs2$DATE>max(bc.gefs$DATE))
+  row.cfs <- which(bc.cfs$DATE>max(bc.gefs$DATE))
+  
+  bc.gefs2[bc.gefs2$ENS==ENS & bc.gefs2$DATE %in% bc.gefs$DATE, c("TMAX", "TMIN", "PRCP")] <- bc.gefs[bc.gefs$ENS==ENS,c("TMAX", "TMIN", "PRCP")]
+  # Set up the comparison data frame
+  for.comp <- bc.cfs[bc.cfs$DATE %in% bc.gefs$DATE, ]
+  
+  # for.comp <- bc.gefs[bc.gefs$ENS==ENS,]
+  for.comp[, c("GEFS.TMAX", "GEFS.TMIN", "GEFS.PRCP")] <- bc.gefs[bc.gefs$ENS==ENS & bc.gefs$DATE %in% for.comp$DATE, c("TMAX", "TMIN", "PRCP")]
+  
+  tmax.adj <- mean(for.comp$GEFS.TMAX-for.comp$TMAX)
+  print(paste(ENS, "tmax.adj", tmax.adj ))
+  bc.gefs2$TMAX[row.ens] <- bc.cfs$TMAX[row.cfs] + mean(for.comp$GEFS.TMAX-for.comp$TMAX)
+  bc.gefs2$TMIN[row.ens] <- bc.cfs$TMIN[row.cfs] + mean(for.comp$GEFS.TMIN-for.comp$TMIN)
+  
+  if(all(for.comp[,c("PRCP", "GEFS.PRCP")]==0)){
+    bc.gefs2$PRCP[row.ens] <- bc.cfs$prcp.day[row.cfs]
+  } else {
+    bc.gefs2$PRCP[row.ens] <- bc.cfs$PRCP[row.cfs]*mean(for.comp$GEFS.PRCP[for.comp$PRCP>0]/for.comp$PRCP[for.comp$PRCP>0])
+  }
+  
+  # mod.tmax <- lm(GEFS.TMAX ~ TMAX, data=for.comp)
+  # mod.tmin <- lm(GEFS.TMIN ~ TMIN, data=for.comp)
+  # mod.prcp <- lm(GEFS.PRCP ~ PRCP, data=for.comp)
+  # bc.gefs2$TMAX[ens.row] <- predict(mod.tmax, newdata = bc.cfs)
+  # bc.gefs2$TMIN[ens.row] <- predict(mod.tmin, newdata = bc.cfs)
+  # bc.gefs2$PRCP[ens.row] <- predict(mod.prcp, newdata = bc.cfs)
+}
+summary(bc.gefs2[,])
+
+
+ghcn.ens <- merge(data.frame(ENS=unique(bc.gefs2$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], all=T)
+
+dat.gefs2 <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs2[bc.gefs2$DATE>max(ghcn.ens$DATE),])
+dat.gefs2$MODEL <- "GEFS"
+dat.gefs2 <- dat.gefs2[order(dat.gefs2$ENS, dat.gefs2$DATE),]
+head(dat.gefs2)
+
+
+gefs.indices2 <- data.frame()
+for(ENS in unique(dat.gefs2$ENS)){
+  row.ens <- which(dat.gefs2$ENS==ENS)
+  gfs.tmp2 <- calc.indices(dat.gefs2[row.ens,])
+  
+  gefs.indices2 <- rbind(gefs.indices2, gfs.tmp2)
+}
+
+summary(gefs.indices2)
+
+
+write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
+
+# ggplot(data=dat.gefs2[dat.gefs2$DATE>as.Date("2021-05-01") & dat.gefs2$DATE<as.Date("2021-05-15"),]) +
+#   geom_line(aes(x=DATE, y=TMIN, color=TYPE, group=ENS))
 
 # ----------------
 
