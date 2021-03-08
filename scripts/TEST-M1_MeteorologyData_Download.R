@@ -10,7 +10,7 @@
 # What needs to happen
 #   1. Download all datasets
 #       - For forecast products, keep past 7 days overlapping with Arb observations
-#   2. Bias-correct forecast products to better match Arb meteorology; 2 stages
+#   2. Format Bias-correct forecast products to better match Arb meteorology; 2 stages
 #       Option 1: Simple means correction lm(Arb ~ Forecast)
 #       Option 2: Formal Data Assimilation with uncertainty propagation
 #       Stage 1: Correct all(? just GEFS?) products with Arb; one week overlap?
@@ -30,6 +30,16 @@ path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology
 
 dir.met <- "../data_raw/meteorology"
 if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)
+
+path.ghcn=c("../data_raw/meteorology/GHCN_extracted/")
+out.cfs="../data_raw/meteorology/CFS_Forecast"
+out.gefs <- "../data_raw/meteorology/GEFS"
+
+# Params for extracting NOAA products
+site.name="MortonArb"
+lat.in=41.812739
+lon.in=-88.072749
+
 # -------------------------------------------------
 
 # -------------------------------------------------
@@ -41,7 +51,6 @@ if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)
 # ---------------------------------
 ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
-path.ghcn=c("../data_raw/meteorology/GHCN_extracted/")
 dir.raw="../data_raw/meteorology/GHCN_raw/"
 
 source("met_download_GHCN.R"); source("met_gapfill.R")
@@ -60,13 +69,8 @@ met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 summary(met.ghcn)
 
 # Set up some parameters for downloading the data
-site.name="MortonArb"
-lat.in=41.812739
-lon.in=-88.072749
 ghcn.overlap = max(met.ghcn$DATE)-7
 forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")
-
-
 # ----------------
 
 # ----------------
@@ -75,7 +79,6 @@ forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")
 # -- he downloaded the 5 most recent forecasts to get uncertainty
 # ----------------
 source("met_download_CFS.R")
-out.cfs="../data_raw/meteorology/CFS_Forecast"
 vars.in <- c("tmax", "tmin", "prate")
 
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
@@ -105,7 +108,6 @@ for(FCST in dates.cfs){
 #   - Using Quinn's temporal downscaling to get better Tmin/Tmax estimates
 # ----------------
 # For GEFS, Quinn has it set up to download a window prior to today w/ each in a separate window; we want to do that only if needed to
-out.gefs <- "../data_raw/meteorology/GEFS"
 
 # Note: If we get the longer-range forecast extraction working, might update this
 gefs.dates <- as.Date(dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name)))
@@ -138,10 +140,103 @@ for(FCST in dates.gefs){
   
 }
 # ----------------
-
 # -------------------------------------------------
 
 # -------------------------------------------------
-# 2. Bias-correct raw datasets
+# 2. Format & Bias-correct raw datasets
 # -------------------------------------------------
+# ----------------
+# Base Data: GHCN
+# ----------------
+met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
+met.ghcn$DATE <- as.Date(met.ghcn$DATE)
+summary(met.ghcn)
+
+# Window for dates we want to overlap if possible
+ghcn.overlap = max(met.ghcn$DATE)-7
+# ----------------
+
+# ----------------
+# Get the GEFS files we want
+# ----------------
+gefs.dates <- as.Date(dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name)))
+gefs.dates <- rev(as.character(gefs.dates[gefs.dates>=ghcn.overlap])) # Reversed to go newest to oldest
+
+# To get the lead-in and gap-fill, we'll want the first 24 hrs of each forecast (the best-guess) except for the most recent, where we want all time
+ftoday <- dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name, gefs.dates[1], "00"))
+
+ncT <- ncdf4::nc_open(file.path(out.gefs, "NOAAGEFS_1hr",site.name, gefs.dates[1], "00", ftoday[1]))
+summary(ncT$var)
+nval <- length(ncT$dim$time$vals)
+ncdf4::nc_close(ncT)
+
+gefs.1hr <- data.frame(Timestamp=seq.POSIXt(as.POSIXct(paste(gefs.dates[1], "00:00")), by="1 hour", length.out=nval), ens=rep(1:length(ftoday), each=nval), tair=NA, prcp=NA)
+gefs.1hr$Date <- as.Date(substr(gefs.1hr$Timestamp, 1, 10))
+
+for(i in 1:length(ftoday)){
+  row.ind <- which(gefs.1hr$ens==i)
+  
+  ncT <- ncdf4::nc_open(file.path(out.gefs, "NOAAGEFS_1hr", site.name, Sys.Date(), "00", ftoday[i]))
+  gefs.1hr$tair[row.ind] <- ncdf4::ncvar_get(ncT, "air_temperature")
+  gefs.1hr$prcp[row.ind] <- ncdf4::ncvar_get(ncT, "precipitation_flux")
+  
+  ncdf4::nc_close(ncT)
+}
+# the first value for all precip is NA, so let just make it 0 for our snaity
+gefs.1hr$prcp[is.na(gefs.1hr$prcp)] <- 0
+summary(gefs.1hr)
+
+# Now Loop through the other days; pulling just the first 24 hrs for each date
+nval=24
+for(i in 2:length(gefs.dates)){
+  ftoday <- dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name, gefs.dates[i], "00"))
+  
+  df.tmp <- data.frame(Timestamp=seq.POSIXt(as.POSIXct(paste(gefs.dates[i], "00:00")), by="1 hour", length.out=nval), ens=rep(1:length(ftoday), each=nval), tair=NA, prcp=NA)
+  df.tmp$Date <- as.Date(substr(df.tmp$Timestamp, 1, 10))
+  
+  for(j in 1:length(ftoday)){
+    row.ind <- which(df.tmp$ens==j)
+    
+    ncT <- ncdf4::nc_open(file.path(out.gefs, "NOAAGEFS_1hr", site.name, gefs.dates[i], "00", ftoday[j]))
+    df.tmp$tair[row.ind] <- ncdf4::ncvar_get(ncT, "air_temperature", count=c(24,1,1))
+    df.tmp$prcp[row.ind] <- ncdf4::ncvar_get(ncT, "precipitation_flux", count=c(24,1,1))
+    ncdf4::nc_close(ncT)
+  }
+  # the first value for all precip is NA, so let just make it 0 for our snaity
+  df.tmp$prcp[is.na(df.tmp$prcp)] <- 0
+  summary(df.tmp)
+  
+  gefs.1hr <- rbind(df.tmp, gefs.1hr)
+  
+  rm(df.tmp)
+}
+summary(gefs.1hr)
+# head(df.1hr)
+# 
+# ggplot(data=df.1hr) +
+#   geom_line(aes(x=Timestamp, y=tair, group=ens))
+
+# Convert into daily max/mins
+gefs.day <- aggregate(cbind(tair, prcp) ~ Date + ens, data=gefs.1hr, FUN=mean)
+gefs.day$tmax <- aggregate(tair ~ Date + ens, data=gefs.1hr, FUN=max)$tair
+gefs.day$tmin <- aggregate(tair ~ Date + ens, data=gefs.1hr, FUN=min)$tair
+gefs.day$prcp.day <- gefs.day$prcp*60*60*24 # should convert to mm/day 
+summary(gefs.day)
+
+# ggplot(data=gefs.day) +
+#   geom_line(aes(x=Date, y=tair, group=ens))
+write.csv(gefs.day, file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")), row.names=F)
+# ----------------
+
+
+# ----------------
+# Get the CFS files we want
+# ----------------
+cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
+cfs.dates <- rev(as.character(cfs.dates[cfs.dates>=ghcn.overlap]))
+
+# cfs.tmp <- read.csv("")
+
+# ----------------
+
 # -------------------------------------------------
