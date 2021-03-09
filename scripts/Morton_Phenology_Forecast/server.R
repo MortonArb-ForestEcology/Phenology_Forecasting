@@ -199,10 +199,12 @@ function(input, output) {
   })
 
   output$plot1 <- renderPlot({
+    #Here is where we interact witht the sql and full what we want
     gdd.prior <- full %>%
       filter(species == !!input$Species)%>%
       select(THRESH)%>%
       collect()
+    
     set.seed(902)
     thresh <- sample(gdd.prior$THRESH, 500)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
