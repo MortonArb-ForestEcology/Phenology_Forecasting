@@ -26,7 +26,7 @@
 # 0. Setup
 # -------------------------------------------------
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
-path.out <- "data_raw/meteorology/data"
+path.out <- "shiny_app/data_raw/meteorology/data"
 
 dir.met <- "shiny_app/data_raw/meteorology"
 if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)

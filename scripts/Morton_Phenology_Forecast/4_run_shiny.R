@@ -8,7 +8,7 @@
 # You must be in the "shiny_app" folder to run online. You must be in this scripts wd to run it locally
 #-----------------------------------------------------------------------------------------------------------------------------------#
 library(shiny)
-library(dplyr)
+
 
 #This is to run the app LOCALLY
 #If you open this script and are in it's directory, all you have to do is runApp.
@@ -24,7 +24,6 @@ rsconnect::deployApp(forceUpdate = T, launch.browser = F)
 
 #This is how you manually stop the ONLINE app
 stopApp(returnValue = invisible())
-
 
 
 
