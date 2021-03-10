@@ -9,6 +9,7 @@
 #         Arb_Pheno.db created by SQL_creation.R
 # Outputs: 
 # Notes: The first half of this script is taken from M2_Meteorology_Graphing_Bayes.R
+#         THERE ARE ALTERNATIVE TO DPLYR for communicating with sql. I like dplyr but it's not needed use can use RSQLite 
 #-----------------------------------------------------------------------------------------------------------------------------------#
 library(shiny)
 library(ggplot2)
@@ -16,17 +17,46 @@ library(plotly)
 library(stringr)
 library(shinyWidgets)
 library(dplyr)
-library(dbplyr)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
 path.in <- "data_raw/meteorology"
 
-dat.ghcn <- read.csv(file.path(path.in, "Weather_ArbCOOP_historical_latest.csv"))
-dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
-dat.forecast <- read.csv(file.path(path.in, "Weather_Arb_forecast_ensemble_latest.csv"))
-#dat.forecast <- read.csv(file.path(path.in, "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv"))
-dat.forecast$DATE <- as.Date(dat.forecast$DATE)
+#This is where we interface with the sql. This is establishing the connection and determining which table we want to pull from 
+Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
+ghcn <- tbl(Tconnect, "Historical_Weather")
+
+#This gets the datatable
+dat.ghcn <- as.data.frame(ghcn) %>%
+  collect() 
+
+#Date gets converted when made into sql...may argue against using it too freely
+dat.ghcn$DATE <- as.Date(dat.ghcn$DATE, origin ="1970-01-01")
+
+forecast <- tbl(Tconnect, "Forecast_Weather")
+
+dat.forecast <- as.data.frame(forecast) %>%
+  collect() 
+
+dat.forecast$DATE <- as.Date(dat.forecast$DATE, origin ="1970-01-01")
+
+#path.weath <- "data_raw/meteorology/"
+#Reading in the historical weather
+#dat.ghcn <- read.csv(file.path(paste0(path.weath, "Weather_ArbCOOP_historical_latest.csv")))
+#dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
+
+#Reading in the forecast weather
+#dat.forecast <- read.csv(file.path(paste0(path.weath, "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
+#dat.forecast$DATE <- as.Date(dat.forecast$DATE)
+
+#Here is where we read in the names of our oak species for indexing in our app
+cat <- tbl(Tconnect, "Species_Catalogue")
+sp.catalogue <- as.data.frame(cat) %>%
+  collect() 
+
+dex <- tbl(Tconnect, "Species_Index")
+sp.index <- as.data.frame(dex) %>%
+  collect() 
 
 # Subset to just the forecasts
 # dat.forecast <- dat.forecast[dat.forecast$TYPE=="forecast",]
@@ -188,16 +218,12 @@ day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate
 summary(day.labels2)
 
 
-#Here is where we read in the names of our oak species for indexing in our app
-sp.catalogue <- read.csv("Species_Name_Catalogue.csv")
-sp.index <- read.csv("Species_Name_Index.csv")
 
-#This is where we interface with the sql. This is establishing the connection and determining which table we want to pull from 
-Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
-#We want to pull from the Budburst_Model table for out GDD predictions
+#Making the connection to our budburst predicitons before we pull them out by species
 full <- tbl(Tconnect, "Budburst_Model")
 
-ens <- unique(dat.forecast$ID)
+#We want to pull from the Budburst_Model table for out GDD predictions
+ens <- unique(dat.forecast$ENS)
 function(input, output) { 
   
   #This is where we created the species options including the ability to pick between common and scientific names
@@ -217,15 +243,15 @@ function(input, output) {
     #Here is where we interact witht the sql and full what we want
     gdd.prior <- full %>%
       filter(species == !!input$Species)%>% #Choosing our species
-      select(THRESH)%>% #picking the variable we want from those species
+      #select(THRESH)%>% #picking the variable we want from those species
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
     thresh <- sample(gdd.prior$THRESH, 500)
-    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
+    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
-      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ID==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
+      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
     }
     pred.df <- data.frame(x=as.vector(pred.array))
     

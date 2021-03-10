@@ -18,18 +18,12 @@ library(shinyWidgets)
 # -------------------------------------
 path.in <- "data_raw/meteorology"
 
-# ---------------
-# Met Data
-# ---------------
-dat.ghcn <- read.csv(file.path(path.in, "Weather_ArbCOOP_historical_latest.csv"))
-dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
+Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
 
+cat <- tbl(Tconnect, "Species_Catalogue")
+sp.catalogue <- cat %>%
+  collect() 
 
-dat.forecast <- read.csv(file.path(path.in, "Weather_Arb_forecast_ensemble_latest.csv"))
-dat.forecast$DATE <- as.Date(dat.forecast$DATE)
-
-#Species names for the name pickers
-sp.catalogue <- read.csv("Species_Name_Catalogue.csv")
 
 sp.list <- sort(unique(sp.catalogue$Scientific))
 name.type <- c("Scientific", "Common")
