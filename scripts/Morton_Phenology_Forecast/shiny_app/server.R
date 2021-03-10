@@ -1,3 +1,15 @@
+#----------------------------------------------------------------------------------------------------------------------------------#
+# Script by : Lucien Fitzpatrick
+# Project: Phenology forecasting app
+# Purpose: This script is the server side of the shiny app
+# Inputs: Weather_ArbCOOP_historical_latest.csv created by M1_Meterology_download.R
+#         Weather_Arb_forecast_ensemble_latest.csv created by M1_Meterology_download.R
+#         Species_Name_Catalogue.csv created by SP_Names.R
+#         Species_Name_Index.csv created by SP_Names.R
+#         Arb_Pheno.db created by SQL_creation.R
+# Outputs: 
+# Notes: The first half of this script is taken from M2_Meteorology_Graphing_Bayes.R
+#-----------------------------------------------------------------------------------------------------------------------------------#
 library(shiny)
 library(ggplot2)
 library(plotly)
@@ -10,10 +22,10 @@ library(dbplyr)
 # -------------------------------------
 path.in <- "data_raw/meteorology"
 
-dat.ghcn <- read.csv(file.path(path.in, "data", "Weather_ArbCOOP_historical_latest.csv"))
+dat.ghcn <- read.csv(file.path(path.in, "Weather_ArbCOOP_historical_latest.csv"))
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
-
-dat.forecast <- read.csv(file.path(path.in, "data", "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv"))
+dat.forecast <- read.csv(file.path(path.in, "Weather_Arb_forecast_ensemble_latest.csv"))
+#dat.forecast <- read.csv(file.path(path.in, "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv"))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 
 # Subset to just the forecasts
@@ -175,22 +187,25 @@ day.labels2$yday <- lubridate::yday(day.labels2$Date)
 day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate::day(day.labels2$Date))
 summary(day.labels2)
 
+
+#Here is where we read in the names of our oak species for indexing in our app
 sp.catalogue <- read.csv("Species_Name_Catalogue.csv")
 sp.index <- read.csv("Species_Name_Index.csv")
 
-#THis is where I read in all of the dataframes which is probably the step that slows things down. SQL will hopefully fix this
+#This is where we interface with the sql. This is establishing the connection and determining which table we want to pull from 
 Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
+#We want to pull from the Budburst_Model table for out GDD predictions
 full <- tbl(Tconnect, "Budburst_Model")
-Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
-full <- tbl(Tconnect, "Budburst_Model")
-options(shiny.sanitize.errors = TRUE)
 
 ens <- unique(dat.forecast$ID)
 function(input, output) { 
   
+  #This is where we created the species options including the ability to pick between common and scientific names
   output$select_Species <- renderUI({
   if(input$Convention == "Common"){
   spp.avail <- sp.catalogue$Scientific
+  #If people want to use the Common names, they are presented common names but under the hood we use scientific to match file names
+  #THis is sadly also why alphabetical only works one way...
   names(spp.avail) <- sp.catalogue$Common
   } else{
     spp.avail <- sort(unique(paste(sp.index$Name[sp.index$Type==input$Convention])))
@@ -201,9 +216,9 @@ function(input, output) {
   output$plot1 <- renderPlot({
     #Here is where we interact witht the sql and full what we want
     gdd.prior <- full %>%
-      filter(species == !!input$Species)%>%
-      select(THRESH)%>%
-      collect()
+      filter(species == !!input$Species)%>% #Choosing our species
+      select(THRESH)%>% #picking the variable we want from those species
+      collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
     thresh <- sample(gdd.prior$THRESH, 500)
