@@ -9,7 +9,6 @@
 #-----------------------------------------------------------------------------------------------------------------------------------#
 library(shiny)
 library(dplyr)
-library(shiny)
 
 #This is to run the app LOCALLY
 #If you open this script and are in it's directory, all you have to do is runApp.
