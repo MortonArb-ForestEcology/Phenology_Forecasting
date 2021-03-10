@@ -3,10 +3,10 @@ library(dplyr)
 library(shiny)
 
 #setwd("../")
-#runApp("Morton_Phenology_Forecast")
+#runApp("shiny_app")
 
 
-setwd("Morton_Phenology_Forecast")
+setwd("shiny_app")
 
 rsconnect::deployApp(forceUpdate = T, launch.browser = F)
 

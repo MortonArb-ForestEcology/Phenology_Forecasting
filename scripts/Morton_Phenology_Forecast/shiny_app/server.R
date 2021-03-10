@@ -13,7 +13,7 @@ path.in <- "data_raw/meteorology"
 dat.ghcn <- read.csv(file.path(path.in, "data", "Weather_ArbCOOP_historical_latest.csv"))
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
-dat.forecast <- read.csv(file.path(path.in, "data", "Weather_Arb_forecast_ensemble_latest.csv"))
+dat.forecast <- read.csv(file.path(path.in, "data", "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv"))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 
 # Subset to just the forecasts
