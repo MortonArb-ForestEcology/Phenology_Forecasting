@@ -301,6 +301,19 @@ function(input, output) {
       )
     
   cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1))
-  })  
+  }) 
+  
+  output$plot.ui <- renderUI({
+    plotOutput("plot1", click="plot_click", width=600, height=800)
+  })
+  
+  output$info <- renderPrint({
+    dat.subs <- input$Species
+    
+    txthere <- input$Species
+    txthere <- t(txthere)
+    row.names(txthere) <- c("Species")
+    txthere
+  })
   
 }

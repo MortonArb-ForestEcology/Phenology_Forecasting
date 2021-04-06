@@ -35,10 +35,7 @@ fluidPage(
   uiOutput("select_Species"),
 
   
-  mainPanel(
-    
-    # Output: Histogram ----
-    plotOutput(outputId = "plot1", width = "150%", height = "800px")
-
-  )
+  #mainPanel(plotOutput(outputId = "plot1", width = "150%", height = "800px")),
+  mainPanel(uiOutput("plot.ui", click="plot_click"), height="100%"),
+  verbatimTextOutput("info")
 )
