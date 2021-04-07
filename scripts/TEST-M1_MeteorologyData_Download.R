@@ -98,8 +98,7 @@ dates.cfs <- as.character(dates.cfs)
 for(FCST in dates.cfs){
   # print(FCST)
   dir.create(file.path(out.cfs, site.name, FCST), recursive=T, showWarnings =F)
-  download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(cfs.start), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
-  
+  download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
 }
 # ----------------
 
