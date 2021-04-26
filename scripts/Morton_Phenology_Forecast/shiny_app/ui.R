@@ -33,9 +33,14 @@ fluidPage(
   #Allowing the choice between scientific and common
   selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type))),
   uiOutput("select_Species"),
-
   
-  #mainPanel(plotOutput(outputId = "plot1", width = "150%", height = "800px")),
-  mainPanel(uiOutput("plot.ui", click="plot_click"), height="100%"),
+  mainPanel(
+    fluidRow(
+      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), uiOutput("plot.1.ui", click="plot_click"), 
+                  uiOutput("plot.2.ui", click="plot_click"), 
+                  uiOutput("plot.3.ui", click="plot_click"), 
+                  uiOutput("plot.4.ui", click="plot_click"))
+        )),
   verbatimTextOutput("info")
+
 )

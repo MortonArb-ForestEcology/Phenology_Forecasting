@@ -84,7 +84,7 @@ for(VAR in vars.agg){
 # -------------------------------------
 # Doing some quick graphing
 # -------------------------------------
-day.labels <- data.frame(Date=seq.Date(as.Date("2020-01-01"), as.Date("2020-12-31"), by="month"))
+day.labels <- data.frame(Date=seq.Date(as.Date("2021-01-01"), as.Date("2021-12-31"), by="month"))
 day.labels$yday <- lubridate::yday(day.labels$Date)
 day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::day(day.labels$Date))
 summary(day.labels)
@@ -198,21 +198,12 @@ plot.tmean <- ggplot(data=dat.ghcn) +
         panel.grid.minor.x = element_blank(),
         panel.grid.minor.y = element_blank())
 
-library(cowplot)
-plot.title <- ggdraw() + 
-  draw_label(paste("The Morton Arboretum weather, last updated:", Sys.Date(), "\n   "),
-             fontface = 'bold', x = 0,hjust = 0) +
-  theme(plot.margin = margin(0, 0, 0, 1)
-  )
-
-plot.dat <- cowplot::plot_grid(plot.tmean, plot.prcp, plot.threshB, plot.threshA)
-
 calc.bud <- function(dat, VAR, THRESH){
   min(dat[which(dat[,VAR] >= THRESH),"YDAY"])
 }
 
 
-day.labels2 <- data.frame(Date=seq.Date(as.Date("2020-01-03"), as.Date("2020-7-01"), by="day"))
+day.labels2 <- data.frame(Date=seq.Date(as.Date("2021-01-03"), as.Date("2021-7-01"), by="day"))
 day.labels2$yday <- lubridate::yday(day.labels2$Date)
 day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate::day(day.labels2$Date))
 summary(day.labels2)
@@ -239,7 +230,38 @@ function(input, output) {
   pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= sort(spp.avail), options = list('live-search' = TRUE), multiple = F)
   })
 
-  output$plot1 <- renderPlot({
+  output$plot.thresh <- renderPlot({
+    #Here is where we interact witht the sql and full what we want
+    gdd.prior <- full %>%
+      filter(species == !!input$Species)%>% #Choosing our species
+      #select(THRESH)%>% #picking the variable we want from those species
+      collect() #A neccessary line to collect all the data instead of only the 10 first
+    
+    set.seed(902)
+    thresh <- sample(gdd.prior$THRESH, 500)
+    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
+    
+    for(i in 1:length(ens)){
+      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
+    }
+    pred.df <- data.frame(x=as.vector(pred.array))
+    
+    # Create some useful indices and labels
+    dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
+                          q75=quantile(pred.array,c(0.125, 0.875)),
+                          q95=quantile(pred.array,c(0.025, 0.975)))
+    row.names(dat.lim) <- c("lb", "ub")
+    dat.lim <- data.frame(t(dat.lim))
+    pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
+    pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
+    
+    plot.threshB + 
+      geom_rect(data=dat.lim["q75",],
+                aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
+    
+  })
+  
+  output$plot.temp <- renderPlot({
     #Here is where we interact witht the sql and full what we want
     gdd.prior <- full %>%
       filter(species == !!input$Species)%>% #Choosing our species
@@ -265,7 +287,73 @@ function(input, output) {
     pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
     
     
-    plot.yday.dens <- ggplot() + 
+    plot.tmean +
+    geom_rect(data=dat.lim["q75",],
+              aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
+
+    
+  }) 
+  
+  output$plot.prcp <- renderPlot({
+    #Here is where we interact witht the sql and full what we want
+    gdd.prior <- full %>%
+      filter(species == !!input$Species)%>% #Choosing our species
+      #select(THRESH)%>% #picking the variable we want from those species
+      collect() #A neccessary line to collect all the data instead of only the 10 first
+    
+    set.seed(902)
+    thresh <- sample(gdd.prior$THRESH, 500)
+    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
+    
+    for(i in 1:length(ens)){
+      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
+    }
+    pred.df <- data.frame(x=as.vector(pred.array))
+    
+    # Create some useful indices and labels
+    dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
+                          q75=quantile(pred.array,c(0.125, 0.875)),
+                          q95=quantile(pred.array,c(0.025, 0.975)))
+    row.names(dat.lim) <- c("lb", "ub")
+    dat.lim <- data.frame(t(dat.lim))
+    pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
+    pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
+    
+    
+    plot.prcp +
+      geom_rect(data=dat.lim["q75",],
+              aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
+    
+    
+  }) 
+  
+  output$plot.dist <- renderPlot({
+    #Here is where we interact witht the sql and full what we want
+    gdd.prior <- full %>%
+      filter(species == !!input$Species)%>% #Choosing our species
+      #select(THRESH)%>% #picking the variable we want from those species
+      collect() #A neccessary line to collect all the data instead of only the 10 first
+    
+    set.seed(902)
+    thresh <- sample(gdd.prior$THRESH, 500)
+    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
+    
+    for(i in 1:length(ens)){
+      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
+    }
+    pred.df <- data.frame(x=as.vector(pred.array))
+    
+    # Create some useful indices and labels
+    dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
+                          q75=quantile(pred.array,c(0.125, 0.875)),
+                          q95=quantile(pred.array,c(0.025, 0.975)))
+    row.names(dat.lim) <- c("lb", "ub")
+    dat.lim <- data.frame(t(dat.lim))
+    pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
+    pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
+    
+    
+     ggplot() + 
       geom_density(data=pred.df, aes(x=x), adjust=3.5, fill="green3", alpha=0.5) +
       geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
       geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
@@ -278,40 +366,41 @@ function(input, output) {
             legend.background = element_blank(),
             panel.grid.minor.x = element_blank(),
             panel.grid.minor.y = element_blank())
+      
+     # plot.title <- ggdraw() + 
+        #draw_label(paste("The Morton Arboretum Bud Burst Forecast (updated:", Sys.Date(), ")\n   ", input$Species, ": ", pred.range[1], " - ", pred.range[2], " (75% CI)"),
+        #           fontface = 'bold', x = 0,hjust = 0) +
+        #theme(plot.margin = margin(0, 0, 0, l=10)
+       # )
     
-    plot.threshB.spp <- plot.threshB + 
-      geom_rect(data=dat.lim["q75",],
-                aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
-    
-    plot.tmean.spp <- plot.tmean +
-      geom_rect(data=dat.lim["q75",],
-                aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
-    
-    plot.prcp.spp <- plot.prcp + 
-      geom_rect(data=dat.lim["q75",],
-                aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
-    
-    plot.dat <- cowplot::plot_grid(plot.tmean.spp, plot.yday.dens, plot.threshB.spp, plot.prcp.spp)
-    
-    
-    plot.title <- ggdraw() + 
-      draw_label(paste("The Morton Arboretum Bud Burst Forecast (updated:", Sys.Date(), ")\n   ", input$Species, ": ", pred.range[1], " - ", pred.range[2], " (75% CI)"),
-                 fontface = 'bold', x = 0,hjust = 0) +
-      theme(plot.margin = margin(0, 0, 0, l=10)
-      )
-    
-  cowplot::plot_grid(plot.title, plot.dat, ncol=1, rel_heights = c(0.15, 1))
   }) 
   
-  output$plot.ui <- renderUI({
-    plotOutput("plot1", click="plot_click", width=600, height=800)
+  
+  output$plot.1.ui <- renderUI({
+    plotOutput("plot.thresh", click="plot_click", width=600, height=800)
+  })
+  
+  output$plot.2.ui <- renderUI({
+    plotOutput("plot.temp", click="plot_click", width=600, height=800)
+  })
+  
+  output$plot.3.ui <- renderUI({
+    plotOutput("plot.prcp", click="plot_click", width=600, height=800)
+  })
+  
+  output$plot.4.ui <- renderUI({
+    plotOutput("plot.dist", click="plot_click", width=600, height=800)
   })
   
   output$info <- renderPrint({
-    dat.subs <- input$Species
-    
+    #dat.subs <- dat.ghcn$Date >= "1970-01-01"
+    #txthere <- nearPoints(dat.ghcn[dat.subs,c("Date")], 
+               #input$plot_click, threshold =10, maxpoints=5)
     txthere <- input$Species
     txthere <- t(txthere)
+    
+
+    
     row.names(txthere) <- c("Species")
     txthere
   })
