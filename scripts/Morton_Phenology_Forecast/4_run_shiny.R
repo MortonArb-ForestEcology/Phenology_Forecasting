@@ -8,6 +8,12 @@
 # You must be in the "shiny_app" folder to run online. You must be in this scripts wd to run it locally
 #-----------------------------------------------------------------------------------------------------------------------------------#
 library(shiny)
+library(ggplot2)
+library(plotly)
+library(stringr)
+library(shinyWidgets)
+library(dplyr)
+library(gridExtra)
 
 
 #This is to run the app LOCALLY
