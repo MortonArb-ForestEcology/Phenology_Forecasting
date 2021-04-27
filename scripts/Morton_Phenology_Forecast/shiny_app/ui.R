@@ -36,11 +36,14 @@ fluidPage(
   
   mainPanel(
     fluidRow(
-      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), uiOutput("plot.1.ui", click="plot_click"), 
-                  uiOutput("plot.2.ui", click="plot_click"), 
-                  uiOutput("plot.3.ui", click="plot_click"), 
-                  uiOutput("plot.4.ui", click="plot_click"))
+      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), uiOutput("plot.thresh.ui", click="thresh_click"), 
+                  uiOutput("plot.temp.ui", click="temp_click"), 
+                  uiOutput("plot.prcp.ui", click="prcp_click"), 
+                  uiOutput("plot.dist.ui", click="dist_click"))
         )),
-  verbatimTextOutput("info")
+  verbatimTextOutput("info.thresh"),
+  verbatimTextOutput("npoint"),
+  verbatimTextOutput("info.prcp"),
+  verbatimTextOutput("info.dist")
 
 )

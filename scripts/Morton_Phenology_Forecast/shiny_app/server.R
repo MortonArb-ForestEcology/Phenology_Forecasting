@@ -17,6 +17,7 @@ library(plotly)
 library(stringr)
 library(shinyWidgets)
 library(dplyr)
+library(gridExtra)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
@@ -376,33 +377,47 @@ function(input, output) {
   }) 
   
   
-  output$plot.1.ui <- renderUI({
-    plotOutput("plot.thresh", click="plot_click", width=600, height=800)
+  #Setting up the clicking ui for each  of our plots. This makes the plots visible and makes them clickable
+  output$plot.thresh.ui <- renderUI({
+    plotOutput("plot.thresh", click="thresh_click")
   })
   
-  output$plot.2.ui <- renderUI({
-    plotOutput("plot.temp", click="plot_click", width=600, height=800)
+  output$plot.temp.ui <- renderUI({
+    plotOutput("plot.temp", click="temp_click")
   })
   
-  output$plot.3.ui <- renderUI({
-    plotOutput("plot.prcp", click="plot_click", width=600, height=800)
+  output$plot.prcp.ui <- renderUI({
+    plotOutput("plot.prcp", click="prcp_click")
   })
   
-  output$plot.4.ui <- renderUI({
-    plotOutput("plot.dist", click="plot_click", width=600, height=800)
+  output$plot.dist.ui <- renderUI({
+    plotOutput("plot.dist", click="dist_click")
   })
   
-  output$info <- renderPrint({
-    #dat.subs <- dat.ghcn$Date >= "1970-01-01"
-    #txthere <- nearPoints(dat.ghcn[dat.subs,c("Date")], 
-               #input$plot_click, threshold =10, maxpoints=5)
-    txthere <- input$Species
-    txthere <- t(txthere)
-    
+  
+  #Defining the output information we get from out clicks
+  
+  output$info.thresh <- renderText({
+    paste0("x=", input$thresh_click$x, "\ny=", input$thresh_click$y)
+  })
+  
+  output$info.temp <- renderText({
+    paste0("x=", input$temp_click$x, "\ny=", input$temp_click$y)
+  })
+  
+  output$info.prcp <- renderText({
+    paste0("x=", input$prcp_click$x, "\ny=", input$prcp_click$y)
+  })
+  
+  output$info.dist <- renderText({
+    paste0("x=", input$dist_click$x, "\ny=", input$dist_click$y)
+  })
 
-    
-    row.names(txthere) <- c("Species")
-    txthere
-  })
+  output$npoint <- renderPrint({
+    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+                      threshold = 5, maxpoints = 3)
+    cat <- ("Nearest point within five pixels:\n")
+    print(row)
+    })
   
 }
