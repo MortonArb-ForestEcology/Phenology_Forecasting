@@ -91,14 +91,10 @@ day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::
 summary(day.labels)
 
 if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
-  dat.ghcn$threshA <- dat.ghcn$GDD0.cum 
   dat.ghcn$threshB <- dat.ghcn$GDD5.cum
-  ens.forecast$threshA <- ens.forecast$GDD0.cum
   ens.forecast$threshB <- ens.forecast$GDD5.cum
 } else {
-  dat.ghcn$threshA <- dat.ghcn$CDD0.cum 
   dat.ghcn$threshB <- dat.ghcn$CDD2.cum 
-  ens.forecast$threshA <- ens.forecast$CDD0.cum
   ens.forecast$threshB <- ens.forecast$CDD0.cum
 }
 
@@ -120,11 +116,6 @@ plot.threshB <- ggplot(data=dat.ghcn) +
         panel.grid.minor.y = element_blank())
 
 if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
-  plot.threshA <- plot.threshA + 
-    scale_y_continuous(name="Cum. GrowDD, base 0 C" ,expand=c(0,0)) + 
-    scale_x_continuous(name="Day of Year", expand=c(0,0), limits=c(1, 180), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)]) +
-    coord_cartesian(ylim=c(0, max(dat.ghcn$threshA[dat.ghcn$YDAY<=180])))
-  
   plot.threshB <- plot.threshB + 
     scale_y_continuous(name="Cum. GrowDD, base 5 C" ,expand=c(0,0)) +
     scale_x_continuous(name="Day of Year", expand=c(0,0), limits=c(1, 180), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)])  +
@@ -132,12 +123,6 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
   
   # pheno.sum; dat.thresh
 } else {
-  plot.threshA <- plot.threshA + 
-    scale_y_continuous(name="Cum. ChillDD, base 0 C" ,expand=c(0,0)) +
-    scale_x_continuous(name="Day of Year", expand=c(0,0), limits=c(155, 366), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)])  +
-    coord_cartesian(ylim=c(0, max(dat.ghcn$threshA[dat.ghcn$YDAY>=155])))
-  
-  
   plot.threshB <- plot.threshB + 
     scale_y_continuous(name="Cum. ChillDD, base -2 C" ,expand=c(0,0)) +
     scale_x_continuous(name="Day of Year", expand=c(0,0), limits=c(155, 366), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)])   +
@@ -381,29 +366,31 @@ function(input, output) {
   #Defining the output information we get from out clicks
 
   output$info.thresh <- renderPrint({
-    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
-                      threshold = 5, maxpoints = 3)
-    cat <- ("Nearest point within five pixels:\n")
-    print(row)
+    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
+                        xvar = "YDAY", yvar = "GDD5.cum",
+                      threshold = 5, maxpoints = 1)
+    
+   o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
+                       xvar = "YDAY", yvar = "GDD5.cum",
+                      threshold = 5, maxpoints = 1)
+    print(o.row)
+    print(f.row)
     })
   output$info.temp <- renderPrint({
-    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
-                      threshold = 5, maxpoints = 3)
-    cat <- ("Nearest point within five pixels:\n")
-    print(row)
+    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+                      threshold = 5, maxpoints = 1)
+    print(f.row)
   })
   output$info.prcp <- renderPrint({
-    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
-                      threshold = 5, maxpoints = 3)
-    cat <- ("Nearest point within five pixels:\n")
-    print(row)
+    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
+                      threshold = 5, maxpoints = 1)
+    print(f.row)
   })
   
   output$info.dist <- renderPrint({
-    row <- nearPoints(pred.df[, c("x")], input$dist_click, 
-                      threshold = 5, maxpoints = 3)
-    cat <- ("Nearest point within five pixels:\n")
-    print(row)
+    f.row <- nearPoints(pred.df[, c("x")], input$dist_click, 
+                      threshold = 5, maxpoints = 1)
+    print(f.row)
   })
   
 }
