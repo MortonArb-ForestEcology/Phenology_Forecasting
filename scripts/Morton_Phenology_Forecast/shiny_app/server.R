@@ -368,11 +368,9 @@ function(input, output) {
   output$info.thresh <- renderPrint({
     o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
                         xvar = "YDAY", yvar = "GDD5.cum",
-                        threshold = 15, maxpoints = 1)
+                        threshold = 50, maxpoints = 1)
     
-    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
-                        xvar = "YDAY", yvar = "GDD5.cum",
-                      threshold = 15, maxpoints = 1)
+    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "GDD5.cum")]
     
     print(o.row)
     print(f.row)
@@ -380,20 +378,20 @@ function(input, output) {
   output$info.temp <- renderPrint({
     
     o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
-                        threshold = 15, maxpoints = 1)
+                        threshold = 50, maxpoints = 1)
     
-    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
-                      threshold = 15, maxpoints = 1)
+    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "TMEAN")]
+    
     print(o.row)
     print(f.row)
   })
   output$info.prcp <- renderPrint({
     
     o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
-                        threshold = 15, maxpoints = 1)
+                        threshold = 50, maxpoints = 1)
     
-    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
-                      threshold = 15, maxpoints = 1)
+    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "PRCP.cum")]
+    
     print(o.row)
     print(f.row)
   })
