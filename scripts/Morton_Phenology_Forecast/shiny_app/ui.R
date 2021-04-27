@@ -42,7 +42,7 @@ fluidPage(
                   uiOutput("plot.dist.ui", click="dist_click"))
         )),
   verbatimTextOutput("info.thresh"),
-  verbatimTextOutput("npoint"),
+  verbatimTextOutput("info.temp"),
   verbatimTextOutput("info.prcp"),
   verbatimTextOutput("info.dist")
 

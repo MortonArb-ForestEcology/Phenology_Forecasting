@@ -102,23 +102,6 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
   ens.forecast$threshB <- ens.forecast$CDD0.cum
 }
 
-plot.threshA <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshA), fun=mean, color="black", geom="line", size=1) +
-  geom_line(data=dat.ghcn, aes(x=YDAY, y=threshA, group=YEAR), alpha=0.2, size=0.5) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshA, color="observed"), size=2) +
-  # geom_ribbon(aes(fill="observed")) +
-  geom_ribbon(data=ens.forecast$threshA[ens.forecast$threshA$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-  geom_line(data=ens.forecast$threshA[ens.forecast$threshA$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
-  scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
-  scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
-  theme_bw() +
-  guides(fill=F) +
-  theme(legend.position = c(0.2, 0.9),
-        legend.title=element_blank(),
-        legend.background = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank())
-
 plot.threshB <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshB, group=YEAR), alpha=0.2, size=0.5) +
@@ -396,28 +379,31 @@ function(input, output) {
   
   
   #Defining the output information we get from out clicks
-  
-  output$info.thresh <- renderText({
-    paste0("x=", input$thresh_click$x, "\ny=", input$thresh_click$y)
-  })
-  
-  output$info.temp <- renderText({
-    paste0("x=", input$temp_click$x, "\ny=", input$temp_click$y)
-  })
-  
-  output$info.prcp <- renderText({
-    paste0("x=", input$prcp_click$x, "\ny=", input$prcp_click$y)
-  })
-  
-  output$info.dist <- renderText({
-    paste0("x=", input$dist_click$x, "\ny=", input$dist_click$y)
-  })
 
-  output$npoint <- renderPrint({
-    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+  output$info.thresh <- renderPrint({
+    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
                       threshold = 5, maxpoints = 3)
     cat <- ("Nearest point within five pixels:\n")
     print(row)
     })
+  output$info.temp <- renderPrint({
+    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+                      threshold = 5, maxpoints = 3)
+    cat <- ("Nearest point within five pixels:\n")
+    print(row)
+  })
+  output$info.prcp <- renderPrint({
+    row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
+                      threshold = 5, maxpoints = 3)
+    cat <- ("Nearest point within five pixels:\n")
+    print(row)
+  })
+  
+  output$info.dist <- renderPrint({
+    row <- nearPoints(pred.df[, c("x")], input$dist_click, 
+                      threshold = 5, maxpoints = 3)
+    cat <- ("Nearest point within five pixels:\n")
+    print(row)
+  })
   
 }
