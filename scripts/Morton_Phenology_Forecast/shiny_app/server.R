@@ -101,7 +101,7 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
 plot.threshB <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=threshB, group=YEAR), alpha=0.2, size=0.5) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
+  geom_line(data=dat.forecast[dat.forecast$TYPE == "observed", ], aes(x=YDAY, y=GDD5.cum, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
   geom_ribbon(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
@@ -132,7 +132,7 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
 plot.prcp <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum, group=YEAR), alpha=0.2, size=0.5) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=PRCP.cum, color="observed"), size=2) +
+  geom_line(data=dat.forecast[dat.forecast$TYPE == "observed", ], aes(x=YDAY, y=PRCP.cum, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
   geom_ribbon(data=ens.forecast$PRCP.cum[ens.forecast$PRCP.cum$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$PRCP.cum[ens.forecast$PRCP.cum$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
@@ -151,7 +151,7 @@ plot.prcp <- ggplot(data=dat.ghcn) +
 plot.tmean <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun=mean, color="black", geom="line", size=1) +
   geom_line(data=dat.ghcn, aes(x=YDAY, y=TMEAN, group=YEAR), alpha=0.2, size=0.5) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
+  geom_line(data=dat.forecast[dat.forecast$TYPE == "observed", ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
   # geom_ribbon(aes(fill="observed")) +
   geom_ribbon(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
   geom_line(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
@@ -366,24 +366,35 @@ function(input, output) {
   #Defining the output information we get from out clicks
 
   output$info.thresh <- renderPrint({
-    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
+    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
                         xvar = "YDAY", yvar = "GDD5.cum",
-                      threshold = 5, maxpoints = 1)
+                        threshold = 15, maxpoints = 1)
     
-   o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
-                       xvar = "YDAY", yvar = "GDD5.cum",
-                      threshold = 5, maxpoints = 1)
+    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
+                        xvar = "YDAY", yvar = "GDD5.cum",
+                      threshold = 15, maxpoints = 1)
+    
     print(o.row)
     print(f.row)
     })
   output$info.temp <- renderPrint({
-    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
-                      threshold = 5, maxpoints = 1)
+    
+    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+                        threshold = 15, maxpoints = 1)
+    
+    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+                      threshold = 15, maxpoints = 1)
+    print(o.row)
     print(f.row)
   })
   output$info.prcp <- renderPrint({
-    f.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
-                      threshold = 5, maxpoints = 1)
+    
+    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
+                        threshold = 15, maxpoints = 1)
+    
+    f.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "forecast", c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
+                      threshold = 15, maxpoints = 1)
+    print(o.row)
     print(f.row)
   })
   
