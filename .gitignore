@@ -7,3 +7,4 @@ data_processed/GHCN_met_all.csv
 *.png
 data_processed/TracePlots_Quercus_macrocarpa.pdf
 scripts/Morton_Phenology_Forecast/shiny_app/Arb_Pheno.db
+*.nc
