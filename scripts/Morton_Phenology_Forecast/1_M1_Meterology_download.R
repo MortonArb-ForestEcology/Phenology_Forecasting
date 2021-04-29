@@ -64,6 +64,7 @@ download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, ga
 # A bit of setup to get the data
 # ----------------
 # Load GHCN data to get the window we need
+# Load GHCN data to get the window we need
 met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
 met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 summary(met.ghcn)
@@ -97,8 +98,7 @@ dates.cfs <- as.character(dates.cfs)
 for(FCST in dates.cfs){
   # print(FCST)
   dir.create(file.path(out.cfs, site.name, FCST), recursive=T, showWarnings =F)
-  download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(cfs.start), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
-  
+  download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
 }
 # ----------------
 
@@ -481,11 +481,4 @@ for(ENS in unique(dat.gefs2$ENS)){
 summary(gefs.indices2)
 
 
-write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
-
-# ggplot(data=dat.gefs2[dat.gefs2$DATE>as.Date("2021-05-01") & dat.gefs2$DATE<as.Date("2021-05-15"),]) +
-#   geom_line(aes(x=DATE, y=TMIN, color=TYPE, group=ENS))
-
-# ----------------
-
-# -------------------------------------------------
+write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE.csv")), row.names = F)
