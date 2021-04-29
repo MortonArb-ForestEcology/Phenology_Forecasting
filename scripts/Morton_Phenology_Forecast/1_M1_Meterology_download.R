@@ -72,6 +72,45 @@ summary(met.ghcn)
 # Set up some parameters for downloading the data
 ghcn.overlap = max(met.ghcn$DATE)-7
 forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")
+# -------------------------------------
+# Calculating some cumulative statistics
+# -------------------------------------
+# Create a function to calculate values we're interested in for prediction
+calc.indices <- function(dat){
+  # Assumes upper case column names of: TMAX, TMIN, PRCP, YDAY
+  # For chilling days, only start after the solstice (June 20th)
+  dat$TMEAN <- apply(dat[,c("TMAX", "TMIN")], 1, mean)
+  dat$GDD0 <- ifelse(dat$TMEAN>0, dat$TMEAN-0, 0)
+  dat$GDD5 <- ifelse(dat$TMEAN>5, dat$TMEAN-5, 0)
+  dat$CDD0 <- ifelse(dat$YDAY>172 & dat$TMEAN<0, 0-dat$TMEAN, 0)
+  dat$CDD2 <- ifelse(dat$YDAY>172 & dat$TMEAN< -2, -2-dat$TMEAN, 0)
+  dat$DaysNoRain <- NA
+  
+  dat[, c("GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum", "PRCP.cum")] <- cumsum(dat[, c("GDD0", "GDD5", "CDD0", "CDD2", "PRCP")])
+  
+  dat[, c("NORAIN.cum")] <- cumsum(ifelse(dat[,"PRCP"]>0, 1, 0))
+  
+  # Calculating days since rain just in case
+  dat$DaysNoRain[1] <- ifelse(dat$PRCP[1]>0, 0, 1)
+  for(i in 2:nrow(dat)){
+    dat$DaysNoRain[i] <- ifelse(dat$PRCP[i]>0, dat$DaysNoRain[i-1]+1, 0)
+  }
+  return(dat)
+}
+
+yr.min <- 2008
+yr.max <- lubridate::year(Sys.Date())
+met.ghcn2 <- data.frame()
+for(YR in yr.min:yr.max){
+  rows.yr <- which(met.ghcn$YEAR==YR)
+  # dat.yr <- dat.ghcn[rows.yr,]
+  dat.tmp <- calc.indices(dat=met.ghcn[rows.yr,])
+  met.ghcn2 <- rbind(met.ghcn2, dat.tmp)
+}
+summary(met.ghcn2)
+# dat.ghcn2[dat.ghcn2$DATE=="2020-04-09",]
+
+write.csv(met.ghcn2, file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
 # ----------------
 
 # ----------------

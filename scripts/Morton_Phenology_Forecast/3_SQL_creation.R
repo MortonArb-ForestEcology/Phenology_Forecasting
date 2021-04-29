@@ -30,7 +30,8 @@ dat.b <- read.csv("../../data_processed/Oak_collection_budburst.csv")
 
 
 #Reading in the historical weather
-dat.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
+dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv"))
+
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Reading in the forecast weather
