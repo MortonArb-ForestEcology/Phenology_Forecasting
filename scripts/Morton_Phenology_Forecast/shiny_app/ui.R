@@ -29,21 +29,21 @@ sp.list <- sort(unique(sp.catalogue$Scientific))
 name.type <- c("Scientific", "Common")
 
 fluidPage(
-  
   #Allowing the choice between scientific and common
   selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type))),
   uiOutput("select_Species"),
-  
-  mainPanel(
     fluidRow(
-      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), uiOutput("plot.thresh.ui", click="thresh_click"), 
+      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), 
+                  uiOutput("plot.thresh.ui", click="thresh_click"), 
                   uiOutput("plot.temp.ui", click="temp_click"), 
                   uiOutput("plot.prcp.ui", click="prcp_click"), 
                   uiOutput("plot.dist.ui", click="dist_click"))
-        )),
+        ),
+  fluidRow(
+    splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), 
   verbatimTextOutput("info.thresh"),
   verbatimTextOutput("info.temp"),
-  verbatimTextOutput("info.prcp"),
-  verbatimTextOutput("info.dist")
-
+  verbatimTextOutput("info.prcp"))
+  #verbatimTextOutput("info.dist"))
+  )
 )
