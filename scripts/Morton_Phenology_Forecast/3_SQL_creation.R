@@ -7,11 +7,8 @@
 #         Species_Name_Catalogue.csv created by SP_Names.R
 #         Species_Name_Index.csv created by SP_Names.R
 # Outputs: Arb_Pheno.db created
-# Notes: The first half of this script is taken from M2_Meteorology_Graphing_Bayes.R
+# Notes: #Currently this establishes the database on a local device and then loads it with our information of interest
 #-----------------------------------------------------------------------------------------------------------------------------------#
-#This script is for the creation of the sql database
-#Currently this only establishes the database on a local device and then loads it with our budburst model prediction data
-#This is a first pass test of concept but will soon integrate all aspects of our phenology data
 library(RSQLite)
 library(dplyr)
 

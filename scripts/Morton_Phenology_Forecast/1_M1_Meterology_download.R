@@ -110,6 +110,7 @@ for(YR in yr.min:yr.max){
 summary(met.ghcn2)
 # dat.ghcn2[dat.ghcn2$DATE=="2020-04-09",]
 
+#This is where the "observed" data comes from
 write.csv(met.ghcn2, file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv"), row.names=F)
 # ----------------
 
@@ -519,5 +520,5 @@ for(ENS in unique(dat.gefs2$ENS)){
 
 summary(gefs.indices2)
 
-
+#This is the main forecast file we will be working with
 write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE.csv")), row.names = F)
