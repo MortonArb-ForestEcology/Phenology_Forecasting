@@ -2,10 +2,11 @@
 # Script by : Lucien Fitzpatrick
 # Project: Phenology forecasting app
 # Purpose: This script is for the creation of the sql database that is pulled for the app
-# Inputs: Weather_ArbCOOP_historical_latest.csv created by M1_Meterology_download.R
+# Inputs: Thermal Time model output for Oak species
+#         Quercuscollection googlesheet
+#         Oak_collection_budburst.csv
+#         Weather_ArbCOOP_historical_latest.csv created by M1_Meterology_download.R
 #         Weather_Arb_forecast_ensemble_latest.csv created by M1_Meterology_download.R
-#         Species_Name_Catalogue.csv created by SP_Names.R
-#         Species_Name_Index.csv created by SP_Names.R
 # Outputs: Arb_Pheno.db created
 # Notes: #Currently this establishes the database on a local device and then loads it with our information of interest
 #-----------------------------------------------------------------------------------------------------------------------------------#
