@@ -207,7 +207,10 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    thresh <- sample(gdd.prior$THRESH, 500)
+    #thresh <- sample(gdd.prior$THRESH, 500)
+    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
+    
+    thresh <- runif(500, 300, 600)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -238,7 +241,10 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    thresh <- sample(gdd.prior$THRESH, 500)
+    #thresh <- sample(gdd.prior$THRESH, 500)
+    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
+    
+    thresh <- runif(500, 300, 600)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -271,7 +277,10 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    thresh <- sample(gdd.prior$THRESH, 500)
+    #thresh <- sample(gdd.prior$THRESH, 500)
+    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
+    
+    thresh <- runif(500, 300, 600)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -304,7 +313,10 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    thresh <- sample(gdd.prior$THRESH, 500)
+    #thresh <- sample(gdd.prior$THRESH, 500)
+    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
+    
+    thresh <- runif(500, 300, 600)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -366,34 +378,34 @@ function(input, output) {
   #Defining the output information we get from out clicks
 
   output$info.thresh <- renderPrint({
-    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
+    o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "GDD5.cum")], input$thresh_click, 
                         xvar = "YDAY", yvar = "GDD5.cum",
                         threshold = 50, maxpoints = 1)
     
-    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "GDD5.cum")]
+    #f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "GDD5.cum")]
     
     print(o.row)
-    print(f.row)
+    #print(f.row)
     })
   output$info.temp <- renderPrint({
     
-    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
+    o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "TMEAN")], input$temp_click, 
                         threshold = 50, maxpoints = 1)
     
-    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "TMEAN")]
+    #f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "TMEAN")]
     
     print(o.row)
-    print(f.row)
+    #print(f.row)
   })
   output$info.prcp <- renderPrint({
     
-    o.row <- nearPoints(dat.forecast[dat.forecast$TYPE == "observed", c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
+    o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
                         threshold = 50, maxpoints = 1)
     
-    f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "PRCP.cum")]
+    #f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "PRCP.cum")]
     
     print(o.row)
-    print(f.row)
+    #print(f.row)
   })
   
   output$info.dist <- renderPrint({
