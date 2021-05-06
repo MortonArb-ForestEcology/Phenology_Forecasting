@@ -11,7 +11,7 @@ dat.ghcn <- read.csv(file.path(path.in, "data", "Weather_ArbCOOP_historical_late
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 summary(dat.ghcn)
 
-dat.forecast <- read.csv(file.path(path.in, "data", "Weather_Arb_forecast_ensemble_latest.csv"))
+dat.forecast <- read.csv(file.path(path.in, "data", "MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv"))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 # 
 summary(dat.forecast)
@@ -47,7 +47,7 @@ for(VAR in vars.agg){
 # -------------------------------------
 # Doing some quick graphing
 # -------------------------------------
-day.labels <- data.frame(Date=seq.Date(as.Date("2020-01-01"), as.Date("2020-12-31"), by="month"))
+day.labels <- data.frame(Date=seq.Date(as.Date("2021-01-01"), as.Date("2021-12-31"), by="month"))
 day.labels$yday <- lubridate::yday(day.labels$Date)
 day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::day(day.labels$Date))
 summary(day.labels)
@@ -180,7 +180,7 @@ calc.bud <- function(dat, VAR, THRESH){
 }
 
 
-day.labels2 <- data.frame(Date=seq.Date(as.Date("2020-01-03"), as.Date("2020-7-01"), by="day"))
+day.labels2 <- data.frame(Date=seq.Date(as.Date("2021-01-03"), as.Date("2021-7-01"), by="day"))
 day.labels2$yday <- lubridate::yday(day.labels2$Date)
 day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate::day(day.labels2$Date))
 summary(day.labels2)
@@ -188,7 +188,7 @@ summary(day.labels2)
 dat.b <- read.csv("../data_processed/Oak_collection_budburst.csv")
 
 spp.forecast <- unique(dat.b$Species)
-ens <- unique(dat.forecast$ID)
+ens <- unique(dat.forecast$ENS)
 SPP=spp.forecast
 for(SPP in spp.forecast){
   gdd.prior <- read.csv(file.path("../data_processed/model_output", paste0(SPP, "_TT_model_budburst.csv")))
@@ -196,10 +196,10 @@ for(SPP in spp.forecast){
   
   set.seed(902)
   thresh <- sample(gdd.prior$THRESH, 500)
-  pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ID))))
+  pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
   
   for(i in 1:length(ens)){
-    pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ID==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
+    pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
   }
   pred.df <- data.frame(x=as.vector(pred.array))
   
