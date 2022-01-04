@@ -1,6 +1,7 @@
 # A function to download NOAA CFS operational forecasts: 
 # https://www.ncdc.noaa.gov/data-access/model-data/model-datasets/climate-forecast-system-version2-cfsv2#CFSv2%20Operational%20Forecasts
 # Full documentation to come (ask Christy in the meanwhile)
+library(httr)
 
 download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sys.Date(), forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")){
   if(!dir.exists(path.save)) dir.create(path.save, recursive=T, showWarnings = F)
@@ -17,33 +18,32 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sy
   # https://www.ncei.noaa.gov/thredds/catalog/model-cfs_v2_for_ts/catalog.html
   
   # 1. Getting a list of the years we can get dara from
-  fname <- RCurl::getURL(file.path(cat.base, "catalog.html"), dirlistonly = TRUE)
-  fname <- strsplit(fname, "\r*\n")[[1]]
-  
-  ind.parent <- grep("Time Series", fname)
-  # ind.yr <- grep(lubridate::year(Sys.Date()), fname2)
-  f.latest <- fname[ind.parent+6]
-  yr.latest <- strsplit(f.latest, "<*tt*>")[[1]][2]
-  yr.latest <- substr(yr.latest, 1, 4)
+  #fname <- RCurl::getURL(file.path(cat.base, "catalog.html"), dirlistonly = TRUE)
+  connec <- httr::GET(file.path(cat.base, "catalog.html"))
+  fname <- strsplit(strsplit(content(connec, "text"), "href='")[[1]][4], "/")[[1]][1]
   
   # 2. Getting the available months for the latest year
-  fname2 <- RCurl::getURL(file.path(cat.base, yr.latest, "catalog.html"), dirlistonly = TRUE)
-  fname2 <- strsplit(fname2, "\r*\n")[[1]]
+  #fname2 <- RCurl::getURL(file.path(cat.base, yr.latest, "catalog.html"))
+  connec <- httr::GET(file.path(cat.base, yr.latest, "catalog.html"))
+  fname2 <- strsplit(content(connec, "text"), "href='")[[1]]
   str.mo <- fname2[grep(yr.latest, fname2)[4]] # Pass thorugh all the headers to get the most recent month
   mo.latest <- strsplit(str.mo, "<*tt*>")[[1]][2]
   mo.latest <- substr(mo.latest, 1, 6)
   
   # 3. getting the latest day
-  fname3 <- RCurl::getURL(file.path(cat.base, yr.latest, mo.latest, "catalog.html"), dirlistonly = TRUE)
-  fname3 <- strsplit(fname3, "\r*\n")[[1]]
+  
+  #fname3 <- RCurl::getURL(file.path(cat.base, yr.latest, mo.latest, "catalog.html"), dirlistonly = TRUE)
+  connec <- httr::GET(file.path(cat.base, yr.latest, mo.latest, "catalog.html"))
+  fname3 <- strsplit(content(connec, "text"), "href='")[[1]]
   str.day <- fname3[grep(mo.latest, fname3)[4]] # Pass thorugh all the headers to get the most recent day
   
   day.latest <- strsplit(str.day, "<*tt*>")[[1]][2]
   day.latest <- substr(day.latest, 1, 8)
   
   # 4. getting the latest hour
-  fname4 <- RCurl::getURL(file.path(cat.base, yr.latest, mo.latest, day.latest, "catalog.html"), dirlistonly = TRUE)
-  fname4 <- strsplit(fname4, "\r*\n")[[1]]
+  #fname4 <- RCurl::getURL(file.path(cat.base, yr.latest, mo.latest, day.latest, "catalog.html"), dirlistonly = TRUE)
+  connec <- httr::GET(file.path(cat.base, yr.latest, mo.latest, day.latest, "catalog.html"))
+  fname4 <- strsplit(content(connec, "text"), "href='")[[1]]
   str.hr <- fname4[grep(day.latest, fname4)[4]] # Pass thorugh all the headers to get the most recent day
   
   hr.latest <- strsplit(str.hr, "<*tt*>")[[1]][2]
