@@ -20,7 +20,7 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = Sy
   # 1. Getting a list of the years we can get dara from
   #fname <- RCurl::getURL(file.path(cat.base, "catalog.html"), dirlistonly = TRUE)
   connec <- httr::GET(file.path(cat.base, "catalog.html"))
-  fname <- strsplit(strsplit(content(connec, "text"), "href='")[[1]][4], "/")[[1]][1]
+  yr.latest <- strsplit(strsplit(content(connec, "text"), "href='")[[1]][4], "/")[[1]][1]
   
   # 2. Getting the available months for the latest year
   #fname2 <- RCurl::getURL(file.path(cat.base, yr.latest, "catalog.html"))
