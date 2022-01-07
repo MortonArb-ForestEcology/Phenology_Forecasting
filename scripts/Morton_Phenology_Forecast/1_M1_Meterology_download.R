@@ -99,7 +99,7 @@ calc.indices <- function(dat){
 }
 
 yr.min <- 2008
-yr.max <- lubridate::year(Sys.Date())
+yr.max <- lubridate::year(Sys.Date()) #I had to do this because of a discrepancy over the holdays where it hasn't updated yet
 met.ghcn2 <- data.frame()
 for(YR in yr.min:yr.max){
   rows.yr <- which(met.ghcn$YEAR==YR)
@@ -290,6 +290,9 @@ for(i in 2:length(cfs.dates)){
 }
 head(cfs.tmx)
 
+#Subsetting because the precipitation has a longer forecast
+cfs.prp <- cfs.prp[cfs.prp$time <= max(cfs.tmn$time), ]
+
 dat.cfs <- data.frame(Timestamp=cfs.tmx$time, Date=as.Date(substr(cfs.tmx$time, 1, 10)), 
                       tmax=cfs.tmx$Maximum_temperature_height_above_ground.unit.K., 
                       tmin=cfs.tmn$Minimum_temperature_height_above_ground.unit.K.,
@@ -401,7 +404,7 @@ summary(met.gefs)
 
 # Loading the data we have to evaluate the forecast
 gefs.comp <- met.gefs[met.gefs$Date %in% met.ghcn$DATE,]
-gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
+gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.prcp")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
 
 # Set up a bias-corrected data frame
 bc.gefs <- data.frame(TYPE="forecast", ENS=met.gefs$ens, DATE=met.gefs$Date, YDAY=lubridate::yday(met.gefs$Date))
