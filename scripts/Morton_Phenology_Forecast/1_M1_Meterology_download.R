@@ -431,9 +431,10 @@ for(ENS in unique(met.gefs$ens)){
     mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
     mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
     mod.prcp <- lm(GHCN.prcp ~ prcp, data=gefs.comp[comp.row,])
-    bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row])
-    bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row])
-    bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row])
+    #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
+    bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
+    bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
+    bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row,])
   }
 }
 summary(bc.gefs)
