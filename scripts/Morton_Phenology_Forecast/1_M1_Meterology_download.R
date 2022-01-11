@@ -513,7 +513,7 @@ dat.gefs2$MODEL[dat.gefs2$DATE < min(bc.gefs$DATE)] <- "Observed"
 dat.gefs2 <- dat.gefs2[order(dat.gefs2$ENS, dat.gefs2$DATE),]
 head(dat.gefs2)
 
-
+dat.gefs2 <- dat.gefs2[!is.na(dat.gefs2$MODEL),]
 gefs.indices2 <- data.frame()
 for(ENS in unique(dat.gefs2$ENS)){
   row.ens <- which(dat.gefs2$ENS==ENS)
