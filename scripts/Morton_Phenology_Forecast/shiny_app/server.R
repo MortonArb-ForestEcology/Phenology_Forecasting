@@ -207,10 +207,8 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    #thresh <- sample(gdd.prior$THRESH, 500)
-    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
-    
-    thresh <- runif(500, 300, 600)
+    thresh <- sample(gdd.prior$THRESH, 500)
+
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -241,10 +239,8 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    #thresh <- sample(gdd.prior$THRESH, 500)
-    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
+    thresh <- sample(gdd.prior$THRESH, 500)
     
-    thresh <- runif(500, 300, 600)
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -277,10 +273,8 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    #thresh <- sample(gdd.prior$THRESH, 500)
-    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
-    
-    thresh <- runif(500, 300, 600)
+    thresh <- sample(gdd.prior$THRESH, 500)
+
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
@@ -313,10 +307,8 @@ function(input, output) {
       collect() #A neccessary line to collect all the data instead of only the 10 first
     
     set.seed(902)
-    #thresh <- sample(gdd.prior$THRESH, 500)
-    #FAKE VALUES CURRENTLY TO TEST FUNCTIONALITY 
-    
-    thresh <- runif(500, 300, 600)
+    thresh <- sample(gdd.prior$THRESH, 500)
+
     pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
     
     for(i in 1:length(ens)){
