@@ -15,6 +15,7 @@ library(dplyr)
 
 path.weath <- "shiny_app/data_raw/meteorology/"
 path.ghcn=c("shiny_app/data_raw/meteorology/GHCN_extracted/")
+dir.met <- "shiny_app/data_raw/meteorology"
 
 #Reading in budburst model
 bud.files <- list.files(path = "../../data_processed/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
@@ -33,7 +34,7 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Reading in the forecast weather
-dat.forecast <- read.csv(file.path(paste0(path.weath,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
+dat.forecast <- read.csv(file.path(paste0(path.weath,"GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
