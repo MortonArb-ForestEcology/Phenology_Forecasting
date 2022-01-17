@@ -12,10 +12,10 @@
 #-----------------------------------------------------------------------------------------------------------------------------------#
 library(RSQLite)
 library(dplyr)
-
-path.weath <- "shiny_app/data_raw/meteorology/"
-path.ghcn=c("shiny_app/data_raw/meteorology/GHCN_extracted/")
-dir.met <- "shiny_app/data_raw/meteorology"
+path.temp <- "shiny_app/data_raw/meteorology/"
+path.weath <- "data_raw/meteorology/"
+path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
+dir.met <- "data_raw/meteorology"
 
 #Reading in budburst model
 bud.files <- list.files(path = "../../data_processed/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
@@ -23,6 +23,14 @@ Budburst_Model <- as.data.frame(sapply(bud.files, read.csv, simplify=FALSE) %>%
                                   bind_rows(.id = "id"))
 
 Budburst_Model <- Budburst_Model[,c("THRESH", "aPrec", "sd", "species")]
+
+set.seed(901)
+#Taking a  random sample of 1000 pulls
+b.model <- do.call(rbind, 
+        lapply(split(Budburst_Model, Budburst_Model$species), 
+               function(x) x[sample(nrow(x), 1000), ]))
+
+rownames(b.model) <- NULL
 
 #Reading in the oak observations
 dat.b <- read.csv("../../data_processed/Oak_collection_budburst.csv")
@@ -55,9 +63,17 @@ com$Type <- "Common"
 
 sp.index <- rbind(sci, com)
 
+write.csv(b.model, file.path(path.temp, "Budburst_Model.csv"), row.names = F)
+write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
+write.csv(dat.forecast , file.path(path.temp, "Forecast_Weather.csv"), row.names = F)
+write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
+write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
+
+
+
 #This creates the database and "conn" becomes the variable noting the connection path
 conn <- dbConnect(RSQLite::SQLite(), "shiny_app/Arb_Pheno.db")
-dbWriteTable(conn, "Budburst_Model", Budburst_Model, overwrite = T)
+dbWriteTable(conn, "Budburst_Model", b.model, overwrite = T)
 dbWriteTable(conn, "Budburst_Obs", dat.b, overwrite = T)
 dbWriteTable(conn, "Historical_Weather", dat.ghcn, overwrite = T)
 dbWriteTable(conn, "Forecast_Weather", dat.forecast, overwrite = T)
