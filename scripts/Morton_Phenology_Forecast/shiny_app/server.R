@@ -58,7 +58,7 @@ sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
 
 # Subset to just the forecasts
 dat.forecast <- dat.forecast[dat.forecast$TYPE=="forecast",]
-vars.agg <- c("TMEAN", "PRCP.cum", "GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum")
+vars.agg <- c("TMEAN", "GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum")
 ens.forecast <- list()
 for(VAR in vars.agg){
   ens.forecast[[VAR]] <- aggregate(dat.forecast[,VAR],
@@ -97,7 +97,7 @@ plot.threshB <- ggplot(data=dat.ghcn) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
   theme_bw() +
-  #guides(fill=F) +
+  guides(fill="none") +
   theme(legend.position = c(0.2, 0.9),
         legend.title=element_blank(),
         legend.background = element_blank(),
@@ -118,23 +118,6 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))) {
     coord_cartesian(ylim=c(0, max(dat.ghcn$threshB[dat.ghcn$YDAY>=155])))
 }  
 
-plot.prcp <- ggplot(data=dat.ghcn) +
-  stat_summary(data=dat.ghcn, aes(x=YDAY, y=PRCP.cum), fun=mean, color="black", geom="line", size=1, na.rm = T) +
-  geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=PRCP.cum, color="observed"), size=2) +
-  geom_ribbon(data=ens.forecast$PRCP.cum[ens.forecast$PRCP.cum$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-  geom_line(data=ens.forecast$PRCP.cum[ens.forecast$PRCP.cum$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
-  scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
-  scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
-  scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=2)], labels=day.labels$Text[seq(2, 12, by=2)], limits = c(0,180))  +
-  scale_y_continuous(name="Cum. Precip (mm)" ,expand=c(0,0)) +
-  theme_bw() +
-  #guides(fill=F) +
-  theme(legend.position = c(0.2, 0.9),
-        legend.title=element_blank(),
-        legend.background = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank())
-
 plot.tmean <- ggplot(data=dat.ghcn) +
   stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun=mean, color="black", geom="line", size=1,  na.rm = T) +
   geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
@@ -142,10 +125,10 @@ plot.tmean <- ggplot(data=dat.ghcn) +
   geom_line(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
   scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
   scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
-  scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=2)], labels=day.labels$Text[seq(2, 12, by=2)], limits = c(0,180))  +
+  scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)], limits = c(0,180))  +
   scale_y_continuous(name="Mean Daily Temp (C)" ,expand=c(0,0)) +
   theme_bw() +
-  #guides(fill=F) +
+  guides(fill="none") +
   theme(legend.position = c(0.5, 0.2),
         legend.title=element_blank(),
         legend.background = element_blank(),
@@ -182,7 +165,7 @@ function(input, output) {
     } else{
       spp.avail <- sort(unique(paste(sp.index$Name[sp.index$Type==input$Convention])))
     }
-    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= sort(spp.avail), options = list('live-search' = TRUE), multiple = F)
+    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus acutissima", options = list('live-search' = TRUE), multiple = F)
   })
   
   output$plot.thresh <- renderPlot({
@@ -247,38 +230,6 @@ function(input, output) {
     
   }) 
   
-  output$plot.prcp <- renderPlot({
-    #Here is where we interact witht the sql and full what we want
-    #gdd.prior <- full %>%
-    #  filter(species == !!input$Species)%>% #Choosing our species
-      #select(THRESH)%>% #picking the variable we want from those species
-    #  collect() #A neccessary line to collect all the data instead of only the 10 first
-    thresh <- full[full$species == input$Species, "THRESH"]
-    
-    pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
-    
-    for(i in 1:length(ens)){
-      pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
-    }
-    pred.df <- data.frame(x=as.vector(pred.array))
-    
-    # Create some useful indices and labels
-    dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
-                          q75=quantile(pred.array,c(0.125, 0.875)),
-                          q95=quantile(pred.array,c(0.025, 0.975)))
-    row.names(dat.lim) <- c("lb", "ub")
-    dat.lim <- data.frame(t(dat.lim))
-    pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
-    pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
-    
-    
-    plot.prcp +
-      geom_rect(data=dat.lim["q75",],
-                aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)
-    
-    
-  }) 
-  
   output$plot.dist <- renderPlot({
     #Here is where we interact witht the sql and full what we want
     #gdd.prior <- full %>%
@@ -311,7 +262,7 @@ function(input, output) {
       scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
       scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
       theme_bw() +
-      #guides(fill=F) +
+      guides(fill="none") +
       theme(legend.position = c(0.5, 0.2),
             legend.title=element_blank(),
             legend.background = element_blank(),
@@ -336,10 +287,7 @@ function(input, output) {
     plotOutput("plot.temp", click="temp_click")
   })
   
-  output$plot.prcp.ui <- renderUI({
-    plotOutput("plot.prcp", click="prcp_click")
-  })
-  
+
   output$plot.dist.ui <- renderUI({
     plotOutput("plot.dist", click="dist_click")
   })
@@ -367,16 +315,7 @@ function(input, output) {
     print(o.row)
     #print(f.row)
   })
-  output$info.prcp <- renderPrint({
-    
-    o.row <- nearPoints(dat.forecast[, c("TYPE", "DATE", "YDAY", "PRCP.cum")], input$prcp_click, 
-                        threshold = 50, maxpoints = 1)
-    
-    #f.row <- dat.forecast[(dat.forecast$TYPE == "forecast" & dat.forecast$YDAY == o.row$YDAY), c("TYPE", "DATE", "YDAY", "PRCP.cum")]
-    
-    print(o.row)
-    #print(f.row)
-  })
+
   
   output$info.dist <- renderPrint({
     f.row <- nearPoints(pred.df[, c("x")], input$dist_click, 
