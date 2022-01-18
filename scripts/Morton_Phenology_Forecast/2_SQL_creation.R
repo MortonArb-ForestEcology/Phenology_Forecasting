@@ -24,7 +24,12 @@ Budburst_Model <- as.data.frame(sapply(bud.files, read.csv, simplify=FALSE) %>%
 
 Budburst_Model <- Budburst_Model[,c("THRESH", "aPrec", "sd", "species")]
 
-set.seed(901)
+convg.df <- read.csv(file.path("../../data_processed/model_output", paste0("Budburst_convergence.csv")))
+good.sp <- convg.df[convg.df$burst.converge < 1.05, "species"]
+
+Budburst_Model <- Budburst_Model[Budburst_Model$species %in% good.sp,]
+
+set.seed(902)
 #Taking a  random sample of 1000 pulls
 b.model <- do.call(rbind, 
         lapply(split(Budburst_Model, Budburst_Model$species), 
@@ -34,7 +39,7 @@ rownames(b.model) <- NULL
 
 #Reading in the oak observations
 dat.b <- read.csv("../../data_processed/Oak_collection_budburst.csv")
-
+dat.b <- dat.b[dat.b$Species %in% good.sp,]
 
 #Reading in the historical weather
 dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv"))
@@ -42,7 +47,7 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Reading in the forecast weather
-dat.forecast <- read.csv(file.path(paste0(path.weath,"GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE.csv")))
+dat.forecast <- read.csv(file.path(paste0(path.weath,"GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")))
 dat.forecast$DATE <- as.Date(dat.forecast$DATE)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
@@ -63,11 +68,24 @@ com$Type <- "Common"
 
 sp.index <- rbind(sci, com)
 
+#Reading in budburst model
+past.fc <- list.files(path = file.path(path.temp), pattern = "Previous-Forecast", full.names = F)
+gsub(".*_", "", past.fc)
+
+fc.df <- data.frame(c("Latest"), c("Forecast_Weather.csv"))
+colnames(fc.df) <- c("Date", "File")
+past.dates <- data.frame((gsub("\\..*", "", gsub(".*_", "", past.fc))), past.fc)
+colnames(past.dates) <- c("Date", "File")
+fc.df <- rbind(past.dates, fc.df)
+
+
 write.csv(b.model, file.path(path.temp, "Budburst_Model.csv"), row.names = F)
+write.csv(dat.b , file.path(path.temp,"Oak_collection_budburst.csv"), row.names = F)
 write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
 write.csv(dat.forecast , file.path(path.temp, "Forecast_Weather.csv"), row.names = F)
 write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
 write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
+write.csv(fc.df, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
 
 
 
