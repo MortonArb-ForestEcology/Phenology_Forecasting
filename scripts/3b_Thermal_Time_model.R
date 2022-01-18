@@ -32,6 +32,7 @@ setdiff(SP.leaf$Species, SP.burst$Species)
 #Creating a data frame to check the model output
 Check <- data.frame()
 l <- 1
+SP.burst <- SP.burst[SP.burst$Species %in% SP.leaf$Species,]
 
 #We are using burst to determine the species becasue it is missing two species: fusiformis and laurifolia
 for(SP in SP.burst$Species){
@@ -182,7 +183,7 @@ for(SP in SP.burst$Species){
 }
 
 #Checking convergence and confidence interval of all species
-Check
+write.csv(Check, file.path("../data_processed/model_output", paste0("Budburst_convergence.csv")), row.names=F)
 
 #If they are below 1.1 then they are consider converged (I'll get the right citation for that I've seen it in a few papers)
 Close <- Check[(Check$burst.converge > 1.05 | Check$leaf.converge > 1.05) , ]
