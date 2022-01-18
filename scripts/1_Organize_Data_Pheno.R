@@ -37,7 +37,7 @@ source(file.path(path.hub, "scripts/Group_google.R"))
 #This only matters for end years. Start years are adjusted to match the first year the genus has a form.
 Genus <- c("Quercus")
 StartYear <- 2018
-EndYear <- 2019
+EndYear <- 2021
 
 #Will produce message that look like errors that say 
 #"New names: Please choose the correct accession number for the tree you are observing.` -> `Please choose the correct accession number for the tree you are observing....5`"
@@ -54,7 +54,7 @@ dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
 
 #pulling out bud burst information from out phenology data
 dat.oak <- subset(dat.oak, select = c("Date.Observed", "Year", "Species", "Bud", "Leaf", "PlantNumber"))
-
+dat.oak <- dat.oak[dat.oak$Year != "2020",]
 
 #Creating final frame containing the first burst for each year.
 dat.burst <- aggregate(dat.oak[dat.oak$Bud=="Yes", "Date.Observed"], 
