@@ -26,19 +26,33 @@
 # 0. Setup
 # -------------------------------------------------
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
-path.out <- "shiny_app/data_raw/meteorology/data"
+path.out <- "data_raw/meteorology/data"
+path.shiny <- "shiny_app/data_raw/meteorology/"
 
-dir.met <- "shiny_app/data_raw/meteorology"
+
+dir.met <- "data_raw/meteorology"
 if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)
 
-path.ghcn=c("shiny_app/data_raw/meteorology/GHCN_extracted/")
-out.cfs="shiny_app/data_raw/meteorology/CFS_Forecast"
-out.gefs <- "shiny_app/data_raw/meteorology/GEFS"
+path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
+out.cfs="data_raw/meteorology/CFS_Forecast"
+out.gefs <- "data_raw/meteorology/GEFS"
 
 # Params for extracting NOAA products
 site.name="MortonArb"
 lat.in=41.812739
 lon.in=-88.072749
+
+#Label the older downlaods as previous forecasts
+#Reading in the historical weather
+#--------------------------------------------------------------------------#
+#This should ony be run ONCE at the start of the day. This converts the previous to a historical but it doesn't check to be sure it's historical
+#--------------------------------------------------------------------------#
+#Reading in the forecast weather
+dat.forecast <- read.csv(file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")))
+dat.forecast$DATE <- as.Date(dat.forecast$DATE)
+
+write.csv(dat.forecast, file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_", max(dat.forecast[dat.forecast$TYPE == "observed", "DATE"]) ,".csv")), row.names = F)
+write.csv(dat.forecast, file.path(paste0(path.shiny,"Previous-Forecast_", max(dat.forecast[dat.forecast$TYPE == "observed", "DATE"]) ,".csv")), row.names = F)
 
 # -------------------------------------------------
 
@@ -51,7 +65,7 @@ lon.in=-88.072749
 # ---------------------------------
 ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
-dir.raw="shiny_app/data_raw/meteorology/GHCN_raw/"
+dir.raw="data_raw/meteorology/GHCN_raw/"
 
 source("../met_download_GHCN.R"); source("../met_gapfill.R")
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
@@ -360,11 +374,17 @@ cfs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %i
 bc.cfs <- data.frame(TYPE="forecast", DATE=met.cfs$Date, YDAY=lubridate::yday(met.cfs$Date))
 summary(bc.cfs)
 # If there's only a tiny bit of data, just use the mean off-sets
-if(nrow(cfs.comp)<=3){
+
+#LUCIEN CHANGED THIS TO FORCE THE MEAN OFFSET TEMPORARILY
+#BECAUSE I M DOING THIS IN JANUARY THE BIAS CORRECTION CAUSES ISSUES
+#IT COULD BE FOR OTHER REASONS BUT I DON"T KNOW ENOUGH I WIL DISCUSS THIS SOON
+if(nrow(cfs.comp)<=3){ #This is the standard
+#if(nrow(cfs.comp)<=10){
+
   bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
   bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
   
-  if(all(cfs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
+  if(all(cfs.comp[,c("prcp.day")]==0) | all(cfs.comp[,c("GHCN.PRCP")]==0)){
     bc.cfs$PRCP <- met.cfs$prcp.day
   } else {
     row.rain <- which(cfs.comp$prcp.day>0)
@@ -374,10 +394,10 @@ if(nrow(cfs.comp)<=3){
 } else {
   mod.tmax <- lm(GHCN.tmax ~ tmax, data=cfs.comp)
   mod.tmin <- lm(GHCN.tmin ~ tmin, data=cfs.comp)
-  mod.prcp <- lm(GHCN.prcp ~ prcp, data=cfs.comp)
+  mod.prcp <- lm(GHCN.PRCP ~ prcp, data=cfs.comp)
   bc.cfs$TMAX <- predict(mod.tmax, newdata = met.cfs)
   bc.cfs$TMIN <- predict(mod.tmin, newdata = met.cfs)
-  bc.cfs$PRXP <- predict(mod.prcp, newdata = met.cfs)
+  bc.cfs$PRCP <- predict(mod.prcp, newdata = met.cfs)
 }
 summary(bc.cfs)
 
@@ -404,7 +424,7 @@ summary(met.gefs)
 
 # Loading the data we have to evaluate the forecast
 gefs.comp <- met.gefs[met.gefs$Date %in% met.ghcn$DATE,]
-gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.prcp")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
+gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
 
 # Set up a bias-corrected data frame
 bc.gefs <- data.frame(TYPE="forecast", ENS=met.gefs$ens, DATE=met.gefs$Date, YDAY=lubridate::yday(met.gefs$Date))
@@ -416,7 +436,8 @@ for(ENS in unique(met.gefs$ens)){
   comp.row <- which(gefs.comp$ens==ENS)
   
   # If there's only a tiny bit of data, just use the mean off-sets
-  if(length(comp.row)<=3){
+  if(length(comp.row)<=3){#This is the standard
+  #if(length(comp.row)<=10){  
     bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
     bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
     
@@ -430,7 +451,7 @@ for(ENS in unique(met.gefs$ens)){
   } else {
     mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
     mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
-    mod.prcp <- lm(GHCN.prcp ~ prcp, data=gefs.comp[comp.row,])
+    mod.prcp <- lm(GHCN.PRCP ~ prcp, data=gefs.comp[comp.row,])
     #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
     bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
     bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
@@ -525,4 +546,5 @@ for(ENS in unique(dat.gefs2$ENS)){
 summary(gefs.indices2)
 
 #This is the main forecast file we will be working with
-write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE.csv")), row.names = F)
+write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")), row.names = F)
+
