@@ -28,23 +28,20 @@
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
 path.out <- "data_raw/meteorology/data"
 path.shiny <- "shiny_app/data_raw/meteorology/"
-if(!dir.exists(path.out)) dir.create(path.out, recursive=T, showWarnings = F)
-if(!dir.exists(path.shiny)) dir.create(path.shiny, recursive=T, showWarnings = F)
+
 
 dir.met <- "data_raw/meteorology"
 if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)
 
-path.ghcn <- "data_raw/meteorology/GHCN_extracted/"
-out.cfs <- "data_raw/meteorology/CFS_Forecast"
+path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
+out.cfs="data_raw/meteorology/CFS_Forecast"
 out.gefs <- "data_raw/meteorology/GEFS"
-if(!dir.exists(path.ghcn)) dir.create(path.ghcn, recursive = T, showWarnings = F)
-if(!dir.exists(out.cfs)) dir.create(out.cfs, recursive = T, showWarnings = F)
-if(!dir.exists(out.gefs)) dir.create(out.gefs, recursive = T, showWarnings = F)
 
 # Params for extracting NOAA products
 site.name="MortonArb"
 lat.in=41.812739
 lon.in=-88.072749
+
 # -------------------------------------------------
 
 # -------------------------------------------------
