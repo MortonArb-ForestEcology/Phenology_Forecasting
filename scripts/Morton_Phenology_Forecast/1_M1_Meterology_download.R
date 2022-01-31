@@ -28,32 +28,23 @@
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
 path.out <- "data_raw/meteorology/data"
 path.shiny <- "shiny_app/data_raw/meteorology/"
-
+if(!dir.exists(path.out)) dir.create(path.out, recursive=T, showWarnings = F)
+if(!dir.exists(path.shiny)) dir.create(path.shiny, recursive=T, showWarnings = F)
 
 dir.met <- "data_raw/meteorology"
 if(!dir.exists(dir.met)) dir.create(dir.met, recursive=T, showWarnings = F)
 
-path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
-out.cfs="data_raw/meteorology/CFS_Forecast"
+path.ghcn <- "data_raw/meteorology/GHCN_extracted/"
+out.cfs <- "data_raw/meteorology/CFS_Forecast"
 out.gefs <- "data_raw/meteorology/GEFS"
+if(!dir.exists(path.ghcn)) dir.create(path.ghcn, recursive = T, showWarnings = F)
+if(!dir.exists(out.cfs)) dir.create(out.cfs, recursive = T, showWarnings = F)
+if(!dir.exists(out.gefs)) dir.create(out.gefs, recursive = T, showWarnings = F)
 
 # Params for extracting NOAA products
 site.name="MortonArb"
 lat.in=41.812739
 lon.in=-88.072749
-
-#Label the older downlaods as previous forecasts
-#Reading in the historical weather
-#--------------------------------------------------------------------------#
-#This should ony be run ONCE at the start of the day. This converts the previous to a historical but it doesn't check to be sure it's historical
-#--------------------------------------------------------------------------#
-#Reading in the forecast weather
-dat.forecast <- read.csv(file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")))
-dat.forecast$DATE <- as.Date(dat.forecast$DATE)
-
-write.csv(dat.forecast, file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_", max(dat.forecast[dat.forecast$TYPE == "observed", "DATE"]) ,".csv")), row.names = F)
-write.csv(dat.forecast, file.path(paste0(path.shiny,"Previous-Forecast_", max(dat.forecast[dat.forecast$TYPE == "observed", "DATE"]) ,".csv")), row.names = F)
-
 # -------------------------------------------------
 
 # -------------------------------------------------
@@ -378,8 +369,8 @@ summary(bc.cfs)
 #LUCIEN CHANGED THIS TO FORCE THE MEAN OFFSET TEMPORARILY
 #BECAUSE I M DOING THIS IN JANUARY THE BIAS CORRECTION CAUSES ISSUES
 #IT COULD BE FOR OTHER REASONS BUT I DON"T KNOW ENOUGH I WIL DISCUSS THIS SOON
-if(nrow(cfs.comp)<=3){ #This is the standard
-#if(nrow(cfs.comp)<=10){
+#if(nrow(cfs.comp)<=3){ #This is the standard
+if(nrow(cfs.comp)<=14){
 
   bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
   bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
@@ -436,8 +427,8 @@ for(ENS in unique(met.gefs$ens)){
   comp.row <- which(gefs.comp$ens==ENS)
   
   # If there's only a tiny bit of data, just use the mean off-sets
-  if(length(comp.row)<=3){#This is the standard
-  #if(length(comp.row)<=10){  
+  #if(length(comp.row)<=3){#This is the standard
+  if(length(comp.row)<=14){  
     bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
     bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
     
@@ -545,6 +536,10 @@ for(ENS in unique(dat.gefs2$ENS)){
 
 summary(gefs.indices2)
 
+check <- gefs.indices2[gefs.indices2$DATE == "2022-05-03",]
+
 #This is the main forecast file we will be working with
 write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")), row.names = F)
+write.csv(gefs.indices2, file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_" , Sys.Date() ,".csv")), row.names = F)
+write.csv(gefs.indices2, file.path(paste0(path.shiny,"Previous-Forecast_", Sys.Date() ,".csv")), row.names = F)
 

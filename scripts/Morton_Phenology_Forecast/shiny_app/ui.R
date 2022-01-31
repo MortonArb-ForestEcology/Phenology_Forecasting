@@ -18,32 +18,43 @@ library(shinyWidgets)
 # -------------------------------------
 path.in <- "data_raw/meteorology"
 
-Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
+#Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
 
-cat <- tbl(Tconnect, "Species_Catalogue")
-sp.catalogue <- cat %>%
-  collect() 
+#cat <- tbl(Tconnect, "Species_Catalogue")
+#sp.catalogue <- cat %>%
+#  collect() 
 
-
+sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
 sp.list <- sort(unique(sp.catalogue$Scientific))
 name.type <- c("Scientific", "Common")
 
+fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
+
+
 fluidPage(
   #Allowing the choice between scientific and common
-  selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type))),
-  uiOutput("select_Species"),
-    fluidRow(
-      splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), 
-                  uiOutput("plot.thresh.ui", click="thresh_click"), 
-                  uiOutput("plot.temp.ui", click="temp_click"), 
-                  uiOutput("plot.prcp.ui", click="prcp_click"), 
-                  uiOutput("plot.dist.ui", click="dist_click"))
-        ),
   fluidRow(
-    splitLayout(cellWidths = c("25%", "25%", "25%", "25%"), 
-  verbatimTextOutput("info.thresh"),
-  verbatimTextOutput("info.temp"),
-  verbatimTextOutput("info.prcp"))
+  column(width = 4, selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type)))),
+  
+  column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(Sys.Date())))),
+  fluidRow(
+    column(width = 4, uiOutput("select_Species"))),
+           
+  fluidRow(column(width = 4, "Click submit to see and update results"),
+            column(width = 2, submitButton("Submit"))),
+  
+    fluidRow(
+      splitLayout(cellWidths = c("33%", "33%", "33%"), 
+                  uiOutput("plot.temp.ui"),# click="temp_click"),
+                  uiOutput("plot.thresh.ui"),#, click="thresh_click"), 
+                  uiOutput("plot.dist.ui")),
+        ),
+  #fluidRow(
+    #splitLayout(cellWidths = c("25%", "25%", "25%", "25%")) 
+  #verbatimTextOutput("info.thresh"),
+  #verbatimTextOutput("info.temp"),
+  #verbatimTextOutput("info.prcp"))
   #verbatimTextOutput("info.dist"))
-  )
+  #)
 )
+
