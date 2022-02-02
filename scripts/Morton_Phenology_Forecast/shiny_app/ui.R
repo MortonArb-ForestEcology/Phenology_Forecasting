@@ -18,43 +18,41 @@ library(shinyWidgets)
 # -------------------------------------
 path.in <- "data_raw/meteorology"
 
-#Tconnect <- DBI::dbConnect(RSQLite::SQLite(), "Arb_Pheno.db")
-
-#cat <- tbl(Tconnect, "Species_Catalogue")
-#sp.catalogue <- cat %>%
-#  collect() 
-
+#Reading in the list of species names
 sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
 sp.list <- sort(unique(sp.catalogue$Scientific))
 name.type <- c("Scientific", "Common")
 
+#Reading in the list of available past forecasts: This system will only work for one year this time. I should split it by year into different folders down the line
 fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
 
-
+#This puts everything on a single page where I can specify the organizaiton easily
 fluidPage(
-  #Allowing the choice between scientific and common
+  
+  #This defines what will be in the first row of the page
+  #Currently that is the naming convention selection and previous forecast slider
   fluidRow(
+  #Allowing the choice between scientific and common: Maybe remove given the audience and functionality quirks
   column(width = 4, selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type)))),
   
-  column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(Sys.Date())))),
-  fluidRow(
-    column(width = 4, uiOutput("select_Species"))),
-           
-  fluidRow(column(width = 4, "Click submit to see and update results"),
-            column(width = 2, submitButton("Submit"))),
+  #Allowing for a slider between the forecasts
+  column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(max(fc.df$Date))))),
   
+  #Deciding what is in the second row
+  fluidRow(
+    #Picking the species you want to see
+    column(width = 4, uiOutput("select_Species"))),
+  
+  #Deciding what is in the third row
+  fluidRow(
+    
+    #The submit button and warning text
+    column(width = 4, "Click submit to see and update results"),
+            column(width = 2, submitButton("Submit"))),
+  #Fourth row
     fluidRow(
-      splitLayout(cellWidths = c("33%", "33%", "33%"), 
-                  uiOutput("plot.temp.ui"),# click="temp_click"),
-                  uiOutput("plot.thresh.ui"),#, click="thresh_click"), 
-                  uiOutput("plot.dist.ui")),
-        ),
-  #fluidRow(
-    #splitLayout(cellWidths = c("25%", "25%", "25%", "25%")) 
-  #verbatimTextOutput("info.thresh"),
-  #verbatimTextOutput("info.temp"),
-  #verbatimTextOutput("info.prcp"))
-  #verbatimTextOutput("info.dist"))
-  #)
+      #The graphs themselves. The only show up when the submit button is pressed
+                  uiOutput("plot.thresh.ui")), 
+
 )
 
