@@ -1,4 +1,4 @@
-# Mortn_Phenology_Forecast README
+# Morton_Phenology_Forecast README
 
 # Preloaded data
 
