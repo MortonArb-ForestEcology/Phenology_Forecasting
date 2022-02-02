@@ -28,6 +28,7 @@
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
 path.out <- "data_raw/meteorology/data"
 path.shiny <- "shiny_app/data_raw/meteorology/"
+if(!dir.exists(path.shiny)) dir.create(path.shiny, recursive=T, showWarnings = F)
 
 
 dir.met <- "data_raw/meteorology"
@@ -367,25 +368,31 @@ summary(bc.cfs)
 #BECAUSE I M DOING THIS IN JANUARY THE BIAS CORRECTION CAUSES ISSUES
 #IT COULD BE FOR OTHER REASONS BUT I DON"T KNOW ENOUGH I WIL DISCUSS THIS SOON
 #if(nrow(cfs.comp)<=3){ #This is the standard
-if(nrow(cfs.comp)<=14){
-
-  bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
-  bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
+if(nrow(cfs.comp) != 0){
+  if(nrow(cfs.comp)<=14){
   
-  if(all(cfs.comp[,c("prcp.day")]==0) | all(cfs.comp[,c("GHCN.PRCP")]==0)){
-    bc.cfs$PRCP <- met.cfs$prcp.day
+    bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
+    bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
+    
+    if(all(cfs.comp[,c("prcp.day")]==0) | all(cfs.comp[,c("GHCN.PRCP")]==0)){
+      bc.cfs$PRCP <- met.cfs$prcp.day
+    } else {
+      row.rain <- which(cfs.comp$prcp.day>0)
+      bc.cfs$PRCP <- met.cfs$prcp.day*mean(cfs.comp$GHCN.PRCP[row.rain]/cfs.comp$prcp.day[row.rain])
+    }
+    
   } else {
-    row.rain <- which(cfs.comp$prcp.day>0)
-    bc.cfs$PRCP <- met.cfs$prcp.day*mean(cfs.comp$GHCN.PRCP[row.rain]/cfs.comp$prcp.day[row.rain])
-  }
-  
-} else {
-  mod.tmax <- lm(GHCN.tmax ~ tmax, data=cfs.comp)
-  mod.tmin <- lm(GHCN.tmin ~ tmin, data=cfs.comp)
-  mod.prcp <- lm(GHCN.PRCP ~ prcp, data=cfs.comp)
-  bc.cfs$TMAX <- predict(mod.tmax, newdata = met.cfs)
-  bc.cfs$TMIN <- predict(mod.tmin, newdata = met.cfs)
-  bc.cfs$PRCP <- predict(mod.prcp, newdata = met.cfs)
+    mod.tmax <- lm(GHCN.tmax ~ tmax, data=cfs.comp)
+    mod.tmin <- lm(GHCN.tmin ~ tmin, data=cfs.comp)
+    mod.prcp <- lm(GHCN.PRCP ~ prcp, data=cfs.comp)
+    bc.cfs$TMAX <- predict(mod.tmax, newdata = met.cfs)
+    bc.cfs$TMIN <- predict(mod.tmin, newdata = met.cfs)
+    bc.cfs$PRCP <- predict(mod.prcp, newdata = met.cfs)
+  } 
+} else{
+  bc.cfs$TMAX <- met.cfs$tmax
+  bc.cfs$TMIN <- met.cfs$tmin
+  bc.cfs$PRCP <- met.cfs$prcp.day
 }
 summary(bc.cfs)
 
@@ -425,25 +432,31 @@ for(ENS in unique(met.gefs$ens)){
   
   # If there's only a tiny bit of data, just use the mean off-sets
   #if(length(comp.row)<=3){#This is the standard
-  if(length(comp.row)<=14){  
-    bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
-    bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
-    
-    if(all(gefs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
-      bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+  if(is.null(comp.row)){
+    if(length(comp.row)<=14){  
+      bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
+      bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
+      
+      if(all(gefs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
+        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+      } else {
+        comp2 <- which(gefs.comp$ens==ENS & gefs.comp$prcp.day>0)
+        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]*mean(gefs.comp$GHCN.PRCP[comp2]/gefs.comp$prcp.day[comp2])
+      }
+      
     } else {
-      comp2 <- which(gefs.comp$ens==ENS & gefs.comp$prcp.day>0)
-      bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]*mean(gefs.comp$GHCN.PRCP[comp2]/gefs.comp$prcp.day[comp2])
+      mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
+      mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
+      mod.prcp <- lm(GHCN.PRCP ~ prcp, data=gefs.comp[comp.row,])
+      #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
+      bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
+      bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
+      bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row,])
     }
-    
-  } else {
-    mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
-    mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
-    mod.prcp <- lm(GHCN.PRCP ~ prcp, data=gefs.comp[comp.row,])
-    #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
-    bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
-    bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
-    bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row,])
+  } else{
+    bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row]
+    bc.gefs$TMIN[ens.row] <- met.gefs$tmax[ens.row]
+    bc.gefs$PRCP[ens.row] <- met.gefs$tmax[ens.row]
   }
 }
 summary(bc.gefs)
@@ -537,6 +550,8 @@ check <- gefs.indices2[gefs.indices2$DATE == "2022-05-03",]
 
 #This is the main forecast file we will be working with
 write.csv(gefs.indices2, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")), row.names = F)
-write.csv(gefs.indices2, file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_" , Sys.Date() ,".csv")), row.names = F)
+#write.csv(gefs.indices2, file.path(paste0(dir.met,"/GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_" , Sys.Date() ,".csv")), row.names = F)
+
+#Loading them into the shiny app
 write.csv(gefs.indices2, file.path(paste0(path.shiny,"Previous-Forecast_", Sys.Date() ,".csv")), row.names = F)
 
