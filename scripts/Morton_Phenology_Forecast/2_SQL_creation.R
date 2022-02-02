@@ -19,13 +19,13 @@ path.temp <- "shiny_app/data_raw/meteorology/"
 if(!dir.exists(path.temp)) dir.create(path.temp, recursive=T, showWarnings = F)
 
 #Reading in budburst model
-bud.files <- list.files(path = "../../data_processed/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
+bud.files <- list.files(path = "preloaded_data/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
 Budburst_Model <- as.data.frame(sapply(bud.files, read.csv, simplify=FALSE) %>% 
                                   bind_rows(.id = "id"))
 
 Budburst_Model <- Budburst_Model[,c("THRESH", "aPrec", "sd", "species")]
 
-convg.df <- read.csv(file.path("../../data_processed/model_output", paste0("Budburst_convergence.csv")))
+convg.df <- read.csv(file.path("preloaded_data/model_output", paste0("Budburst_convergence.csv")))
 good.sp <- convg.df[convg.df$burst.converge < 1.05, "species"]
 
 Budburst_Model <- Budburst_Model[Budburst_Model$species %in% good.sp,]
@@ -39,7 +39,7 @@ b.model <- do.call(rbind,
 rownames(b.model) <- NULL
 
 #Reading in the oak observations
-dat.b <- read.csv("../../data_processed/Oak_collection_budburst.csv")
+dat.b <- read.csv("preloaded_data/Oak_collection_budburst.csv")
 dat.b <- dat.b[dat.b$Species %in% good.sp,]
 
 #Reading in the historical weather
@@ -48,8 +48,7 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
-oaks <- googlesheets4::read_sheet("14rJUVhJ2pDSskyEzMM7KX5p3LTvpxiSnDoOw2Ngu2PY", sheet="QuercusCollection")
-oaks <- data.frame(oaks)
+oaks <- read.csv(file.path("preloaded_data/Quercus_Collection.csv"))
 
 sp.catalogue <- as.data.frame(unique(dat.b$Species))
 colnames(sp.catalogue) <- c("Scientific")
