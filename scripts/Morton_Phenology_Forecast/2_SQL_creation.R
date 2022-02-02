@@ -29,7 +29,7 @@ good.sp <- convg.df[convg.df$burst.converge < 1.05, "species"]
 
 Budburst_Model <- Budburst_Model[Budburst_Model$species %in% good.sp,]
 
-set.seed(902)
+set.seed(903)
 #Taking a  random sample of 1000 pulls
 b.model <- do.call(rbind, 
         lapply(split(Budburst_Model, Budburst_Model$species), 
@@ -70,34 +70,14 @@ sp.index <- rbind(sci, com)
 
 #Reading in budburst model
 past.fc <- list.files(path = file.path(path.temp), pattern = "Previous-Forecast", full.names = F)
-gsub(".*_", "", past.fc)
-
-fc.df <- data.frame(c("Latest"), c("Forecast_Weather.csv"))
-colnames(fc.df) <- c("Date", "File")
 past.dates <- data.frame((gsub("\\..*", "", gsub(".*_", "", past.fc))), past.fc)
 colnames(past.dates) <- c("Date", "File")
-fc.df <- rbind(past.dates, fc.df)
 
-
+#Creating the different csv's
 write.csv(b.model, file.path(path.temp, "Budburst_Model.csv"), row.names = F)
 write.csv(dat.b , file.path(path.temp,"Oak_collection_budburst.csv"), row.names = F)
 write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
 write.csv(dat.forecast , file.path(path.temp, "Forecast_Weather.csv"), row.names = F)
 write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
 write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
-write.csv(fc.df, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
-
-
-
-#This creates the database and "conn" becomes the variable noting the connection path
-conn <- dbConnect(RSQLite::SQLite(), "shiny_app/Arb_Pheno.db")
-dbWriteTable(conn, "Budburst_Model", b.model, overwrite = T)
-dbWriteTable(conn, "Budburst_Obs", dat.b, overwrite = T)
-dbWriteTable(conn, "Historical_Weather", dat.ghcn, overwrite = T)
-dbWriteTable(conn, "Forecast_Weather", dat.forecast, overwrite = T)
-dbWriteTable(conn, "Species_Index", sp.index, overwrite = T)
-dbWriteTable(conn, "Species_Catalogue", sp.catalogue, overwrite = T)
-
-
-#See list of tables to confirm
-dbListTables(conn)
+write.csv(past.dates, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
