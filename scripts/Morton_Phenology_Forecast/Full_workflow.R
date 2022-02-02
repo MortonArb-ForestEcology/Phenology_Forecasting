@@ -18,7 +18,7 @@ library(gridExtra)
 source("1_M1_Meterology_download.R")
 
 #Uploading the new data to the shiny app's folder
-source("2_SQL_creation.R")
+source("2_data_org.R")
 
 #Launching the app to the internet
 source("3_run_shiny.R")
