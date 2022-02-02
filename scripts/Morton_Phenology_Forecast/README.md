@@ -26,9 +26,7 @@ Inputs: 1_M1_Meterology_download.R
 
 3_run_shiny.R
         
-Outputs: Downloads the new weather, updates the forecasts, and launches the app online
-
-CLEAN_Phenology_NPN_combined_leaf.csv         
+Outputs: Downloads the new weather, updates the forecasts, and launches the app online        
 
 Notes: 
 
