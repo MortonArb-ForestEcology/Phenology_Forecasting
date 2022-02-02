@@ -1,5 +1,19 @@
 # Mortn_Phenology_Forecast README
 
+# Preloaded data
+
+## model_ouput folder
+
+A folder containing the model output from our Thermal Time model for each species. They are created in the Phenology Forecasting repository script 3b_Thermal_Time_model.R
+
+## Oak_collection_budburst.csv
+
+The budburst phenology observations from our volunteer obeservation network.
+
+## Quercus_Collection
+
+Information on the oak species we gather observations for. Mostly used to identify their common names
+
 # Scripts
 
 ## Full_Workflow.R
