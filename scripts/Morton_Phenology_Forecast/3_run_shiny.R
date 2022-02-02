@@ -28,6 +28,7 @@ setwd("shiny_app")
 
 rsconnect::deployApp(forceUpdate = T, launch.browser = F)
 
+setwd("../")
 
 #This is how you manually stop the ONLINE app
 #stopApp(returnValue = invisible())
