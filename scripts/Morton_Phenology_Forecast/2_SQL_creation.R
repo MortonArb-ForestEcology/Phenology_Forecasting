@@ -10,12 +10,13 @@
 # Outputs: Arb_Pheno.db created
 # Notes: #Currently this establishes the database on a local device and then loads it with our information of interest
 #-----------------------------------------------------------------------------------------------------------------------------------#
-library(RSQLite)
 library(dplyr)
-path.temp <- "shiny_app/data_raw/meteorology/"
 path.weath <- "data_raw/meteorology/"
 path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
 dir.met <- "data_raw/meteorology"
+
+path.temp <- "shiny_app/data_raw/meteorology/"
+if(!dir.exists(path.temp)) dir.create(path.temp, recursive=T, showWarnings = F)
 
 #Reading in budburst model
 bud.files <- list.files(path = "../../data_processed/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
@@ -46,10 +47,6 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
-#Reading in the forecast weather
-dat.forecast <- read.csv(file.path(paste0(path.weath,"GEFS/","MortonArb_GEFS_daily_FORECAST-READY-LONGRANGE_latest.csv")))
-dat.forecast$DATE <- as.Date(dat.forecast$DATE)
-
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
 oaks <- googlesheets4::read_sheet("14rJUVhJ2pDSskyEzMM7KX5p3LTvpxiSnDoOw2Ngu2PY", sheet="QuercusCollection")
 oaks <- data.frame(oaks)
@@ -74,10 +71,10 @@ past.dates <- data.frame((gsub("\\..*", "", gsub(".*_", "", past.fc))), past.fc)
 colnames(past.dates) <- c("Date", "File")
 
 #Creating the different csv's
+#The Forecasts have already been put there by the 1_M1 script
 write.csv(b.model, file.path(path.temp, "Budburst_Model.csv"), row.names = F)
 write.csv(dat.b , file.path(path.temp,"Oak_collection_budburst.csv"), row.names = F)
 write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
-write.csv(dat.forecast , file.path(path.temp, "Forecast_Weather.csv"), row.names = F)
 write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
 write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
 write.csv(past.dates, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
