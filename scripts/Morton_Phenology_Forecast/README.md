@@ -10,7 +10,7 @@ A folder containing the model output from our Thermal Time model for each specie
 
 The budburst phenology observations from our volunteer obeservation network.
 
-## Quercus_Collection
+## Quercus_Collection.csv
 
 Information on the oak species we gather observations for. Mostly used to identify their common names
 
