@@ -50,17 +50,13 @@ for(SP in SP.burst$Species){
   Check[l, "mean.leaf"] <- mean(dat.leaf$GDD5.cum)
   
   #Creating indexes so the hierarchy can properly function
-  burst.ind <- aggregate(Accession~PlantNumber, data=dat.burst,
+  burst.ind <- aggregate(Species~PlantNumber, data=dat.burst,
                          FUN=min)
+
   
-  burst.acc <- aggregate(Species~Accession, data=dat.burst,
-                         FUN=min)
-  
-  leaf.ind <- aggregate(Accession~PlantNumber, data=dat.leaf,
+  leaf.ind <- aggregate(Species~PlantNumber, data=dat.leaf,
                         FUN=min)
-  
-  leaf.acc <- aggregate(Species~Accession, data=dat.leaf,
-                        FUN=min)
+
   
   
   hierarchical_regression <- "
@@ -76,15 +72,9 @@ for(SP in SP.burst$Species){
       aPrec ~ dgamma(0.2, 0.1)
       Tprior ~ dunif(1, 600)
     }
-
-    for(t in 1:nAcc){
-      Accession[t] <-  THRESH[sp[t]] + b[t]
-      b[t] ~ dnorm(0, bPrec[t])
-      bPrec[t] ~ dgamma(0.1, 0.1)
-    }
     
     for(i in 1:nPln){
-        ind[i] <-  Accession[acc[i]] + c[i]
+        ind[i] <-  THRESH[sp[i]] + c[i]
         c[i] ~ dnorm(0, cPrec)
     }
     sPrec ~ dgamma(0.1, 0.1)
@@ -95,21 +85,21 @@ for(SP in SP.burst$Species){
   
   burst.list <- list(y = dat.burst$GDD5.cum, n = length(dat.burst$GDD5.cum),
                      pln = as.numeric(factor(dat.burst$PlantNumber)), nPln = length(unique(dat.burst$PlantNumber)),
-                     acc = as.numeric(factor(burst.ind$Accession)), nAcc = length(unique(dat.burst$Accession)),
-                     sp = as.numeric(factor(burst.acc$Species)), nSp = length(unique(dat.burst$Species)))
+                     sp = as.numeric(factor(burst.ind$Species)), nSp = length(unique(dat.burst$Species)))
   
   leaf.list <- list(y = dat.leaf$GDD5.cum, n = length(dat.leaf$GDD5.cum),
                     pln = as.numeric(factor(dat.leaf$PlantNumber)), nPln = length(unique(dat.leaf$PlantNumber)),
-                    acc = as.numeric(factor(leaf.ind$Accession)), nAcc = length(unique(dat.leaf$Accession)),
-                    sp = as.numeric(factor(leaf.acc$Species)), nSp = length(unique(dat.leaf$Species)))
+                    sp = as.numeric(factor(leaf.ind$Species)), nSp = length(unique(dat.leaf$Species)))
   
   
   #Setting the number of MCMC chains and their parameters
   nchain = 3
   inits <- list()
+  rngs <- c(737, 874, 869)
   for(i in 1:nchain){
-    inits[[i]] <- list(  #Added length equal to number of species
-      Tprior = runif(1,100,200))
+    inits[[i]] <- list(.RNG.name = "base::Super-Duper",
+                       .RNG.seed = as.integer(rngs[i])
+    )
   }
   
   #---------------------------------------------------------#
