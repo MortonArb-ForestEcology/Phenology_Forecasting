@@ -5,13 +5,13 @@ Scripts for Ecological forecasting model for phenology at the arboretum
 
 Each of these folders has their own README inside
 
-## Test Models Folder
-
-Purpose: A folder to contain old or experimental models whose code might be used down the line.
-
 ## Morton_Phenology_Forecast
 
 Purpose: A folder for running our shiny app
+
+## Test Models
+
+Purpose: A folder to contain old or experimental models whose code might be used down the line.
 
 ## NPN scripts
 
