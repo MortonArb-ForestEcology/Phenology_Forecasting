@@ -2,6 +2,8 @@
 
 Within this folder there are the necessary scripts to run and launch our shiny app. The scripts in this folder download data and launch the app but the app itself is found in the "shiny_app" folder. It consist of one "server" script and one "ui" script. This is the requried format to launch a shiny app. Most documentation for the server and ui are found on the scripts themselves
 
+To properly launch the app all you need to do is run the Full_Workflow.R script which sources all the others
+
 # Preloaded data
 
 ## model_ouput folder
