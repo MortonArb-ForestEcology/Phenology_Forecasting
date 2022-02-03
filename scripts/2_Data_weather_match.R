@@ -4,7 +4,8 @@
 # Project: Spring phenology forecasting
 # Purpose: This script serves as the download of weather data and the calculation of relevant weather statistics
 # Inputs: The weather_calc.r script which defines the weather_calc function.
-# Outputs: lat.calc dataframe that can be used to match weather to phenological events
+# Outputs: Oak_collection_budburst.csv which contain's GDD5 values for every budburst oobservation
+#          Oak_collection_leaf.csv which contain's GDD5 values for every leaf oobservation
 # Notes:
 #-----------------------------------------------------------------------------------------------------------------------------------#
 path.g <- "G:/My Drive"
