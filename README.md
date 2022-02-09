@@ -54,6 +54,8 @@ Inputs: dat.comb dataframe that is created by the Organize_Data_Pheno.R script
 
 Outputs: Currently, a hindcast of a species modeled day of budburst vs observed date of budburst
 
+Notes: This script runs each species as it's own model because as we add more complex models down the line that require higher data density we will have species that no longer converge. If all species are run in one model, the species that no longer converge will impact species that do. This will make teasing out which species work for which model much more difficult.
+
 # Functions
 
 ## Clean_google.R
