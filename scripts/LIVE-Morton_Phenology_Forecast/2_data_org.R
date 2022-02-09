@@ -15,7 +15,7 @@ path.weath <- "data_raw/meteorology/"
 path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
 dir.met <- "data_raw/meteorology"
 
-path.temp <- "shiny_app/data_raw/meteorology/"
+path.temp <- "MortonArb_PhenoForecast/data_raw/meteorology/"
 if(!dir.exists(path.temp)) dir.create(path.temp, recursive=T, showWarnings = F)
 
 #Reading in budburst model

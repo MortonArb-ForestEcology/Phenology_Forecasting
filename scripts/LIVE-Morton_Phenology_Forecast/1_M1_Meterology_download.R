@@ -21,13 +21,13 @@
 #   4. Calculate met indices
 #   5. Save met driver ensemble 
 # --------------------------------------------------------------
-
+library(ggplot2)
 # -------------------------------------------------
 # 0. Setup
 # -------------------------------------------------
 #path.out <- "/Volumes/GoogleDrive/My Drive/LivingCollections_Phenology/Phenology Forecasting"
 path.out <- "data_raw/meteorology/data"
-path.shiny <- "shiny_app/data_raw/meteorology/"
+path.shiny <- "MortonArb_PhenoForecast/data_raw/meteorology/"
 if(!dir.exists(path.shiny)) dir.create(path.shiny, recursive=T, showWarnings = F)
 
 
@@ -73,7 +73,7 @@ met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 summary(met.ghcn)
 
 # Set up some parameters for downloading the data
-ghcn.overlap = max(met.ghcn$DATE)-7
+ghcn.overlap = max(met.ghcn$DATE)-14
 forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")
 # -------------------------------------
 # Calculating some cumulative statistics
@@ -128,20 +128,22 @@ vars.in <- c("tmax", "tmin", "prate")
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
 
 if(!ghcn.overlap %in% cfs.dates){
-  cfs.start <- max(ghcn.overlap, max(cfs.dates+1, Sys.Date()-3)) # Can't go back a full week apparently :-/
+  cfs.start <- max(ghcn.overlap, max(cfs.dates+1, Sys.Date()-14)) # Can't go back a full week apparently :-/
 } else {
   cfs.start <- min(max(cfs.dates)+1, Sys.Date())
 }
 
-dates.cfs <- seq.Date(cfs.start, Sys.Date(), by=1)
-# Loop through the dates as needed --> beyond first time this shouldn't be needed, but 
-#  if there's a hiccup, it'll have to start over
-dates.cfs <- as.character(dates.cfs)
-
-for(FCST in dates.cfs){
-  # print(FCST)
-  dir.create(file.path(out.cfs, site.name, FCST), recursive=T, showWarnings =F)
-  download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
+if(cfs.start <= Sys.Date()){
+  dates.cfs <- seq.Date(cfs.start, Sys.Date(), by=1)
+  # Loop through the dates as needed --> beyond first time this shouldn't be needed, but 
+  #  if there's a hiccup, it'll have to start over
+  dates.cfs <- as.character(dates.cfs)
+  
+  for(FCST in dates.cfs){
+    # print(FCST)
+    dir.create(file.path(out.cfs, site.name, FCST), recursive=T, showWarnings =F)
+    download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
+  }
 }
 # ----------------
 
@@ -149,6 +151,7 @@ for(FCST in dates.cfs){
 # 1.2.2. GEFS data (31 ensemble members, but shorter-range)
 # Note: GEFS is what the EFI forecasting challenge is using
 #   - Using Quinn's temporal downscaling to get better Tmin/Tmax estimates
+# This package can be downloaded from here: https://github.com/rqthomas/noaaGEFSpoint
 # ----------------
 # For GEFS, Quinn has it set up to download a window prior to today w/ each in a separate window; we want to do that only if needed to
 
@@ -158,7 +161,7 @@ gefs.dates <- as.Date(dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name)))
 # For our start date, we need to go back to our 7-day overlap if we need to, otherwise we want to start with the day after the latest GEFS forecast
 # Note: tried setting this up as an ifelse() statement and had format trouble, so separated it out
 if(!ghcn.overlap %in% gefs.dates){
-  gefs.start <- max(ghcn.overlap, max(gefs.dates+1, Sys.Date()-3)) # Can't go back a full week apparently :-/
+  gefs.start <- max(ghcn.overlap, max(gefs.dates+1, Sys.Date()-7)) # Can't go back a full week apparently :-/
 } else {
   gefs.start <- min(max(gefs.dates)+1, Sys.Date())
 }
@@ -186,7 +189,8 @@ for(FCST in dates.gefs){
 # -------------------------------------------------
 
 # -------------------------------------------------
-# 2. Format raw datasets
+# 2. Format raw datasets -- put things into a single latest file
+# In here we set a target window for overlap for our data fitting; ideally it will be 2 weeks
 # -------------------------------------------------
 # ----------------
 # Base Data: GHCN
@@ -194,9 +198,6 @@ for(FCST in dates.gefs){
 met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
 met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 summary(met.ghcn)
-
-# Window for dates we want to overlap if possible
-ghcn.overlap = max(met.ghcn$DATE)-7
 # ----------------
 
 # ----------------
@@ -256,8 +257,8 @@ for(i in 2:length(gefs.dates)){
 summary(gefs.1hr)
 # head(df.1hr)
 # 
-# ggplot(data=df.1hr) +
-#   geom_line(aes(x=Timestamp, y=tair, group=ens))
+ggplot(data=gefs.1hr) +
+  geom_line(aes(x=Timestamp, y=tair, group=ens))
 
 # Convert into daily max/mins
 gefs.day <- aggregate(cbind(tair, prcp) ~ Date + ens, data=gefs.1hr, FUN=mean)
@@ -266,14 +267,17 @@ gefs.day$tmin <- aggregate(tair ~ Date + ens, data=gefs.1hr, FUN=min)$tair
 gefs.day$prcp.day <- gefs.day$prcp*60*60*24 # should convert to mm/day 
 summary(gefs.day)
 
-# ggplot(data=gefs.day) +
-#   geom_line(aes(x=Date, y=tair, group=ens))
+ggplot(data=gefs.day) +
+  geom_line(aes(x=Date, y=tair, group=ens))
+
+
 write.csv(gefs.day, file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")), row.names=F)
 # ----------------
 
 
 # ----------------
 # Get the CFS files we want
+# Remember ghcn.overlap is our goal for overlap
 # ----------------
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
 cfs.dates <- rev(as.character(cfs.dates[cfs.dates>=ghcn.overlap]))
@@ -291,6 +295,7 @@ for(i in 2:length(cfs.dates)){
   cfs.tmn <- rbind(tmn.tmp[substr(tmn.tmp$time, 1, 10)==cfs.dates[i],], cfs.tmn)
   cfs.prp <- rbind(prp.tmp[substr(prp.tmp$time, 1, 10)==cfs.dates[i],], cfs.prp)
 }
+summary(as.Date(cfs.tmx$time))
 head(cfs.tmx)
 
 #Subsetting because the precipitation has a longer forecast
@@ -309,12 +314,16 @@ cfs.day$tmin <- aggregate(tmin ~ Date, data=dat.cfs, FUN=min)$tmin
 cfs.day$prcp.day <- cfs.day$prcp*60*60*24 # should convert to mm/day 
 summary(cfs.day)
 
+ggplot(data=cfs.day) +
+  geom_line(aes(x=Date, y=tair))
+
 write.csv(cfs.day, file.path(out.cfs, paste0(site.name, "_CFS_daily_latest.csv")), row.names=F)
 # ----------------
 # -------------------------------------------------
 
 # -------------------------------------------------
 # 3. Bias-correct datasets & Calculate Indices
+## CR Update: We want to propagate the uncertainty from overlap with the GEFS forecast now that we have it
 # -------------------------------------------------
 calc.indices <- function(dat){
   # Assumes upper case column names of: TMAX, TMIN, PRCP, YDAY
@@ -338,23 +347,136 @@ calc.indices <- function(dat){
   return(dat)
 }
 
+# -------------------------------
+# Load all Met datasets so we can have them and splice as needed
+# -------------------------------
 # ----------------
-# Base Data: GHCN
+# Base Observed Data: GHCN for Morton Arb
 # ----------------
 met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
 met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 met.ghcn$TYPE <- "observed"
+met.ghcn$TAIR <- apply(met.ghcn[,c("TMAX", "TMIN")], 1, FUN=mean)
 summary(met.ghcn)
 # ----------------
 
 # ----------------
-# CFS -- lets start simple
+# Short-Range Forecast: GEFS (16-days)
+# ----------------
+met.gefs <- read.csv(file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")))
+met.gefs[,c("tair", "tmax", "tmin")] <- met.gefs[,c("tair", "tmax", "tmin")]-273.15
+met.gefs$Date <- as.Date(met.gefs$Date)
+summary(met.gefs)
+# ----------------
+
+
+# ----------------
+# Long-Range Forecast: CFS data (9 months)
 # ----------------
 met.cfs <- read.csv(file.path(out.cfs, paste0(site.name, "_CFS_daily_latest.csv")))
 met.cfs[,c("tair", "tmax", "tmin")] <- met.cfs[,c("tair", "tmax", "tmin")]-273.15
 met.cfs$Date <- as.Date(met.cfs$Date)
 summary(met.cfs)
+# ----------------
 
+# Plot the data for a check looking 30 days to the past and 30 days to the future
+yr.now = lubridate::year(Sys.Date())
+ggplot(data=met.ghcn[met.ghcn$YEAR==yr.now,]) +
+  geom_line(data=met.cfs, aes(x=Date, y=tair, color="CFS")) +
+  geom_line(data=met.gefs, aes(x=Date, y=tair, group=ens, color="GEFS"), size=0.2) +
+  geom_line(aes(x=DATE, y=TAIR, color="GHCN")) +
+  scale_color_manual(values=c("GHCN"="black", "GEFS"="blue2", "CFS"="orange2"))+
+  coord_cartesian(xlim=c(Sys.Date()-30, Sys.Date()+30))
+
+# -------------------------------
+
+# -------------------------------
+
+# ----------------
+# GEFS -- The short-range ensemble; 
+#  NOTE: Tackle this first so we can propagate uncertainty to CFS
+# ----------------
+# Set up a bias-corrected data frame
+bc.gefs <- data.frame(TYPE="forecast", ENS=met.gefs$ens, DATE=met.gefs$Date, YDAY=lubridate::yday(met.gefs$Date))
+summary(bc.gefs)
+
+# Loading the data we have to evaluate the forecast
+gefs.overlap <- which(met.gefs$Date %in% met.ghcn$DATE)
+
+# If we have some sort of overlap, do a bias correciton,
+if(length(gefs.overlap>0)){ 
+  gefs.comp <- met.gefs[gefs.overlap,]
+  gefs.comp[,c("GHCN.tair", "GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TAIR", "TMAX", "TMIN", "PRCP")]
+  
+
+  # THis is a stage that would be a natural fit for data assimilation
+  for(ENS in unique(met.gefs$ens)){
+    ens.row <- which(met.gefs$ens==ENS)
+    comp.row <- which(gefs.comp$ens==ENS)
+    
+    # If there's only a tiny bit of data, just use the mean off-sets
+    #if(length(comp.row)<=3){#This is the standard
+    if(length(comp.row)<=14){  
+      bc.gefs$TAIR[ens.row] <- met.gefs$tair[ens.row] + mean(gefs.comp$GHCN.tair[comp.row]-gefs.comp$tair[comp.row])
+      bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
+      bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
+      
+      if(all(gefs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
+        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+      } else {
+        comp2 <- which(gefs.comp$ens==ENS & gefs.comp$prcp.day>0)
+        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]*mean(gefs.comp$GHCN.PRCP[comp2]/gefs.comp$prcp.day[comp2])
+      }
+      
+    } else {
+      mod.tair <- lm(GHCN.tair ~ tair, data=gefs.comp[comp.row,])
+      mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
+      mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
+      mod.prcp <- lm(GHCN.PRCP ~ prcp, data=gefs.comp[comp.row,])
+      #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
+      bc.gefs$TAIR[ens.row] <- predict(mod.tair, newdata = met.gefs[ens.row,])
+      bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
+      bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
+      bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row,])
+    }
+  
+  }
+} else {
+  # If no overlap, just put in the raw values
+  bc.gefs$TAIR[ens.row] <- met.gefs$tair[ens.row]
+  bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row]
+  bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row]
+  bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+}
+summary(bc.gefs)
+
+ghcn.ens <- merge(data.frame(ENS=unique(bc.gefs$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TAIR", "TMAX", "TMIN", "PRCP")], all=T)
+
+dat.gefs <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
+dat.gefs$MODEL <- "GEFS"
+dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
+head(dat.gefs)
+
+# # Calculate Growing degree-days etc? --> lets just wait and do this at the end
+# gefs.indices <- data.frame()
+# for(ENS in unique(dat.gefs$ENS)){
+#   row.ens <- which(dat.gefs$ENS==ENS)
+#   gfs.tmp <- calc.indices(dat.gefs[row.ens,])
+#   
+#   gefs.indices <- rbind(gefs.indices, gfs.tmp)
+# }
+# 
+# summary(gefs.indices)
+# 
+# write.csv(gefs.indices, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY.csv")))
+# ggplot(data=dat.gefs) +
+#   geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS))
+# ----------------
+# -------------------------------
+
+# -------------------------------
+# CFS -- lets start simple
+# ----------------
 # Loading the data we have to evaluate the forecast
 cfs.comp <- met.cfs[met.cfs$Date %in% met.ghcn$DATE,]
 cfs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% cfs.comp$Date, c("TMAX", "TMIN", "PRCP")]
@@ -408,80 +530,7 @@ write.csv(dat.cfs, file.path(out.cfs, paste0(site.name, "_CFS_daily_FORECAST-REA
 # ggplot(data=dat.cfs) +
 #   geom_line(aes(x=DATE, y=TMIN, color=TYPE))
 # ----------------
-
-# ----------------
-# GEFS -- The short-range ensemble
-# ----------------
-met.gefs <- read.csv(file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")))
-met.gefs[,c("tair", "tmax", "tmin")] <- met.gefs[,c("tair", "tmax", "tmin")]-273.15
-met.gefs$Date <- as.Date(met.gefs$Date)
-summary(met.gefs)
-
-# Loading the data we have to evaluate the forecast
-gefs.comp <- met.gefs[met.gefs$Date %in% met.ghcn$DATE,]
-gefs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% gefs.comp$Date, c("TMAX", "TMIN", "PRCP")]
-
-# Set up a bias-corrected data frame
-bc.gefs <- data.frame(TYPE="forecast", ENS=met.gefs$ens, DATE=met.gefs$Date, YDAY=lubridate::yday(met.gefs$Date))
-summary(bc.gefs)
-
-# THis is a stage that would be a natural fit for data assimilation
-for(ENS in unique(met.gefs$ens)){
-  ens.row <- which(met.gefs$ens==ENS)
-  comp.row <- which(gefs.comp$ens==ENS)
-  
-  # If there's only a tiny bit of data, just use the mean off-sets
-  #if(length(comp.row)<=3){#This is the standard
-  if(is.null(comp.row)){
-    if(length(comp.row)<=14){  
-      bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row] + mean(gefs.comp$GHCN.tmax[comp.row]-gefs.comp$tmax[comp.row])
-      bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row] + mean(gefs.comp$GHCN.tmin[comp.row]-gefs.comp$tmin[comp.row])
-      
-      if(all(gefs.comp[,c("prcp.day", "GHCN.PRCP")]==0)){
-        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
-      } else {
-        comp2 <- which(gefs.comp$ens==ENS & gefs.comp$prcp.day>0)
-        bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]*mean(gefs.comp$GHCN.PRCP[comp2]/gefs.comp$prcp.day[comp2])
-      }
-      
-    } else {
-      mod.tmax <- lm(GHCN.tmax ~ tmax, data=gefs.comp[comp.row,])
-      mod.tmin <- lm(GHCN.tmin ~ tmin, data=gefs.comp[comp.row,])
-      mod.prcp <- lm(GHCN.PRCP ~ prcp, data=gefs.comp[comp.row,])
-      #Ok I added a comma to this bottom section to make it wokr but I hope I'm not changing functionality
-      bc.gefs$TMAX[ens.row] <- predict(mod.tmax, newdata = met.gefs[ens.row,])
-      bc.gefs$TMIN[ens.row] <- predict(mod.tmin, newdata = met.gefs[ens.row,])
-      bc.gefs$PRCP[ens.row] <- predict(mod.prcp, newdata = met.gefs[ens.row,])
-    }
-  } else{
-    bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row]
-    bc.gefs$TMIN[ens.row] <- met.gefs$tmax[ens.row]
-    bc.gefs$PRCP[ens.row] <- met.gefs$tmax[ens.row]
-  }
-}
-summary(bc.gefs)
-
-ghcn.ens <- merge(data.frame(ENS=unique(bc.gefs$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], all=T)
-
-dat.gefs <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
-dat.gefs$MODEL <- "GEFS"
-dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
-head(dat.gefs)
-
-gefs.indices <- data.frame()
-for(ENS in unique(dat.gefs$ENS)){
-  row.ens <- which(dat.gefs$ENS==ENS)
-  gfs.tmp <- calc.indices(dat.gefs[row.ens,])
-  
-  gefs.indices <- rbind(gefs.indices, gfs.tmp)
-}
-
-summary(gefs.indices)
-
-write.csv(gefs.indices, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY.csv")))
-# ggplot(data=dat.gefs) +
-#   geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS))
-# ----------------
+# -------------------------------
 
 
 # ----------------
