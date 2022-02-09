@@ -38,7 +38,7 @@ write.csv(NPN.pts, file.path(path.daymet, "NPN_points.csv"), row.names=FALSE)
 #Downloading all of the damet data for each point. Internal =TRUE means it creates a nested list. Set false to actually download a file
 lat.list <- daymetr::download_daymet_batch(file_location = file.path(path.daymet, "NPN_points.csv"),
                                            start = 2000,
-                                           end = 2019,
+                                           end = 2021,
                                            internal = T)
 
 
