@@ -118,7 +118,7 @@ for(SP in unique(dat.burst$Species)){
   dat.burst[dat.burst$Species == SP, "obs_check"] <- min(dat.sp$obs_check)
 }
 
-#dat.burst <- dat.burst[dat.burst$obs_check > 0,]
+dat.burst <- dat.burst[dat.burst$obs_check > 0,]
 
 
 for(SP in unique(dat.leaf$Species)){
@@ -142,7 +142,7 @@ for(SP in unique(dat.leaf$Species)){
   dat.leaf[dat.leaf$Species == SP, "obs_check"] <- min(dat.sp$obs_check)
 }
 
-#dat.leaf <- dat.leaf[dat.leaf$obs_check > 0,]
+dat.leaf <- dat.leaf[dat.leaf$obs_check > 0,]
 
 
 # Save modified data
