@@ -178,3 +178,4 @@ write.csv(Check, file.path("../data_processed/model_output", paste0("Budburst_co
 #If they are below 1.1 then they are consider converged (I'll get the right citation for that I've seen it in a few papers)
 Close <- Check[(Check$burst.converge > 1.05 | Check$leaf.converge > 1.05) , ]
 Close
+
