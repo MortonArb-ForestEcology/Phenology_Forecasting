@@ -46,8 +46,8 @@ for(SP in SP.burst$Species){
   dat.leaf <- dat.l[dat.l$Species == SP, ]
   
   #Checking the mean
-  Check[l, "mean.burst"] <- mean(dat.burst$GDD5.cum)
-  Check[l, "mean.leaf"] <- mean(dat.leaf$GDD5.cum)
+  Check[l, "mean.burst"] <- mean(dat.burst$GDD5.cum, na.rm = T)
+  Check[l, "mean.leaf"] <- mean(dat.leaf$GDD5.cum, na.rm = T)
   
   #Creating indexes so the hierarchy can properly function
   burst.ind <- aggregate(Species~PlantNumber, data=dat.burst,
