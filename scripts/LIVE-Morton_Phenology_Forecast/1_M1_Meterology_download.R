@@ -484,10 +484,14 @@ bc.cfs <- data.frame(TYPE="forecast", DATE=met.cfs$Date, YDAY=lubridate::yday(me
 summary(bc.cfs)
 
 # Because we're working with propagating uncertainty, there shoudln't be any issues with overlap
-cfs.overlap <- which(met.cfs$Date %in% bc.gefs$DATE)
+# NOTE: using the trailing 14-day window because adding in the initial part is just not enough uncertainty
+dates.overlap <- unique(met.cfs$Date[which(met.cfs$Date %in% bc.gefs$DATE)])
+dates.overlap <- dates.overlap[length(dates.overlap):(length(dates.overlap)-14)]
+
+cfs.overlap <- which(met.cfs$Date %in% dates.overlap)
 cfs.comp <- met.cfs[cfs.overlap,]
 
-gefs.sub <- bc.gefs[bc.gefs$DATE %in% met.cfs$Date,]
+gefs.sub <- bc.gefs[bc.gefs$DATE %in% dates.overlap,]
 names(gefs.sub) <- car::recode(names(gefs.sub), "'DATE'='Date'; 'TAIR'='GEFS.TAIR'; 'TMAX'='GEFS.TMAX'; 'TMIN'='GEFS.TMIN'; 'PRCP'='GEFS.PRCP'")
 summary(gefs.sub)
 
@@ -532,7 +536,8 @@ summary(bc.cfs)
 
 ggplot(data=bc.cfs) +
   geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS)) +
-  geom_line(data=met.cfs, aes(x=Date, y=tmax), color="black")
+  geom_line(data=bc.gefs, aes(x=DATE, y=TMAX, group=ENS), color="blue", size=0.1) +
+  geom_line(data=met.cfs, aes(x=Date, y=tmax), color="black") 
 
 dat.gefs <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
 dat.gefs$MODEL <- "GEFS"
@@ -552,8 +557,6 @@ for(ENS in unique(dat.gefs$ENS)){
 }
 
 write.csv(dat.cfs, file.path(out.cfs, paste0(site.name, "_CFS_daily_FORECAST-READY.csv")))
-# ggplot(data=dat.cfs) +
-#   geom_line(aes(x=DATE, y=TMIN, color=TYPE))
 # ----------------
 # -------------------------------
 
