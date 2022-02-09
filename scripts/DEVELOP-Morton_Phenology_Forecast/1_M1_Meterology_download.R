@@ -455,8 +455,8 @@ for(ENS in unique(met.gefs$ens)){
     }
   } else{
     bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row]
-    bc.gefs$TMIN[ens.row] <- met.gefs$tmax[ens.row]
-    bc.gefs$PRCP[ens.row] <- met.gefs$tmax[ens.row]
+    bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row]
+    bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
   }
 }
 summary(bc.gefs)
