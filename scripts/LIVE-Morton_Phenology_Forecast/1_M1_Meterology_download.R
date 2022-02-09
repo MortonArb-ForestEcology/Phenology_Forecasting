@@ -443,10 +443,10 @@ if(length(gefs.overlap>0)){
   }
 } else {
   # If no overlap, just put in the raw values
-  bc.gefs$TAIR[ens.row] <- met.gefs$tair[ens.row]
-  bc.gefs$TMAX[ens.row] <- met.gefs$tmax[ens.row]
-  bc.gefs$TMIN[ens.row] <- met.gefs$tmin[ens.row]
-  bc.gefs$PRCP[ens.row] <- met.gefs$prcp.day[ens.row]
+  bc.gefs$TAIR <- met.gefs$tair
+  bc.gefs$TMAX <- met.gefs$tmax
+  bc.gefs$TMIN <- met.gefs$tmin
+  bc.gefs$PRCP <- met.gefs$prcp.day
 }
 summary(bc.gefs)
 
@@ -457,74 +457,99 @@ dat.gefs$MODEL <- "GEFS"
 dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
 head(dat.gefs)
 
-# # Calculate Growing degree-days etc? --> lets just wait and do this at the end
-# gefs.indices <- data.frame()
-# for(ENS in unique(dat.gefs$ENS)){
-#   row.ens <- which(dat.gefs$ENS==ENS)
-#   gfs.tmp <- calc.indices(dat.gefs[row.ens,])
-#   
-#   gefs.indices <- rbind(gefs.indices, gfs.tmp)
-# }
-# 
-# summary(gefs.indices)
-# 
-# write.csv(gefs.indices, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY.csv")))
-# ggplot(data=dat.gefs) +
-#   geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS))
-# ----------------
-# -------------------------------
+# Calculate Growing degree-days etc?; Note: the input temp data carries over
+gefs.indices <- data.frame()
+for(ENS in unique(dat.gefs$ENS)){
+  row.ens <- which(dat.gefs$ENS==ENS)
+  gfs.tmp <- calc.indices(dat.gefs[row.ens,])
 
-# -------------------------------
-# CFS -- lets start simple
-# ----------------
-# Loading the data we have to evaluate the forecast
-cfs.comp <- met.cfs[met.cfs$Date %in% met.ghcn$DATE,]
-cfs.comp[,c("GHCN.tmax", "GHCN.tmin", "GHCN.PRCP")] <- met.ghcn[met.ghcn$DATE %in% cfs.comp$Date, c("TMAX", "TMIN", "PRCP")]
-
-# Set up a bias-corrected data frame
-bc.cfs <- data.frame(TYPE="forecast", DATE=met.cfs$Date, YDAY=lubridate::yday(met.cfs$Date))
-summary(bc.cfs)
-# If there's only a tiny bit of data, just use the mean off-sets
-
-#LUCIEN CHANGED THIS TO FORCE THE MEAN OFFSET TEMPORARILY
-#BECAUSE I M DOING THIS IN JANUARY THE BIAS CORRECTION CAUSES ISSUES
-#IT COULD BE FOR OTHER REASONS BUT I DON"T KNOW ENOUGH I WIL DISCUSS THIS SOON
-#if(nrow(cfs.comp)<=3){ #This is the standard
-if(nrow(cfs.comp) != 0){
-  if(nrow(cfs.comp)<=14){
-  
-    bc.cfs$TMAX <- met.cfs$tmax + mean(cfs.comp$GHCN.tmax-cfs.comp$tmax)
-    bc.cfs$TMIN <- met.cfs$tmin + mean(cfs.comp$GHCN.tmin-cfs.comp$tmin)
-    
-    if(all(cfs.comp[,c("prcp.day")]==0) | all(cfs.comp[,c("GHCN.PRCP")]==0)){
-      bc.cfs$PRCP <- met.cfs$prcp.day
-    } else {
-      row.rain <- which(cfs.comp$prcp.day>0)
-      bc.cfs$PRCP <- met.cfs$prcp.day*mean(cfs.comp$GHCN.PRCP[row.rain]/cfs.comp$prcp.day[row.rain])
-    }
-    
-  } else {
-    mod.tmax <- lm(GHCN.tmax ~ tmax, data=cfs.comp)
-    mod.tmin <- lm(GHCN.tmin ~ tmin, data=cfs.comp)
-    mod.prcp <- lm(GHCN.PRCP ~ prcp, data=cfs.comp)
-    bc.cfs$TMAX <- predict(mod.tmax, newdata = met.cfs)
-    bc.cfs$TMIN <- predict(mod.tmin, newdata = met.cfs)
-    bc.cfs$PRCP <- predict(mod.prcp, newdata = met.cfs)
-  } 
-} else{
-  bc.cfs$TMAX <- met.cfs$tmax
-  bc.cfs$TMIN <- met.cfs$tmin
-  bc.cfs$PRCP <- met.cfs$prcp.day
+  gefs.indices <- rbind(gefs.indices, gfs.tmp)
 }
+
+summary(gefs.indices)
+# 
+write.csv(gefs.indices, file.path(out.gefs, paste0(site.name, "_GEFS_daily_FORECAST-READY.csv")))
+
+ggplot(data=bc.gefs) +
+  geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS))
+# ----------------
+# -------------------------------
+
+# -------------------------------
+# CFS -- Adjust based on GEFS so we can propagate uncertainty
+# ----------------
+# Set up a bias-corrected data frame; 
+# NOTE: starting simple and NOT adding additional uncertainty --> just doing the "best guess" adjustment from the correlation with GEFS
+bc.cfs <- data.frame(TYPE="forecast", DATE=met.cfs$Date, YDAY=lubridate::yday(met.cfs$Date), ENS=rep(unique(bc.gefs$ENS), each=nrow(met.cfs)))
 summary(bc.cfs)
 
-dat.cfs <- rbind(met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")], bc.cfs)
-dat.cfs$MODEL <- "CFS"
-dat.cfs$ENS <- "CFS1"
+# Because we're working with propagating uncertainty, there shoudln't be any issues with overlap
+cfs.overlap <- which(met.cfs$Date %in% bc.gefs$DATE)
+cfs.comp <- met.cfs[cfs.overlap,]
 
+gefs.sub <- bc.gefs[bc.gefs$DATE %in% met.cfs$Date,]
+names(gefs.sub) <- car::recode(names(gefs.sub), "'DATE'='Date'; 'TAIR'='GEFS.TAIR'; 'TMAX'='GEFS.TMAX'; 'TMIN'='GEFS.TMIN'; 'PRCP'='GEFS.PRCP'")
+summary(gefs.sub)
+
+cfs.comp <- merge(cfs.comp, gefs.sub)
+dim(cfs.comp)
+dim(gefs.sub)
+
+
+# -------------------------
+# # Tried working with the correlations, but there generally IS NONE
+# # So we're going to skip on down and use a mean adjustment instead
+# -------------------------
+# # Save a table of correlation stats just for reference
+cfs.stat.tair <- data.frame(ENS=unique(bc.gefs$ENS), intercept=NA, slope=NA, R2=NA)
+# 
+# for(ENS in unique(cfs.comp$ENS)){
+#   dat.ens <- cfs.comp[cfs.comp$ENS==ENS,]
+#   mod.tair <- lm(GEFS.TAIR ~ tair, data=dat.ens)
+#   mod.tmax <- lm(GEFS.TMAX ~ tmax, data=dat.ens)
+#   mod.tmin <- lm(GEFS.TMIN ~ tmin, data=dat.ens)
+#   mod.prcp <- lm(GEFS.PRCP ~ prcp, data=dat.ens)
+# 
+#   cfs.stat.tair[cfs.stat.tair$ENS==ENS,"R2"] <- summary(mod.tair)$r.squared
+#   cfs.stat.tair[cfs.stat.tair$ENS==ENS,c("intercept", "slope")] <- mod.tair$coefficients
+#   
+#   bc.cfs$TMAX[bc.cfs$ENS==ENS] <- predict(mod.tmax, newdata = met.cfs)
+#   bc.cfs$TMIN[bc.cfs$ENS==ENS] <- predict(mod.tmin, newdata = met.cfs)
+#   bc.cfs$PRCP[bc.cfs$ENS==ENS] <- predict(mod.prcp, newdata = met.cfs)
+# }
+# cfs.stat.tair
+for(ENS in unique(cfs.comp$ENS)){
+  dat.ens <- cfs.comp[cfs.comp$ENS==ENS,]
+  
+  bc.cfs$TMAX[bc.cfs$ENS==ENS] <- met.cfs$tmax - mean(dat.ens$tmax-dat.ens$GEFS.TMAX)
+  bc.cfs$TMIN[bc.cfs$ENS==ENS] <- met.cfs$tmin - mean(dat.ens$tmin-dat.ens$GEFS.TMIN)
+  bc.cfs$PRCP[bc.cfs$ENS==ENS] <- met.cfs$prcp.day - mean(dat.ens$prcp.day-dat.ens$GEFS.PRCP)
+  
+}
+
+summary(bc.cfs)
+
+
+ggplot(data=bc.cfs) +
+  geom_line(aes(x=DATE, y=TMAX, color=TYPE, group=ENS)) +
+  geom_line(data=met.cfs, aes(x=Date, y=tmax), color="black")
+
+dat.gefs <- rbind(ghcn.ens[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
+dat.gefs$MODEL <- "GEFS"
+dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
+head(dat.gefs)
+
+dat.cfs <- rbind(ghcn.ens[,names(bc.cfs)], bc.cfs[bc.cfs$DATE>max(ghcn.ens$DATE),])
+dat.cfs$MODEL <- "CFS"
 summary(dat.cfs)
 
-dat.cfs <- calc.indices(dat.cfs)
+gefs.indices <- data.frame()
+for(ENS in unique(dat.gefs$ENS)){
+  row.ens <- which(dat.gefs$ENS==ENS)
+  gfs.tmp <- calc.indices(dat.gefs[row.ens,])
+  
+  gefs.indices <- rbind(gefs.indices, gfs.tmp)
+}
 
 write.csv(dat.cfs, file.path(out.cfs, paste0(site.name, "_CFS_daily_FORECAST-READY.csv")))
 # ggplot(data=dat.cfs) +
