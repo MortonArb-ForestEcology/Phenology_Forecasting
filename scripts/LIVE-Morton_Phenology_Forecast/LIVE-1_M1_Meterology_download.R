@@ -471,7 +471,7 @@ summary(bc.gefs)
 
 ghcn.ens.gefs <- merge(data.frame(ENS=unique(bc.gefs$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TAIR", "TMAX", "TMIN", "PRCP")], all=T)
 
-dat.gefs <- rbind(ghcn.ens.gefs[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens$DATE),])
+dat.gefs <- rbind(ghcn.ens.gefs[,names(bc.gefs)], bc.gefs[bc.gefs$DATE>max(ghcn.ens.gefs$DATE),])
 dat.gefs$MODEL <- "GEFS"
 dat.gefs <- dat.gefs[order(dat.gefs$ENS, dat.gefs$DATE),]
 head(dat.gefs)
@@ -574,7 +574,7 @@ ggplot(data=bc.cfs) +
 ghcn.ens.cfs <- merge(data.frame(ENS=unique(bc.cfs$ENS)), met.ghcn[met.ghcn$YEAR==lubridate::year(Sys.Date()), c("TYPE", "DATE", "YDAY", "TAIR", "TMAX", "TMIN", "PRCP")], all=T)
 
 cols.use <- c("TYPE", "ENS", "DATE", "YDAY", "TMAX", "TMIN", "PRCP")
-dat.cfs <- rbind(ghcn.ens.cfs[,cols.use], bc.cfs[bc.cfs$DATE>max(ghcn.ens$DATE),cols.use])
+dat.cfs <- rbind(ghcn.ens.cfs[,cols.use], bc.cfs[bc.cfs$DATE>max(ghcn.ens.cfs$DATE),cols.use])
 dat.cfs$MODEL <- "CFS"
 dat.cfs <- dat.cfs[order(dat.cfs$ENS, dat.cfs$DATE),]
 summary(dat.cfs)
