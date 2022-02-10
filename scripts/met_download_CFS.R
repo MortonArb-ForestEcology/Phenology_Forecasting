@@ -30,7 +30,7 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = "l
     
     # Stop if this date isn't in the forecast yet:
     if(grepl("HTTP Status 404 - Not Found", fname4[1])){
-      stop("Forecast Date Not Found")
+      stop(paste0("Forecast Date Not Found: ", day.strng))
     }
 
     str.hr <- fname4[grep(day.latest, fname4)[4]] # Pass thorugh all the headers to get the most recent day
@@ -88,6 +88,7 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = "l
     
     path.latest <- file.path(cfs.base, yr.latest, mo.latest, day.latest, hr.latest, paste0(VAR, ".01.", hr.latest, ".daily.grb2?var=", cfs.var, "&latitude=", lat.in, "&longitude=", lon.in, "&time_start=", forecast.start, "T00%3A00%3A00Z&time_end=", forecast.end, "T00%3A00%3A00Z&vertCoord=1&accept=csv"))
     
-    download.file(path.latest, destfile=file.path(path.save, paste0(VAR, "_cfs_", day.strng, "_latest.csv")))
+    tryCatch(download.file(path.latest, destfile=file.path(path.save, paste0(VAR, "_cfs_", day.strng, "_latest.csv"))),
+             error=function(e){ print(paste0("File not found: ", VAR, " ", day.strng))})
   }
 }
