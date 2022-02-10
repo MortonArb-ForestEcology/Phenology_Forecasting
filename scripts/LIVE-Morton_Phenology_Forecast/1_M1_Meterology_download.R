@@ -122,7 +122,7 @@ write.csv(met.ghcn2, file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 # Note: CFS is what Shawn Taylor used in his Ecol App Pub
 # -- he downloaded the 5 most recent forecasts to get uncertainty
 # ----------------
-source("met_download_CFS.R")
+source("../met_download_CFS.R")
 vars.in <- c("tmax", "tmin", "prate")
 
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
@@ -141,8 +141,10 @@ if(cfs.start <= Sys.Date()){
   
   for(FCST in dates.cfs){
     # print(FCST)
-    dir.create(file.path(out.cfs, site.name, FCST), recursive=T, showWarnings =F)
-    download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=file.path(out.cfs, site.name, FCST))
+    path.save <- file.path(out.cfs, site.name, FCST)
+    dir.create(path.save, recursive=T, showWarnings =F)
+    download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=path.save)
+    if(length(dir(path.save))==0) unlink(path.save, recursive=T)
   }
 }
 # ----------------
@@ -202,6 +204,7 @@ summary(met.ghcn)
 
 # ----------------
 # Get the GEFS files we want
+# NOTE: If the GHCN data hasn't synced yet, fill the missing dates with GEFS
 # ----------------
 gefs.dates <- as.Date(dir(file.path(out.gefs, "NOAAGEFS_1hr", site.name)))
 gefs.dates <- rev(as.character(gefs.dates[gefs.dates>=ghcn.overlap])) # Reversed to go newest to oldest
@@ -270,30 +273,49 @@ summary(gefs.day)
 ggplot(data=gefs.day) +
   geom_line(aes(x=Date, y=tair, group=ens))
 
-
-write.csv(gefs.day, file.path(out.gefs, paste0(site.name, "_GEFS_daily_latest.csv")), row.names=F)
+# Rather than labelling just "latest", lets use the system date & then sort moving forward
+write.csv(gefs.day, file.path(out.gefs, paste0(site.name, "_GEFS_daily_", Sys.Date(), ".csv")), row.names=F)
 # ----------------
 
 
 # ----------------
 # Get the CFS files we want
-# Remember ghcn.overlap is our goal for overlap
+# Because the CFS forecast goes so long, the correlation with others is totally bonk
+# To get some inherent CFS, lets copy Taylor & White and use the past 7-14 days. I think this will get us process uncertainty
+# We can also use CFS to fill in any remaining missing days we need
 # ----------------
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
-cfs.dates <- rev(as.character(cfs.dates[cfs.dates>=ghcn.overlap]))
+cfs.dates <- rev(as.character(cfs.dates[cfs.dates>=ghcn.overlap])) # This should give us at least 14 days
 
 cfs.tmx <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "tmax_cfs_latest.csv"))
 cfs.tmn <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "tmin_cfs_latest.csv"))
 cfs.prp <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "prate_cfs_latest.csv"))
+cfs.tmx$ENS <- cfs.tmn$ENS <- cfs.prp$ENS <- 0
+
+cfs.tmx1 <- read.csv(file.path(out.cfs, site.name, cfs.dates[1], "tmax_cfs_latest.csv"))
+cfs.tmx1$time <- as.POSIXct(strptime(cfs.tmx1$time, format="%Y-%m-%dT%H:%M:%S"))
+summary(cfs.tmx1)
+cfs.tmx5 <- read.csv(file.path(out.cfs, site.name, cfs.dates[5], "tmax_cfs_latest.csv"))
+cfs.tmx5$time <- as.POSIXct(strptime(cfs.tmx5$time, format="%Y-%m-%dT%H:%M:%S"))
+
+ggplot(data=cfs.tmx1[as.Date(cfs.tmx1$time)<=Sys.Date()+30,]) +
+  geom_line(aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.)) +
+  geom_line(data=cfs.tmx5[as.Date(cfs.tmx5$time)<=Sys.Date()+30,], aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.), color="red", size=0.1)
 
 # We'll just take the first 4 rows of each file
 for(i in 2:length(cfs.dates)){
   tmx.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "tmax_cfs_latest.csv"))
   tmn.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "tmin_cfs_latest.csv"))
   prp.tmp <- read.csv(file.path(out.cfs, site.name, cfs.dates[i], "prate_cfs_latest.csv"))
-  cfs.tmx <- rbind(tmx.tmp[substr(tmx.tmp$time, 1, 10)==cfs.dates[i],], cfs.tmx)
-  cfs.tmn <- rbind(tmn.tmp[substr(tmn.tmp$time, 1, 10)==cfs.dates[i],], cfs.tmn)
-  cfs.prp <- rbind(prp.tmp[substr(prp.tmp$time, 1, 10)==cfs.dates[i],], cfs.prp)
+  tmx.tmp$ENS <- tmn.tmp$ENS <- prp.tmp$ENS <- 1-i # This will give us Ensembe numbers of days ago
+  
+  ggplot(data=cfs.tmx) +
+    geom_line(aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.), color="black", size=0.5) +
+    geom_line(data=tmx.tmp, aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.), color="red", size=0.5)
+  
+  cfs.tmx <- rbind(tmx.tmp, cfs.tmx)
+  cfs.tmn <- rbind(tmn.tmp, cfs.tmn)
+  cfs.prp <- rbind(prp.tmp, cfs.prp)
 }
 summary(as.Date(cfs.tmx$time))
 head(cfs.tmx)
