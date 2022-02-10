@@ -24,7 +24,7 @@ library(gridExtra)
 
 #This section is to run the app ONLINE
 #Must change the directory to the app itself to run it online
-setwd("shiny_app")
+setwd("MortonArb_PhenoForecast/")
 
 rsconnect::deployApp(forceUpdate = T, launch.browser = F)
 
