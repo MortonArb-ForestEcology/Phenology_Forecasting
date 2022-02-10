@@ -56,7 +56,7 @@ ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
 dir.raw="data_raw/meteorology/GHCN_raw/"
 
-source("met_download_GHCN.R"); source("met_gapfill.R")
+source("../met_download_GHCN.R"); source("../met_gapfill.R")
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
 # -------------------------------------
 
@@ -298,24 +298,26 @@ for(i in 2:length(cfs.dates)){
 summary(as.Date(cfs.tmx$time))
 head(cfs.tmx)
 
+
 #Subsetting because the precipitation has a longer forecast
 cfs.prp <- cfs.prp[cfs.prp$time <= max(cfs.tmn$time), ]
 
 dat.cfs <- data.frame(Timestamp=cfs.tmx$time, Date=as.Date(substr(cfs.tmx$time, 1, 10)), 
+                      ENS=cfs.tmx$ENS,
                       tmax=cfs.tmx$Maximum_temperature_height_above_ground.unit.K., 
                       tmin=cfs.tmn$Minimum_temperature_height_above_ground.unit.K.,
                       prcp=cfs.prp$Precipitation_rate_surface.unit.kg.m.2.s.1.)
 dat.cfs$tair <- apply(dat.cfs[,c("tmax", "tmin")], 1, FUN=mean)
 summary(dat.cfs)
 
-cfs.day <- aggregate(cbind(tair, prcp) ~ Date, data=dat.cfs, FUN=mean)
-cfs.day$tmax <- aggregate(tmax ~ Date, data=dat.cfs, FUN=max)$tmax
-cfs.day$tmin <- aggregate(tmin ~ Date, data=dat.cfs, FUN=min)$tmin
+cfs.day <- aggregate(cbind(tair, prcp) ~ Date + ENS, data=dat.cfs, FUN=mean, na.rm=T)
+cfs.day$tmax <- aggregate(tmax ~ Date + ENS, data=dat.cfs, FUN=max)$tmax
+cfs.day$tmin <- aggregate(tmin ~ Date + ENS, data=dat.cfs, FUN=min)$tmin
 cfs.day$prcp.day <- cfs.day$prcp*60*60*24 # should convert to mm/day 
 summary(cfs.day)
 
-ggplot(data=cfs.day) +
-  geom_line(aes(x=Date, y=tair))
+ggplot(data=cfs.day[cfs.day$Date<=Sys.Date()+30,]) +
+  geom_line(aes(x=Date, y=tair, group=ENS))
 
 write.csv(cfs.day, file.path(out.cfs, paste0(site.name, "_CFS_daily_latest.csv")), row.names=F)
 # ----------------
