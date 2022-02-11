@@ -216,8 +216,7 @@ for(SP in unique(b.model$species)){
 
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
-# I don't know where this came from!!
-oaks <- read.csv(file.path(path.mod, "../Quercus_Collection.csv"))
+oaks <- read.csv(file.path("../Gsheet_data/Quercus_Collection.csv"))
 
 sp.catalogue <- as.data.frame(unique(dat.b$Species))
 colnames(sp.catalogue) <- c("Scientific")
