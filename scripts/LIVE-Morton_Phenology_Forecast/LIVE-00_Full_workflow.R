@@ -23,4 +23,4 @@ source("LIVE-2_data_org.R")
 tictoc::toc()
 
 #Launching the app to the internet
-source("LIVE-3_run_shiny.R")
+# source("LIVE-3_run_shiny.R")
