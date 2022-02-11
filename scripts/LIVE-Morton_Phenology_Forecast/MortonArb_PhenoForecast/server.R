@@ -22,7 +22,7 @@ library(cowplot)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
-path.in <- "data_raw/meteorology"
+path.in <- "data/"
 
 
 sp.index <- read.csv(file.path(path.in, "Species_Index.csv"))
