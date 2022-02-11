@@ -77,6 +77,20 @@ for(VAR in vars.agg){
                                        FUN=max, na.rm=T)$x
 }
 
+if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
+  dat.ghcn$threshB <- dat.ghcn$GDD5.cum
+  ens.forecast$threshB <- ens.forecast$GDD5.cum
+} else {
+  dat.ghcn$threshB <- dat.ghcn$CDD2.cum 
+  ens.forecast$threshB <- ens.forecast$CDD0.cum
+}
+
+fc.sp <- as.data.frame(do.call(rbind, ens.forecast))
+fc.sp$VAR <- gsub("\\..*","",(row.names(fc.sp)))
+fc.sp$Species <- SP
+rownames(fc.sp) <- NULL
+ 
+write.csv(fc.sp, file.path(path.temp, paste0("Forecast_data_", Sys.Date(),".csv")), row.names = F)
 
 # -------------------------------------
 # Creating our budburst visualizations
@@ -126,13 +140,7 @@ for(SP in unique(b.model$species)){
   pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
   
   
-  if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
-    dat.ghcn$threshB <- dat.ghcn$GDD5.cum
-    ens.forecast$threshB <- ens.forecast$GDD5.cum
-  } else {
-    dat.ghcn$threshB <- dat.ghcn$CDD2.cum 
-    ens.forecast$threshB <- ens.forecast$CDD0.cum
-  }
+}
   
   plot.threshB <- ggplot(data=dat.ghcn) +
     stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1, na.rm = T) +
