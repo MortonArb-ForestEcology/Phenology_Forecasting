@@ -16,8 +16,6 @@ library(ggplot2)
 
 path.hub <- "../"
 
-path.g <- "G:/My Drive"
-# path.g <- "/Volumes/GoogleDrive/My Drive"
 path <- "../data_processed/"
 dir.create("../data_processed/", recursive = T, showWarnings = F)
 
