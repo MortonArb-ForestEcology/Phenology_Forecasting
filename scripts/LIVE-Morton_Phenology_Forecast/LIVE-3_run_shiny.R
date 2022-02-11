@@ -25,5 +25,7 @@ rsconnect::deployApp(forceUpdate = T, launch.browser = F)
 
 setwd("../")
 
+print("Phenology Forecast Updated!")
+
 #This is how you manually stop the ONLINE app
 #stopApp(returnValue = invisible())

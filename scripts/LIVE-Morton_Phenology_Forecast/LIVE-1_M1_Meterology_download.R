@@ -140,12 +140,14 @@ if(cfs.start <= Sys.Date()){
   for(FCST in dates.cfs){
     # print(FCST)
     path.save <- file.path(out.cfs, site.name, FCST)
+    
     dir.create(path.save, recursive=T, showWarnings =F)
     download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=path.save)
+    
     if(length(dir(path.save))==0) unlink(path.save, recursive=T)
   }
 }
-if(length(dir(path.save))==0) unlink(path.save, recursive=T) # Just in case the last one didn't actually run
+# if(length(dir(path.save))==0) unlink(path.save, recursive=T) # Just in case the last one didn't actually run
 # ----------------
 
 # ----------------
@@ -167,26 +169,29 @@ if(!ghcn.overlap %in% gefs.dates){
   gefs.start <- min(max(gefs.dates)+1, Sys.Date())
 }
 
-dates.gefs <- seq.Date(gefs.start, Sys.Date(), by=1)
-dates.gefs <- dates.gefs[!paste(dates.gefs) %in% paste(gefs.dates)] # Get rid of dates we already have
-
-# Loop through the dates as needed --> beyond first time this shouldn't be needed, but 
-#  if there's a hiccup, it'll have to start over
-dates.gefs <- as.character(dates.gefs)
-
-for(FCST in dates.gefs){
-  noaaGEFSpoint::noaa_gefs_download_downscale(site_list = site.name,
-                                              lat_list = lat.in,
-                                              lon_list= lon.in,
-                                              output_directory = out.gefs,
-                                              forecast_time = "00",
-                                              forecast_date = FCST,
-                                              downscale = TRUE,
-                                              run_parallel = FALSE,
-                                              num_cores = 1,
-                                              method = "point",
-                                              overwrite = FALSE)
+# Make sure we're not trying to get tomorrow's forecast today!
+if(gefs.start <= Sys.Date()){
+  dates.gefs <- seq.Date(gefs.start, Sys.Date(), by=1)
+  dates.gefs <- dates.gefs[!paste(dates.gefs) %in% paste(gefs.dates)] # Get rid of dates we already have
   
+  # Loop through the dates as needed --> beyond first time this shouldn't be needed, but 
+  #  if there's a hiccup, it'll have to start over
+  dates.gefs <- as.character(dates.gefs)
+  
+  for(FCST in dates.gefs){
+    noaaGEFSpoint::noaa_gefs_download_downscale(site_list = site.name,
+                                                lat_list = lat.in,
+                                                lon_list= lon.in,
+                                                output_directory = out.gefs,
+                                                forecast_time = "00",
+                                                forecast_date = FCST,
+                                                downscale = TRUE,
+                                                run_parallel = FALSE,
+                                                num_cores = 1,
+                                                method = "point",
+                                                overwrite = FALSE)
+    
+  }
 }
 # ----------------
 # -------------------------------------------------
@@ -623,5 +628,7 @@ for(ENS in unique(forecast.final$ENS)){
 # length(unique(final.indices$ENS))
 write.csv(final.indices, file.path(dir.met, paste0(site.name, "_daily_FORECAST-READY-LONGRANGE_", Sys.Date(),".csv")), row.names = F)
 
+
+print("Met Driver Workflow Complete!")
 # -------------------------------
 

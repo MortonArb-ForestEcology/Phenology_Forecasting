@@ -30,13 +30,14 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = "l
     
     # Stop if this date isn't in the forecast yet:
     if(grepl("HTTP Status 404 - Not Found", fname4[1])){
-      stop(paste0("Forecast Date Not Found: ", day.strng))
+      warning(paste0("Forecast Date Not Found: ", day.strng))
+      return()
     }
 
     str.hr <- fname4[grep(day.latest, fname4)[4]] # Pass thorugh all the headers to get the most recent day
-    
     hr.latest <- strsplit(str.hr, "<*tt*>")[[1]][2]
     hr.latest <- substr(hr.latest, 1, 10)
+    rm(str.hr) # Remove this so tryCatch will work above
   } else if(forecast.start=="latest"){
     # 1. Getting a list of the years we can get dara from
     #fname <- RCurl::getURL(file.path(cat.base, "catalog.html"), dirlistonly = TRUE)
