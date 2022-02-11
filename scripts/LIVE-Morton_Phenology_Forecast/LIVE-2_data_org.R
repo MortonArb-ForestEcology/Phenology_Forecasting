@@ -87,8 +87,8 @@ if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
 
 fc.sp <- as.data.frame(do.call(rbind, ens.forecast))
 fc.sp$VAR <- gsub("\\..*","",(row.names(fc.sp)))
-fc.sp$Species <- SP
 rownames(fc.sp) <- NULL
+colnames(fc.sp) <- c("PRED.DATE", "YDAY", "TYPE", "mean", "min", "max", "VAR")
  
 write.csv(fc.sp, file.path(path.temp, paste0("Forecast_data_", Sys.Date(),".csv")), row.names = F)
 
@@ -110,17 +110,18 @@ day.labels2$yday <- lubridate::yday(day.labels2$Date)
 day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate::day(day.labels2$Date))
 summary(day.labels2)
 
-
+pred.sp <- data.frame()
+lim.comb <- data.frame()
 for(SP in unique(b.model$species)){
 #Pulling out the gdd5.cum vlaues
   thresh <- b.model[b.model$species == SP, "THRESH"]
   
   #Taking the mean date of each year
-  Year <- unique(dat.b[dat.b$Species == SP, "Year"])
-  prev.date <- as.data.frame(Year)
-  for(YR in unique(dat.b[dat.b$Species == SP, "Year"])){
-    prev.date[prev.date$Year == YR, "Mean.Date"] <- mean.Date(as.Date(format(as.Date(dat.b[dat.b$Species == SP & dat.b$Year == YR,"Date"]),"%m-%d"), format = "%m-%d"))
-  }
+  #Year <- unique(dat.b[dat.b$Species == SP, "Year"])
+  #prev.date <- as.data.frame(Year)
+  #for(YR in unique(dat.b[dat.b$Species == SP, "Year"])){
+  #  prev.date[prev.date$Year == YR, "Mean.Date"] <- mean.Date(as.Date(format(as.Date(dat.b[dat.b$Species == SP & dat.b$Year == YR,"Date"]),"%m-%d"), format = "%m-%d"))
+  #}
   
   pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
   #We want to pull from the Budburst_Model table for out GDD predictions
@@ -128,20 +129,26 @@ for(SP in unique(b.model$species)){
   for(i in 1:length(ens)){
     pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
   }
-  pred.df <- data.frame(x=as.vector(pred.array))
+  pred.df <- data.frame(yday=sample(as.vector(pred.array), 50))
+  pred.df$Species <- SP
   
+  pred.sp <- rbind(pred.sp, pred.df)
+  
+  quant <- quantile(pred.array, c(0.125, 0.875))
   # Create some useful indices and labels
-  dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
-                        q75=quantile(pred.array,c(0.125, 0.875)),
-                        q95=quantile(pred.array,c(0.025, 0.975)))
-  row.names(dat.lim) <- c("lb", "ub")
-  dat.lim <- data.frame(t(dat.lim))
-  pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
-  pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
+  dat.lim <- data.frame(SP, quant[1], quant[2],
+                        mean(pred.array), min(pred.array), max(pred.array))
   
+  colnames(dat.lim) <- c("Species", "lb", "ub", "mean", "min", "max")
+  row.names(dat.lim) <- NULL
   
+  lim.comb <- rbind(lim.comb, dat.lim)
 }
-  
+
+write.csv(pred.sp, file.path(path.burst, paste0("Oak_Budburst_Prediction_", Sys.Date() ,".csv")), row.names = F)
+write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_", Sys.Date() ,".csv")), row.names = F)
+
+
   plot.threshB <- ggplot(data=dat.ghcn) +
     stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1, na.rm = T) +
     geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
@@ -220,7 +227,6 @@ for(SP in unique(b.model$species)){
   plots <- plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
   save(plots, file = paste0(path.date, "/", SP, "_visualization.rdata"))
 
-}
 
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
