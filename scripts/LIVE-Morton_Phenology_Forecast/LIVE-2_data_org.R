@@ -13,6 +13,7 @@
 library(dplyr)
 library(gridExtra)
 library(cowplot)
+lirbary(ggplot2)
 path.weath <- "data_raw/meteorology/"
 path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
 dir.met <- "data_raw/meteorology"
@@ -27,13 +28,14 @@ path.date <- file.path("MortonArb_PhenoForecast/figures", Sys.Date())
 if(!dir.exists(path.date)) dir.create(path.date, recursive=T, showWarnings = F)
 
 #Reading in budburst model
-bud.files <- list.files(path = "preloaded_data/model_output/", pattern = "TT_model_budburst.csv", full.names = T)
+path.mod <- "../../data_processed/model_output"
+bud.files <- list.files(path = path.mod, pattern = "TT_model_budburst.csv", full.names = T)
 Budburst_Model <- as.data.frame(sapply(bud.files, read.csv, simplify=FALSE) %>% 
                                   bind_rows(.id = "id"))
 
 Budburst_Model <- Budburst_Model[,c("THRESH", "aPrec", "sd", "species")]
 
-convg.df <- read.csv(file.path("preloaded_data/model_output", paste0("Budburst_convergence.csv")))
+convg.df <- read.csv(file.path(path.mod, paste0("Budburst_convergence.csv")))
 good.sp <- convg.df[convg.df$burst.converge < 1.05, "species"]
 
 Budburst_Model <- Budburst_Model[Budburst_Model$species %in% good.sp,]
@@ -47,7 +49,7 @@ b.model <- do.call(rbind,
 rownames(b.model) <- NULL
 
 #Reading in the oak observations
-dat.b <- read.csv("preloaded_data/Oak_collection_budburst.csv")
+dat.b <- read.csv(file.path(path.mod, "../Oak_collection_budburst.csv"))
 dat.b <- dat.b[dat.b$Species %in% good.sp,]
 
 #Reading in the historical weather
@@ -214,7 +216,8 @@ for(SP in unique(b.model$species)){
 
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
-oaks <- read.csv(file.path("preloaded_data/Quercus_Collection.csv"))
+# I don't know where this came from!!
+oaks <- read.csv(file.path(path.mod, "../Quercus_Collection.csv"))
 
 sp.catalogue <- as.data.frame(unique(dat.b$Species))
 colnames(sp.catalogue) <- c("Scientific")
