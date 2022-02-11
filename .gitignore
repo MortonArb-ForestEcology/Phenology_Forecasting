@@ -1,5 +1,5 @@
-data_raw/meteorology/*
-data_raw/DAYMET/*
+data_raw/*
+data_raw/*
 *.Rhistory
 .DS_Store
 data_processed/Phenology_Met_combined.csv
@@ -11,5 +11,12 @@ scripts/LIVE-Morton_Phenology_Forecast/data_raw/
 data_processed/TracePlots_Quercus_macrocarpa.pdf
 scripts/Morton_Phenology_Forecast/shiny_app/Arb_Pheno.db
 *.nc
+
 scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/figures/
-Morton_Phenology_Forecast/MortonArb_PhenoForecast/data/
+
+scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/data/
+
+scripts/DEVELOP-Morton_Phenology_Forecast/shiny_app/figures/
+
+scripts/DEVELOP-Morton_Phenology_Forecast/shiny_app/data/
+
