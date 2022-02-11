@@ -11,3 +11,5 @@ scripts/LIVE-Morton_Phenology_Forecast/data_raw/
 data_processed/TracePlots_Quercus_macrocarpa.pdf
 scripts/Morton_Phenology_Forecast/shiny_app/Arb_Pheno.db
 *.nc
+scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/figures/
+Morton_Phenology_Forecast/MortonArb_PhenoForecast/data/

@@ -13,7 +13,7 @@
 library(dplyr)
 library(gridExtra)
 library(cowplot)
-lirbary(ggplot2)
+library(ggplot2)
 path.weath <- "data_raw/meteorology/"
 path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
 dir.met <- "data_raw/meteorology"
@@ -216,7 +216,8 @@ for(SP in unique(b.model$species)){
 
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
-oaks <- read.csv(file.path("../Gsheet_data/Quercus_Collection.csv"))
+## This is a file Lucien created based on something in our Google Drive and will need to be manually updated if necessary; This is is a small, static file, so now pushed to GitHub so everybody can have the same version
+oaks <- read.csv(file.path("../../data_static//Quercus_Collection.csv"))
 
 sp.catalogue <- as.data.frame(unique(dat.b$Species))
 colnames(sp.catalogue) <- c("Scientific")
