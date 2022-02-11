@@ -87,9 +87,9 @@ function(input, output) {
         output[[plotname]] <- renderPlot({
           SP <- input$Species[my_i]
           
-          dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", Sys.Date() ,".csv")))
-          dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_", Sys.Date() ,".csv")))
-          dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_", Sys.Date(),".csv")))
+          dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_", input$`Forecast date` ,".csv")))
+          dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_", input$`Forecast date`,".csv")))
           
           
           #Taking the mean date of each year
