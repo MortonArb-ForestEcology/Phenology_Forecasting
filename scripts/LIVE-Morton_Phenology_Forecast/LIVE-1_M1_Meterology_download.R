@@ -144,8 +144,8 @@ if(cfs.start <= Sys.Date()){
     download.cfs(vars.in=vars.in, lat.in=lat.in, lon.in=lon.in, forecast.start=as.Date(FCST), forecast.end=forecast.end, path.save=path.save)
     if(length(dir(path.save))==0) unlink(path.save, recursive=T)
   }
-  if(length(dir(path.save))==0) unlink(path.save, recursive=T) # Just in case the last one didn't actually run
 }
+if(length(dir(path.save))==0) unlink(path.save, recursive=T) # Just in case the last one didn't actually run
 # ----------------
 
 # ----------------
@@ -620,7 +620,7 @@ for(ENS in unique(forecast.final$ENS)){
   
   final.indices <- rbind(final.indices, final.tmp)
 }
-
+# length(unique(final.indices$ENS))
 write.csv(final.indices, file.path(dir.met, paste0(site.name, "_daily_FORECAST-READY-LONGRANGE_", Sys.Date(),".csv")), row.names = F)
 
 # -------------------------------
