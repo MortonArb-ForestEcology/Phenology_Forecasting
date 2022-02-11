@@ -18,7 +18,9 @@ library(gridExtra)
 source("LIVE-1_M1_Meterology_download.R")
 
 #Uploading the new data to the shiny app's folder
+tictoc::tic()
 source("LIVE-2_data_org.R")
+tictoc::toc()
 
 #Launching the app to the internet
 source("LIVE-3_run_shiny.R")
