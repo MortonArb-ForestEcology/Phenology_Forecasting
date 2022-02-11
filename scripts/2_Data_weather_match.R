@@ -75,6 +75,7 @@ write.csv(lat.calc, "../data_processed/Arb_Daymet_clean_data.csv", row.names=F)
 met.all <- read.csv("../data_processed/Arb_Daymet_clean_data.csv")
 
 
+dat.burst <- dat.burst[dat.burst$Yday < 200,]
 dat.leaf <- dat.leaf[dat.leaf$Yday < 200,]
 
 # dir.create("../data_processed/", recursive = T, showWarnings = F)
@@ -92,56 +93,6 @@ dat.leaf$GDD0.cum <- met.all$GDD0.cum[match(dat.leaf$Date, met.all$Date)]
 dat.leaf$NCD <- met.all$NCD[match(dat.leaf$Date, met.all$Date)]
 dat.leaf$GTmean <- met.all$GTmean[match(dat.leaf$Date, met.all$Date)]
 dat.leaf$PTTGDD.cum <- met.all$PTTGDD.cum[match(dat.leaf$Date, met.all$Date)]
-
-
-#Loop removing any
-for(SP in unique(dat.burst$Species)){
-  dat.sp <- dat.burst[dat.burst$Species == SP,]
-  for(YR in unique(dat.sp$Year)){
-    dat.yr <- dat.sp[dat.sp$Year == YR,]
-    dat.sp[dat.sp$Year == YR, "sp_ind_per_year"] <- length(unique(dat.yr$PlantNumber))
-    #setting the Threshold. Current need 2 individuals budburst or leaf out per year
-    if(length(unique(dat.yr$PlantNumber))<2){
-      #0 notating it doesn't meet the threshold
-      dat.sp[dat.sp$Year == YR, "obs_check"] <- 0
-    }
-    else{
-      dat.sp[dat.sp$Year == YR, "obs_check"] <- 1
-    }
-  }
-  
-  dat.burst[dat.burst$Species == SP, "sp_ind_per_year"] <- dat.sp$sp_ind_per_year
-  dat.burst[dat.burst$Species == SP, "nIndividuals"] <- max(dat.sp$sp_ind_per_year)
-  #Making sure the whole species is removed even if only one year is bad
-  dat.burst[dat.burst$Species == SP, "obs_check"] <- min(dat.sp$obs_check)
-}
-
-dat.burst <- dat.burst[dat.burst$obs_check > 0,]
-
-
-for(SP in unique(dat.leaf$Species)){
-  dat.sp <- dat.leaf[dat.leaf$Species == SP,]
-  for(YR in unique(dat.sp$Year)){
-    dat.yr <- dat.sp[dat.sp$Year == YR,]
-    dat.sp[dat.sp$Year == YR, "sp_ind_per_year"] <- length(unique(dat.yr$PlantNumber))
-    #setting the Threshold. Current need 2 individuals budburst or leaf out per year
-    if(length(unique(dat.yr$PlantNumber))<2){
-      #0 notating it doesn't meet the threshold
-      dat.sp[dat.sp$Year == YR, "obs_check"] <- 0
-    }
-    else{
-      dat.sp[dat.sp$Year == YR, "obs_check"] <- 1
-    }
-  }
-  
-  dat.leaf[dat.leaf$Species == SP, "sp_ind_per_year"] <- dat.sp$sp_ind_per_year
-  dat.leaf[dat.leaf$Species == SP, "nIndividuals"] <- max(dat.sp$sp_ind_per_year)
-  #Making sure the whole species is removed even if only one year is bad
-  dat.leaf[dat.leaf$Species == SP, "obs_check"] <- min(dat.sp$obs_check)
-}
-
-dat.leaf <- dat.leaf[dat.leaf$obs_check > 0,]
-
 
 # Save modified data
 
