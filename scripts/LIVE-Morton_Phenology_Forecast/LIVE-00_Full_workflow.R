@@ -15,10 +15,10 @@ library(dplyr)
 library(gridExtra)
 
 #Downloading the new weatehr data
-source("1_M1_Meterology_download.R")
+source("LIVE-1_M1_Meterology_download.R")
 
 #Uploading the new data to the shiny app's folder
-source("2_data_org.R")
+source("LIVE-2_data_org.R")
 
 #Launching the app to the internet
-source("3_run_shiny.R")
+source("LIVE-3_run_shiny.R")
