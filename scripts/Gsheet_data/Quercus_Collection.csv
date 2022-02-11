@@ -1,0 +1,75 @@
+"Species","Common.Name","Subgenus","Section","IMLS.Occurrence","US.species..pheno.subset.","X..Trees.in.Collection","Wild.Origin","Garden.Origin","Geographic.Distribution","Phenology..Y.N.","Dendrometer.Bands..Y.N.","ITRDB..Y.N.","NPN..Y.N.","TRY.Traits","BIEN.traits","BIEN.range.map..Y.N.","FIA.basal.area.map..Y.N.","Notes"
+"Quercus acutissima","Sawtooth Oak","Cerris","Cerris","acutissima",NA,5,0,5,"China, Korea, Japan, Indochina, Himalayas","Y","N","N","N",177,16,"Y","Y",NA
+"Quercus alba","White oak","Quercus","Quercus","alba","Y",10,2,3,"Eastern USA and Canada","Y","Y","Y","Y",265,22,"Y","Y",NA
+"Quercus aliena","Oriental White Oak","Quercus","Quercus","aliena",NA,5,5,0,"China, Korea, Japan, and Taiwan","Y","N","N","N",136,11,"N","N",NA
+"Quercus aliena var. acutiserrata","Oriental White Oak","Quercus","Quercus",NA,NA,6,4,2,"China, Korea, and Japan","N","N","N","N",70,NA,"N","N",NA
+"Quercus baronii","Baroni's Oak","Cerris","Ilex","baronii",NA,2,2,0,"China","Y","N","N","N",58,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus bebbiana","Bebb's Oak","Quercus","Quercus","HYBRID",NA,4,0,4,"Northeastern USA and Eastern Canada","Y","N","N","N",9,1,"N","N",NA
+"Quercus bebbiana 'Taco'","Taco Bebb's Oak","Quercus","Quercus",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus bicolor","Swamp White Oak","Quercus","Quercus","bicolor","Y",7,5,1,"Eastern USA and Canada","Y","Y","N","N",94,13,"Y","Y",NA
+"Quercus bimundorum 'JFS-KW1QX'","Two Worlds Oak","Quercus","Quercus",NA,NA,1,0,1,"Pennyslyvania and Massachusetts","N","N","N","N",1,NA,"N","N",NA
+"Quercus buckleyi","Buckley's Oak","Quercus","Lobatae","buckleyi","Y",1,1,0,"USA in Texas, Kansas, Oklahoma","Y","N","N","N",10,5,"Y","Y",NA
+"Quercus castaneifolia","Chesnut-leaved Oak","Cerris","Cerris","castaneifolia",NA,1,1,0,"Caucasus and Alborz Mountaints of northern Iran","Y","N","N","N",27,2,"N","N",NA
+"Quercus coccinea","Scarlet Oak","Quercus","Lobatae","coccinea","Y",3,3,0,"Eastern USA","Y","N","Y","N",141,22,"Y","Y",NA
+"Quercus dalechampii","Italian Oak","Quercus","Quercus","dalechampii",NA,2,2,0,"Southeastern Europe: Italy, Balkan peninsula, Austria, Hungary, Slovakia, and the Czech Republic","Y","N","N","N",15,1,"N","N",NA
+"Quercus deamii","Deam's Oak","Quercus","Quercus","HYBRID",NA,7,3,0,"Northeastern/North central USA and Canada","Y","N","N","N",1,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus dentata","Daimyo Oak","Quercus","Quercus","dentata",NA,4,4,0,"Eastern Russia, Northern China, Korea, and Japan","Y","N","N","N",69,6,"N","N",NA
+"Quercus dentata 'Carl Ferris Miller'","Carl Ferris Miller Daimyo Oak","Quercus","Quercus",NA,NA,2,0,2,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus dentata 'Pinnatifida'","Cut-leaved Daimyo Oak","Quercus","Quercus",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus ellipsoidalis","Hill's Oak or Northern pin oak","Quercus","Lobatae","ellipsoidalis","Y",6,6,0,"Great Lakes/North Central USA and Canada","Y","N","N","N",87,16,"Y","Y",NA
+"Quercus exacta","Shinglepin Oak","Quercus","Quercus",NA,NA,1,0,1,"IA, IL, IN, OH, MO, PA in USA","N","N","N","N",1,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus faginea subsp. faginea","Portugese Oak","Quercus","Quercus",NA,NA,1,0,1,"Spain, Portugal, Algeria, Morrocco","N","N","Y","N",140,14,"N","N","ITRDB and TRY traits are not of specific subspecies"
+"Quercus fernowii","Fernow's Oak","Quercus","Quercus","HYBRID",NA,4,3,1,"Central and Eastern USA but disjunct","Y","N","N","N",1,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus fusiformis","Texas Live Oak","Quercus","Virentes","fusiformis","Y",1,1,0,"OK and TX, and Mexican states Coahuila, Tamaulipas, and Nuevo Leon","Y","N","N","N",23,5,"Y","Y",NA
+"Quercus gambelii","Gambel's Oak","Quercus","Quercus","gambellii","Y",4,3,1,"Southwestern USA and Northwestern Mexico","Y","N","N","Y",129,14,"Y","Y",NA
+"Quercus gambelli x macrocarpa","Macrobel Oak","Quercus","Quercus",NA,NA,1,0,1,"Eastern USA","N","N","N","N",NA,NA,"N","N",NA
+"Quercus georgiana","Georgia Oak","Quercus","Lobatae","georgiana","Y",4,4,0,"NC, SC, GA, AL in USA","Y","N","N","N",16,2,"N","Y",NA
+"Quercus guadalupensis","Guadalupe Oak","Quercus","Quercus","HYBRID",NA,3,0,3,"TX and OH in USA","Y","N","N","N",1,NA,"N","N","Native range might only be Texas. BIEN claims to have traits but there is no data actually there"
+"Quercus hartwissiana","Hartwiss' Oak","Quercus","Quercus","hartwissiana",NA,1,1,0,"Bulgaria, Turkey, Georgia, and Ruddia","Y","N","N","N",14,1,"Y","N",NA
+"Quercus ilicifolia","Bear Oak","Quercus","Lobatae","illicifolia","Y",2,2,0,"Northeastern USA and Southeastern Canada","Y","N","N","Y",144,11,"Y","Y",NA
+"Quercus imbricaria","Shingle Oak","Quercus","Lobatae","imbricaria","Y",5,2,3,"Eastern USA","Y","N","N","Y",74,7,"Y","Y",NA
+"Quercus jackiana","Jack's Oak","Quercus","Quercus","HYBRID",NA,6,0,6,"Northeastern USA and Southeastern Canada","Y","N","N","N",1,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus 'K. B. Crystal'","K. B. Crystal Oak","Quercus","Lobatae",NA,NA,3,0,3,"unknown","N","N","N","N",NA,NA,"N","N",NA
+"Quercus laurifolia","Swamp Laurel Oak","Quercus","Lobatae","laurifolia","Y",1,0,1,"Southeastern and South-central USA","Y","N","N","Y",107,21,"Y","Y",NA
+"Quercus lusitanica","Lusitanian Oak","Quercus","Quercus","lusitanica",NA,3,0,3,"Southwestern Spain, Portugal, and Morocco","Y","N","N","N",64,6,"Y","N",NA
+"Quercus lyrata","Overcup Oak","Quercus","Quercus","lyrata","Y",3,3,0,"Southern and Central USA","Y","N","Y","N",81,16,"Y","Y",NA
+"Quercus macdanielii 'Clemons'","Macdaniels Oak","Quercus","Quercus",NA,NA,2,0,2,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus macranthera","Caucasian Oak","Quercus","Quercus","macanthera",NA,2,2,0,"Caucasus region, Northern Iran, and Turkey","Y","N","N","N",30,2,"Y","N",NA
+"Quercus macrocarpa","Bur Oak","Quercus","Quercus","macrocarpa","Y",24,11,9,"Central and Eastern USA and Canada","Y","Y","Y","Y",140,24,"Y","Y",NA
+"Quercus macrocarpa 'Eckman'","Eckman's Bur Oak","Quercus","Quercus",NA,NA,3,0,3,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus macrocarpa 'Lippert'","Lipper Bur Oak","Quercus","Quercus",NA,NA,3,3,0,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus marilandica","Blackjack Oak","Quercus","Lobatae","marilandica","Y",10,10,0,"Central and Eastern USA","Y","N","N","Y",89,9,"Y","Y",NA
+"Quercus michauxii","Swamp Chestnut Oak","Quercus","Quercus","michauxii","Y",3,2,1,"Southeastern USA and some midwest states","Y","N","N","N",164,21,"Y","Y",NA
+"Quercus mongolica","Mongolian Oak","Quercus","Quercus","mongolica",NA,16,16,0,"Southern Sakhalin, Central and Northern China, Korea, Eastern Mongolia, Siberia, and all of Japan","Y","N","Y","N",161,NA,"N","N",NA
+"Quercus montana","Chestnut Oak","Quercus","Quercus","montana","Y",10,6,3,"Eastern USA","Y","N","N","Y",14,4,"Y","Y",NA
+"Quercus muehlenbergii","Chinkapin Oak","Quercus","Quercus","muehlenbergii","Y",9,8,1,"Eastern USA, Southeastern Canada, Northern Mexico","Y","N","Y","N",86,10,"Y","Y",NA
+"Quercus pagoda","Cherry-barked Oak","Quercus","Lobatae","pagoda","Y",2,2,0,"Southeastern USA but disjunct","Y","N","N","N",60,5,"Y","Y",NA
+"Quercus palustris","Pin Oak","Quercus","Lobatae","palustris","Y",11,5,5,"Northeastern USA and Southeastern Canada","Y","N","Y","Y",116,16,"Y","Y",NA
+"Quercus palustris 'Sovereign'","Sovereign Pin Oak","Quercus","Lobatae",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus petraea","Durmast Oak","Quercus","Quercus","patraea",NA,2,2,0,"Central Europe, the Balkans, Turkey, and Iran","Y","N","Y","N",368,16,"Y","Y",NA
+"Quercus petraea subsp. iberica","Georgian Oak","Quercus","Quercus",NA,NA,5,5,0,"Caucasus region, Iran, and northeastern Turkey","N","N","N","N",14,NA,"N","N","BIEN has quercus iberica traits. Not sure if they are the same or not will check"
+"Quercus phellos","Willow Oak","Quercus","Lobatae","phellos","Y",1,0,1,"Southern USA","Y","N","N","Y",101,15,"Y","Y",NA
+"Quercus prinoides","Dwarf Chinkapin Oak","Quercus","Quercus","prinoides","Y",12,12,0,"Eastern and Central USA and Southeastern Canada","Y","N","N","N",20,5,"Y","Y",NA
+"Quercus pubescens","Downy Oak","Quercus","Quercus","pubescens",NA,1,0,1,"Southern Europe and Southwest Asia","Y","N","Y","N",199,14,"Y","N",NA
+"Quercus pyrenaica","Pyrenean Oak","Quercus","Quercus","pyrenaica",NA,1,0,1,"Spain, Portugal, France, and Morocco","Y","N","N","N",138,13,"N","N",NA
+"Quercus robur","English Oak","Quercus","Quercus","robur",NA,6,4,2,"Europe, Russia, Caucasus region, Iran, Kazakhstan, and Turkey","Y","Y","Y","N",435,27,"Y","Y",NA
+"Quercus robur 'Argenteovariegata","Silver-variegated English Oak","Quercus","Quercus",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus robur 'Skymaster'","Skymaster English Oak","Quercus","Quercus",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus robur subsp. pedunculiflora","Peduncled English Oak","Quercus","Quercus",NA,NA,5,5,0,"Southeastern Europe and western Asia","N","N","N","N",13,NA,"N","N","BIEN has quercus peduncifloria traits. Not sure if they are the same or not will check"
+"Quercus rubra","Northern Red Oak","Quercus","Lobatae","rubra","Y",3,1,2,"Eastern USA and Canada","Y","Y","Y","Y",388,26,"Y","Y",NA
+"Quercus rubra 'Schrefeldii'","Schrefeld's Red Oak","Quercus","Lobatae",NA,NA,1,0,1,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus runcinata","Bottom Oak","Quercus","Lobatae","HYBRID",NA,1,0,1,"NC, PA, MA, OH, KN, IN, IL, MI, MO in USA","Y","N","N","N",11,1,"N","N",NA
+"Quercus saulii","Saul's Oak","Quercus","Quercus","HYBRID",NA,1,0,1,"Eastern USA","Y","N","N","Y",9,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus schuettei","Schuett's Oak","Quercus","Quercus","HYBRID",NA,2,0,2,"Cultivar","Y","N","N","N",1,NA,"N","N","Despite being a cultivar USDA has a native range map? BIEN claims to have traits but there is no data actually there"
+"Quercus serrata","Gland Bearing Oak","Quercus","Quercus","serrata",NA,2,2,0,"China, Korea, Japan, Taiwan","Y","N","N","N",135,9,"N","N",NA
+"Quercus shumardii","Shumard's Oak","Quercus","Lobatae","shumardii","Y",7,4,3,"Southeastern Canada and Eastern USA (But mostly in southeastern USA)","Y","N","Y","Y",93,16,"Y","Y",NA
+"Quercus shumardii var. schneckii","Schneck's Oak","Quercus","Lobatae",NA,NA,4,3,1,"Southeastern Canada and Eastern USA (But mostly in southeastern USA)","N","N","N","N",1,NA,"N","N",NA
+"Quercus stellata","Post Oak","Quercus","Quercus","stellata","Y",5,5,0,"Eastern USA (Especially Southeastern)","Y","N","Y","Y",129,21,"Y","Y",NA
+"Quercus sternbergii","Sternberg's Oak","Quercus","Lobatae","HYBRID",NA,1,1,0,"TX in USA","Y","N","N","N",NA,NA,"N","N",NA
+"Quercus subfalcata","Southern Red-Willow Hybrid Oak","Quercus","Lobatae","HYBRID",NA,1,0,1,"TX, LA, MS, AR, IL, SC, MA in USA","Y","N","N","N",1,NA,"N","N","BIEN claims to have traits but there is no data actually there"
+"Quercus texana 'New Madrid'","New Madrid Nuttall's Oak","Quercus","Lobatae",NA,NA,1,1,0,"MO in USA","N","N","N","N",70,7,"Y","Y","Was discovered in MO but range of specifc var is unknown. Traits are for texana."
+"Quercus variabilis","Oriental Oak","Cerris","Cerris","variabilis",NA,5,5,0,"China, Korea, Japan, Taiwan","Y","N","N","N",102,5,"Y","N",NA
+"Quercus velutina","Black Oak","Quercus","Lobatae","velutina","Y",4,4,0,"Eastern USA and Canada","Y","Y","Y","Y",135,16,"Y","Y",NA
+"Quercus warei","Ware's Oak","Quercus","Quercus","HYBRID",NA,4,0,4,"Hybrid without native range","Y","N","N","N",NA,NA,"N","N","Couldn't find any information on native range"
+"Quercus warei 'Long'","Ware's Oak","Quercus","Quercus",NA,NA,2,0,2,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
+"Quercus warei 'Nadler'","Ware's Oak","Quercus","Quercus",NA,NA,3,0,3,"Cultivar","N","N","N","N",NA,NA,"N","N",NA
