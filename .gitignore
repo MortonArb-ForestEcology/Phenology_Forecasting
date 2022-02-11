@@ -1,9 +1,12 @@
 data_raw/meteorology/*
+data_raw/DAYMET/*
 *.Rhistory
 .DS_Store
 data_processed/Phenology_Met_combined.csv
 data_processed/GHCN_met_all.csv
-*.csv
+data_processed/*
+scripts/DEVELOP-Morton_Phenology_Forecast/data_raw/
+scripts/LIVE-Morton_Phenology_Forecast/data_raw/
 *.png
 data_processed/TracePlots_Quercus_macrocarpa.pdf
 scripts/Morton_Phenology_Forecast/shiny_app/Arb_Pheno.db
