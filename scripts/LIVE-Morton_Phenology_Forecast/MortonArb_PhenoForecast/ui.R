@@ -52,7 +52,7 @@ fluidPage(
   #Fourth row
     fluidRow(
       #The graphs themselves. The only show up when the submit button is pressed
-                  uiOutput("plot.thresh.ui")), 
+                  uiOutput("plot.thresh.ui")),
 
 )
 
