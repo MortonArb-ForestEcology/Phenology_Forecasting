@@ -21,8 +21,8 @@ dir.met <- "data_raw/meteorology"
 path.temp <- "MortonArb_PhenoForecast/data/"
 if(!dir.exists(path.temp)) dir.create(path.temp, recursive=T, showWarnings = F)
 
-path.vis <- "MortonArb_PhenoForecast/figures/"
-if(!dir.exists(path.vis)) dir.create(path.vis, recursive=T, showWarnings = F)
+path.met <- "MortonArb_PhenoForecast/data/meteorology"
+if(!dir.exists(path.met)) dir.create(path.met, recursive=T, showWarnings = F)
 
 path.burst <- file.path("MortonArb_PhenoForecast/data/budburst")
 if(!dir.exists(path.burst)) dir.create(path.burst, recursive=T, showWarnings = F)
@@ -118,8 +118,7 @@ for(SP in unique(b.model$species)){
   }
   pred.df <- data.frame(yday=sample(as.vector(pred.array), 100))
   pred.df$Species <- SP
-  
-  pred.sp[, count:count+100]
+
   pred.sp <- rbind(pred.sp, pred.df)
   
   quant <- quantile(pred.array, c(0.125, 0.875))
@@ -156,15 +155,16 @@ com$Type <- "Common"
 sp.index <- rbind(sci, com)
 
 #Checking the dates we have done a forecast for so we can pick using the slider
-past.fc <- list.files(path = file.path(path.vis), full.names = F)
-past.dates <- data.frame(past.fc)
-colnames(past.dates) <- c("Date")
+past.fc <- list.files(path = file.path(path.met), full.names = F)
+past.dates <- data.frame((gsub("\\..*", "", gsub(".*_", "", past.fc))), past.fc)
+colnames(past.dates) <- c("Date", "File")
+
 
 #Creating the different csv's used for options
 write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
 write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
 write.csv(past.dates, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
-write.csv(dat.ghcn, file.path(path.temp, "meteorology", "Historical_Weather.csv"), row.names = F)
+write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
 
 
 print("Data Organizaiton & Prediction Workflow Complete!")

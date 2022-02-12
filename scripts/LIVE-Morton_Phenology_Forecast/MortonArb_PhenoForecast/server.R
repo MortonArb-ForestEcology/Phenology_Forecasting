@@ -27,7 +27,7 @@ path.in <- "data/"
 sp.index <- read.csv(file.path(path.in, "Species_Index.csv"))
 sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
 fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
-dat.ghcn <- read.csv(file.path(path.in, "meteorology" , "Historical_Weather.csv"))
+dat.ghcn <- read.csv(file.path(path.in , "Historical_Weather.csv"))
 
 # -------------------------------------
 # Creating our budburst visualizations
