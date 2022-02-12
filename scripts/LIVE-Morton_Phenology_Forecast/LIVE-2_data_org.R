@@ -165,6 +165,7 @@ write.csv(sp.index , file.path(path.temp, "Species_Index.csv"), row.names = F)
 write.csv(sp.catalogue, file.path(path.temp, "Species_Catalogue.csv"), row.names = F)
 write.csv(past.dates, file.path(path.temp, "Old_Forecast_List.csv"), row.names = F)
 write.csv(dat.ghcn, file.path(path.temp, "Historical_Weather.csv"), row.names = F)
+write.csv(dat.b, file.path(path.temp, "Oak_collection_budburst.csv"), row.names = F)
 
 
 print("Data Organizaiton & Prediction Workflow Complete!")
