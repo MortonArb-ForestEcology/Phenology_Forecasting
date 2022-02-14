@@ -67,7 +67,7 @@ function(input, output) {
     }
     #This determines the ui output that is loaded in. 
     #This is defined here because it requires a response from the naming convention selection (it needs an input)
-    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus acutissima", options = list('live-search' = FALSE), multiple = T)
+    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus alba", options = list('live-search' = FALSE), multiple = T)
   })
 
   #Observe here means it is waiting to observe something. In this case it is the click of the submit button. It prevents the page from loading things before a selection
@@ -103,19 +103,15 @@ function(input, output) {
           plot.threshB <- ggplot(data=dat.ghcn) +
             stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1, na.rm = T) +
             geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
-            
             #geom_ribbon(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
             geom_ribbon(data=dat.forecast[dat.forecast$VAR == "threshB" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-            
             #geom_line(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
             geom_line(data=dat.forecast[dat.forecast$VAR == "threshB" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, y=mean, color="forecast")) +
-            
-            
             scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("Cumulative GDD5 across time for ", SP))+
+            ggtitle(paste0(SP, ": Cumulative GDD5"))+
             theme(legend.position = c(0.2, 0.75),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
@@ -139,23 +135,17 @@ function(input, output) {
           Mean.d.temp <- ggplot(data=dat.ghcn) +
             stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun=mean, color="black", geom="line", size=1,  na.rm = T) +
             geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
-            
             #geom_ribbon(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
             geom_ribbon(data=dat.forecast[dat.forecast$VAR == "TMEAN" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-            
             #geom_line(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
             geom_line(data=dat.forecast[dat.forecast$VAR == "TMEAN" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
-            
-            
-            
-            
             scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)], limits = c(0,180))  +
             scale_y_continuous(name="Mean Daily Temp (C)" ,expand=c(0,0)) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("Mean temp (C) across time for ",SP))+
+            ggtitle(paste0(SP, ": Mean Temp (C)"))+
             theme(legend.position = c(0.2, 0.75),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
@@ -180,7 +170,7 @@ function(input, output) {
             scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("75% Confidence Interval for ",SP))+
+            ggtitle(paste0(SP, ": Budburst DOY 75% C.I."))+
             theme(legend.position = c(0.5, 0.2),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
