@@ -14,6 +14,8 @@
 # library(dplyr)
 # library(gridExtra)
 
+print(paste0("**************  Executing Phenology Forecast workflow for ", Sys.Date(), "  **************"))
+
 #Downloading the new weather data
 source("LIVE-1_M1_Meterology_download.R")
 
