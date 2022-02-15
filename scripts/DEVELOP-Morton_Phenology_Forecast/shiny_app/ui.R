@@ -16,7 +16,7 @@ library(shinyWidgets)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
-path.in <- "data_raw/meteorology"
+path.in <- "data/"
 
 #Reading in the list of species names
 sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
@@ -52,7 +52,7 @@ fluidPage(
   #Fourth row
     fluidRow(
       #The graphs themselves. The only show up when the submit button is pressed
-                  uiOutput("plot.thresh.ui")), 
+                  uiOutput("plot.thresh.ui")),
 
 )
 

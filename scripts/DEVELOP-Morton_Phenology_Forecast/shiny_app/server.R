@@ -22,22 +22,18 @@ library(cowplot)
 # -------------------------------------
 # Load in the data and calculate ensemble spread
 # -------------------------------------
-path.in <- "data_raw/meteorology"
+path.in <- "data/"
 
-
-dat.ghcn <- read.csv(file.path( path.in, "Historical_Weather.csv"))
-sp.index <- read.csv(file.path( path.in, "Species_Index.csv"))
+sp.index <- read.csv(file.path(path.in, "Species_Index.csv"))
 sp.catalogue<- read.csv(file.path( path.in, "Species_Catalogue.csv"))
-dat.b <- read.csv(file.path( path.in, "Oak_collection_budburst.csv"))
 fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
+dat.ghcn <- read.csv(file.path(path.in , "Historical_Weather.csv"))
+dat.b <- read.csv(file.path(path.in , "Oak_collection_budburst.csv"))
 
-#Default number of species to start
-len <- 1
-my_i <- 1
-
+# -------------------------------------
+# Creating our budburst visualizations
 # -------------------------------------
 # Creating some day and axis labels
-# -------------------------------------
 day.labels <- data.frame(Date=seq.Date(as.Date("2021-01-01"), as.Date("2021-12-31"), by="month"))
 day.labels$yday <- lubridate::yday(day.labels$Date)
 day.labels$Text <- paste(lubridate::month(day.labels$Date, label=T), lubridate::day(day.labels$Date))
@@ -53,9 +49,10 @@ day.labels2$Text <- paste(lubridate::month(day.labels2$Date, label=T), lubridate
 summary(day.labels2)
 
 
+#Default number of species to start
+len <- 1
+my_i <- 1
 
-#Loading in out budburst predicitons before we pull them out by species
-full <- read.csv(file.path(path.in, "Budburst_Model.csv"))
 function(input, output) { 
   
   #This is where we created the species options including the ability to pick between common and scientific names
@@ -70,7 +67,7 @@ function(input, output) {
     }
     #This determines the ui output that is loaded in. 
     #This is defined here because it requires a response from the naming convention selection (it needs an input)
-    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus acutissima", options = list('live-search' = FALSE), multiple = T)
+    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus alba", options = list('live-search' = FALSE), multiple = T)
   })
 
   #Observe here means it is waiting to observe something. In this case it is the click of the submit button. It prevents the page from loading things before a selection
@@ -89,77 +86,32 @@ function(input, output) {
         plotname <- paste("plot_thresh", my_i, sep="")
         
         output[[plotname]] <- renderPlot({
-          #Isolating the current species
-          Species.pick <- input$Species[my_i]
+          SP <- input$Species[my_i]
           
-          #Pulling out the gdd5.cum vlaues
-          thresh <- full[full$species == Species.pick, "THRESH"]
+          dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_", input$`Forecast date` ,".csv")))
+          dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_", input$`Forecast date`,".csv")))
+          
           
           #Taking the mean date of each year
-          Year <- unique(dat.b[dat.b$Species == Species.pick, "Year"])
+          Year <- unique(dat.b[dat.b$Species == SP, "Year"])
           prev.date <- as.data.frame(Year)
-          for(YR in unique(dat.b[dat.b$Species == Species.pick, "Year"])){
-            prev.date[prev.date$Year == YR, "Mean.Date"] <- mean.Date(as.Date(format(as.Date(dat.b[dat.b$Species == Species.pick & dat.b$Year == YR,"Date"]),"%m-%d"), format = "%m-%d"))
+          for(YR in unique(dat.b[dat.b$Species == SP, "Year"])){
+            prev.date[prev.date$Year == YR, "Mean.Date"] <- mean.Date(as.Date(format(as.Date(dat.b[dat.b$Species == SP & dat.b$Year == YR,"Date"]),"%m-%d"), format = "%m-%d"))
           }
-          
-          #Reading in the forecast data for the selcted date 
-          dat.forecast <- read.csv(file.path(path.in, fc.df[fc.df$Date == input$`Forecast date`, "File"] ))
-          dat.forecast <- dat.forecast[dat.forecast$TYPE=="forecast",]
-          vars.agg <- c("TMEAN", "GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum")
-          ens.forecast <- list()
-          
-          #Populating our uncertainty
-          for(VAR in vars.agg){
-            ens.forecast[[VAR]] <- aggregate(dat.forecast[,VAR],
-                                             by=dat.forecast[,c("DATE", "YDAY", "TYPE")],
-                                             FUN=mean, na.rm=T)
-            names(ens.forecast[[VAR]])[names(ens.forecast[[VAR]])=="x"] <- "mean"
-            ens.forecast[[VAR]]$min <- aggregate(dat.forecast[,VAR],
-                                                 by=dat.forecast[,c("DATE", "YDAY", "TYPE")],
-                                                 FUN=min, na.rm=T)$x
-            ens.forecast[[VAR]]$max <- aggregate(dat.forecast[,VAR],
-                                                 by=dat.forecast[,c("DATE", "YDAY", "TYPE")],
-                                                 FUN=max, na.rm=T)$x
-          }
-          
-          
-          pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
-          #We want to pull from the Budburst_Model table for out GDD predictions
-          ens <- unique(dat.forecast$ENS)
-          for(i in 1:length(ens)){
-            pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
-          }
-          pred.df <- data.frame(x=as.vector(pred.array))
-          
-          # Create some useful indices and labels
-          dat.lim <- data.frame(q50=quantile(pred.array, c(0.25, 0.75)),
-                                q75=quantile(pred.array,c(0.125, 0.875)),
-                                q95=quantile(pred.array,c(0.025, 0.975)))
-          row.names(dat.lim) <- c("lb", "ub")
-          dat.lim <- data.frame(t(dat.lim))
-          pred.range = as.Date(as.numeric(dat.lim["q75",]), origin=as.Date(paste0(lubridate::year(Sys.Date()), "-01-01")))
-          pred.range <- paste(lubridate::month(pred.range, label=T), lubridate::day(pred.range))
-          
-          
-          
-          if(Sys.Date()<=as.Date(paste0(lubridate::year(Sys.Date()), "-06-20"))){
-            dat.ghcn$threshB <- dat.ghcn$GDD5.cum
-            ens.forecast$threshB <- ens.forecast$GDD5.cum
-          } else {
-            dat.ghcn$threshB <- dat.ghcn$CDD2.cum 
-            ens.forecast$threshB <- ens.forecast$CDD0.cum
-          }
-          
+
           plot.threshB <- ggplot(data=dat.ghcn) +
             stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1, na.rm = T) +
             geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
-            geom_ribbon(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-            geom_line(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
+            #geom_ribbon(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
+            geom_ribbon(data=dat.forecast[dat.forecast$VAR == "threshB" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
+            #geom_line(data=ens.forecast$threshB[ens.forecast$threshB$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast")) +
+            geom_line(data=dat.forecast[dat.forecast$VAR == "threshB" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, y=mean, color="forecast")) +
             scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("Cumulative GDD5 across time for ", Species.pick))+
+            ggtitle(paste0(SP, ": Cumulative GDD5"))+
             theme(legend.position = c(0.2, 0.75),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
@@ -180,43 +132,45 @@ function(input, output) {
               coord_cartesian(ylim=c(0, max(dat.ghcn$threshB[dat.ghcn$YDAY>=155])))
           }  
           
-         Mean.d.temp <- ggplot(data=dat.ghcn) +
+          Mean.d.temp <- ggplot(data=dat.ghcn) +
             stat_summary(data=dat.ghcn, aes(x=YDAY, y=TMEAN), fun=mean, color="black", geom="line", size=1,  na.rm = T) +
             geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=TMEAN, color="observed"), size=2) +
-            geom_ribbon(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
-            geom_line(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
+            #geom_ribbon(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
+            geom_ribbon(data=dat.forecast[dat.forecast$VAR == "TMEAN" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, ymin=min, ymax=max, fill="forecast"), alpha=0.5) +
+            #geom_line(data=ens.forecast$TMEAN[ens.forecast$TMEAN$TYPE=="forecast",], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
+            geom_line(data=dat.forecast[dat.forecast$VAR == "TMEAN" & dat.forecast$TYPE == "forecast" ,], aes(x=YDAY, y=mean, color="forecast"), na.rm = T) +
             scale_color_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_fill_manual(name="data type", values = c("skyblue", "blue2")) +
             scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels$yday[seq(2, 12, by=1)], labels=day.labels$Text[seq(2, 12, by=1)], limits = c(0,180))  +
             scale_y_continuous(name="Mean Daily Temp (C)" ,expand=c(0,0)) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("Mean temp (C) across time for ",Species.pick))+
+            ggtitle(paste0(SP, ": Mean Temp (C)"))+
             theme(legend.position = c(0.2, 0.75),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
                   panel.grid.minor.x = element_blank(),
                   panel.grid.minor.y = element_blank()) +
-            geom_rect(data=dat.lim["q75",],
+            geom_rect(data=dat.budsum[dat.budsum$Species == SP,],
                       aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)+
             geom_vline(data = prev.date, aes(xintercept=lubridate::yday(Mean.Date), linetype = as.character(Year)))+
             theme(text = element_text(size = 15))     
           
-         Cum.gdd5 <- plot.threshB + 
-            geom_rect(data=dat.lim["q75",],
+          Cum.gdd5 <- plot.threshB + 
+            geom_rect(data=dat.budsum[dat.budsum$Species == SP,],
                       aes(xmin = lb, xmax=ub, ymin=-Inf, ymax=Inf), fill="green4", alpha=0.5)+
             geom_vline(data = prev.date, aes(xintercept=lubridate::yday(Mean.Date), linetype = as.character(Year)))+
-           theme(text = element_text(size = 15))     
+            theme(text = element_text(size = 15))     
           
           Prob.dist <- ggplot() + 
-            geom_density(data=pred.df, aes(x=x), adjust=3.5, fill="green3", alpha=0.5) +
-            geom_vline(data=dat.lim["q75",], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
-            geom_vline(data=dat.lim["q75",], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
+            geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), adjust=3.5, fill="green3", alpha=0.5) +
+            geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
+            geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
             scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
             scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
             theme_bw() +
             guides(fill="none") +
-            ggtitle(paste0("75% Confidence Interval for ",Species.pick))+
+            ggtitle(paste0(SP, ": Budburst DOY 75% C.I."))+
             theme(legend.position = c(0.5, 0.2),
                   legend.title=element_blank(),
                   legend.background = element_blank(),
@@ -224,14 +178,13 @@ function(input, output) {
                   panel.grid.minor.y = element_blank())+
             theme(text = element_text(size = 15))     
           
-          plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
+          
+         plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
           
         })
       })
     }
   })
-  
-  
   
   #THe actual final output that is dynamic based on how may species were chosen
   output$plot.thresh.ui <- renderUI({
@@ -242,4 +195,5 @@ function(input, output) {
     })
     do.call(tagList, plot_output_list)
   })
+
 }  
