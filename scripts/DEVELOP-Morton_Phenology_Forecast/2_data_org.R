@@ -18,13 +18,13 @@ path.weath <- "data_raw/meteorology/"
 path.ghcn=c("data_raw/meteorology/GHCN_extracted/")
 dir.met <- "data_raw/meteorology"
 
-path.temp <- "MortonArb_PhenoForecast/data/"
+path.temp <- "shiny_app/data/"
 if(!dir.exists(path.temp)) dir.create(path.temp, recursive=T, showWarnings = F)
 
-path.met <- "MortonArb_PhenoForecast/data/meteorology"
+path.met <- "shiny_app/data/meteorology"
 if(!dir.exists(path.met)) dir.create(path.met, recursive=T, showWarnings = F)
 
-path.burst <- file.path("MortonArb_PhenoForecast/data/budburst")
+path.burst <- file.path("shiny_app/data/budburst")
 if(!dir.exists(path.burst)) dir.create(path.burst, recursive=T, showWarnings = F)
 
 #Reading in budburst model

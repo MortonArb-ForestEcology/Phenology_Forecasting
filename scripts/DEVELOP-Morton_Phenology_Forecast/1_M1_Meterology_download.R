@@ -25,7 +25,7 @@ library(ggplot2)
 # -------------------------------------------------
 # 0. Setup
 # -------------------------------------------------
-path.shiny <- "MortonArb_PhenoForecast/data_raw/meteorology/"
+path.shiny <- "shiny_app/data_raw/meteorology/"
 if(!dir.exists(path.shiny)) dir.create(path.shiny, recursive=T, showWarnings = F)
 
 

@@ -17,12 +17,12 @@
 print(paste0("**************  Executing Phenology Forecast workflow for ", Sys.Date(), "  **************"))
 
 #Downloading the new weather data
-source("LIVE-1_M1_Meterology_download.R")
+source("1_M1_Meterology_download.R")
 
 #Uploading the new data to the shiny app's folder
 tictoc::tic()
-source("LIVE-2_data_org.R")
+source("2_data_org.R")
 tictoc::toc()
 
 #Launching the app to the internet
-source("LIVE-3_run_shiny.R")
+source("3_run_shiny.R")
