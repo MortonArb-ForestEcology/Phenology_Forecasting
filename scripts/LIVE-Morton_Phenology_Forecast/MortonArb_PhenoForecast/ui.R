@@ -29,30 +29,41 @@ fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
 #This puts everything on a single page where I can specify the organizaiton easily
 fluidPage(
   
+  titlePanel("Morton Arboretum Spring Budburst Forecast"),
+  
   #This defines what will be in the first row of the page
-  #Currently that is the naming convention selection and previous forecast slider
+  #Currently that is our explanation of what the app is
   fluidRow(
-  #Allowing the choice between scientific and common: Maybe remove given the audience and functionality quirks
-  column(width = 4, selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type)))),
+    p(h4("This app provides a visualization of the predicted dates of the budburst phenophase for", em("Quercus"), "(oak) species in the", em("Quercus"), 
+         "collection at The Morton Arboretum utilizing data collected from citizen science phenology monitors."))
+  ),
+  fluidRow(br()), #This line is exclusively to give white space between the description and the options
   
-  #Allowing for a slider between the forecasts
-  column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(max(fc.df$Date))))),
+  #The second row is the naming convention selection and previous forecast slider
+  fluidRow(
+    #Allowing the choice between scientific and common: Maybe remove given the audience and functionality quirks
+    column(width = 4, selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type)))),
+    
+    #Allowing for a slider between the forecasts
+    column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(max(fc.df$Date))))),
   
-  #Deciding what is in the second row
+  #Deciding what is in the third row
   fluidRow(
     #Picking the species you want to see
     column(width = 4, uiOutput("select_Species"))),
   
-  #Deciding what is in the third row
+  #Deciding what is in the fourth row
   fluidRow(
     
     #The submit button and warning text
     column(width = 4, "Click submit to see and update results"),
-            column(width = 2, submitButton("Submit"))),
-  #Fourth row
-    fluidRow(
-      #The graphs themselves. The only show up when the submit button is pressed
-                  uiOutput("plot.thresh.ui")),
-
+    column(width = 2, submitButton("Submit"))),
+  #Fifth row
+  fluidRow(
+    #The graphs themselves. The only show up when the submit button is pressed
+    uiOutput("plot.thresh.ui")),
+  
 )
+
+
 
