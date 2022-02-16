@@ -34,9 +34,10 @@ fluidPage(
   #This defines what will be in the first row of the page
   #Currently that is our explanation of what the app is
   fluidRow(
-    p("This app provides a visualization of the predicted dates of the budburst phenophase for", em("Quercus"), "(oak) species in the", em("Quercus"), 
-      "collection at The Morton Arboretum utilizing data collected from citizen science phenology monitors.")
+    p(h4("This app provides a visualization of the predicted dates of the budburst phenophase for", em("Quercus"), "(oak) species in the", em("Quercus"), 
+      "collection at The Morton Arboretum utilizing data collected from citizen science phenology monitors."))
   ),
+  fluidRow(br()), #This line is exclusively to give white space between the description and the options
   
   #The second row is the naming convention selection and previous forecast slider
   fluidRow(
