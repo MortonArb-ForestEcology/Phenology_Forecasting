@@ -179,7 +179,27 @@ function(input, output) {
             theme(text = element_text(size = 15))     
           
           
-         plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
+          plot.row <- plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
+          title <- ggdraw() + 
+            draw_label(
+              paste0(SP, " predicted budburst date range ", as.Date((dat.budsum[dat.budsum$Species == SP,"lb"]-1), origin = paste0(lubridate::year(Sys.Date()),"-01-01")) ,
+                     " to ", as.Date((dat.budsum[dat.budsum$Species == SP,"ub"]-1), origin = paste0(lubridate::year(Sys.Date()),"-01-01"))),
+              fontface = 'bold',
+              x = 0,
+              hjust = 0, 
+              size = 20,
+            ) +
+            theme(
+              # add margin on the left of the drawing canvas,
+              # so title is aligned with left edge of first plot
+              plot.margin = margin(0, 0, 0, 7)
+            )
+          plot_grid(
+            title, plot.row,
+            ncol = 1,
+            # rel_heights values control vertical title margins
+            rel_heights = c(0.1, 1)
+          )
           
         })
       })
