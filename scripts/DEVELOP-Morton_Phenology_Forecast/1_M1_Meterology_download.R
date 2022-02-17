@@ -612,7 +612,11 @@ bc.gefs2 <- merge(data.frame(ENS.CFS=unique(ghcn.cfs$ENS.CFS)), bc.gefs2)
 bc.gefs2$ENS <- paste(bc.gefs2$ENS.CFS, bc.gefs2$ENS.GEFS, sep=".")
 dim(bc.gefs); dim(bc.gefs2)
 
-forecast.final <- rbind(ghcn.cfs[!ghcn.cfs$DATE %in% bc.gefs2$DATE,], bc.gefs2[,cols.use])
+#forecast.final <- rbind(ghcn.cfs[!ghcn.cfs$DATE %in% bc.gefs2$DATE,], bc.gefs2[,cols.use])
+#This fixes our issue of new observations getting excluded from the forecast
+forecast.final <- rbind(ghcn.cfs[ghcn.cfs$TYPE == "observed",], 
+                        bc.gefs2[bc.gefs2$DATE > max(ghcn.cfs[ghcn.cfs$TYPE == "observed","DATE"]) ,cols.use], 
+                        ghcn.cfs[ghcn.cfs$DATE > max(bc.gefs2$DATE),])
 forecast.final <- forecast.final[order(forecast.final$ENS, forecast.final$DATE),]
 
 ggplot(data=forecast.final) +
