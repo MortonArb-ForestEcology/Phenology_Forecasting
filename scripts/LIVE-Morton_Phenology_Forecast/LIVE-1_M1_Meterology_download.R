@@ -310,6 +310,12 @@ for(i in 2:length(cfs.dates)){
     geom_line(aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.), color="black", size=0.5) +
     geom_line(data=tmx.tmp, aes(x=time, y=Maximum_temperature_height_above_ground.unit.K.), color="red", size=0.5)
   
+  last.date <- as.vector(c(max(tmn.tmp$time), max(tmx.tmp$time), max(prp.tmp$time)))
+  
+  tmx.tmp <- tmx.tmp[tmx.tmp$time <= min(last.date),]
+  tmn.tmp <- tmn.tmp[tmn.tmp$time <= min(last.date),]
+  prp.tmp <- prp.tmp[prp.tmp$time <= min(last.date),]
+  
   cfs.tmx <- rbind(tmx.tmp, cfs.tmx)
   cfs.tmn <- rbind(tmn.tmp, cfs.tmn)
   cfs.prp <- rbind(prp.tmp, cfs.prp)
