@@ -35,7 +35,7 @@ fluidPage(
   #Currently that is our explanation of what the app is
   fluidRow(
     p(h4("This app provides a visualization of the predicted dates of the budburst phenophase for", em("Quercus"), "(oak) species in the", em("Quercus"), 
-         "at The Morton Arboretum utilizing data collected from", tags$a(href="https://www.rolliecology.com/phenology", "citizen science phenology monitors."), 
+         "collection at The Morton Arboretum utilizing data collected from", tags$a(href="https://www.rolliecology.com/phenology", "citizen science phenology monitors."), 
          "For more information on how to use this app and future forecast development please see", tags$a(href="https://docs.google.com/document/d/16MhZ5IfQi-hopuARe2Hf4Cn6kIImWZGgH1SyfjOd4wo/","this guide.")))
   ),
   fluidRow(br()), #This line is exclusively to give white space between the description and the options
