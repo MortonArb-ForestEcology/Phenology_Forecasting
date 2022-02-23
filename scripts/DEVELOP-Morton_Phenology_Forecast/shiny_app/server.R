@@ -88,9 +88,15 @@ function(input, output) {
         output[[plotname]] <- renderPlot({
           SP <- input$Species[my_i]
           
-          dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          #dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          #dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_2022-02-16.csv")))
+          
+          dat.newdist <- read.csv(file.path(path.in, "budburst", paste0("Prop_Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          #dat.newdist <- read.csv(file.path(path.in, "budburst", paste0("Prop_Oak_Budburst_Prediction_2022-02-16.csv")))
           dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_", input$`Forecast date` ,".csv")))
+          #dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_2022-02-16.csv")))
           dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_", input$`Forecast date`,".csv")))
+          #dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_2022-02-16.csv")))
           
           
           #Taking the mean date of each year
@@ -162,8 +168,12 @@ function(input, output) {
             geom_vline(data = prev.date, aes(xintercept=lubridate::yday(Mean.Date), linetype = as.character(Year)))+
             theme(text = element_text(size = 15))     
           
+          dat.newdist$ens.end <- as.numeric(gsub("\\..*","", dat.newdist$ens))
+          
           Prob.dist <- ggplot() + 
-            geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), adjust=3.5, fill="green3", alpha=0.5) +
+            #facet_wrap(~ens.end, scales = "fixed")+
+            #geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday, color = as.character(ens)), adjust=3.5, alpha=0.5) +
+            geom_line(data=dat.newdist[dat.newdist$Species == SP,], aes(x=yday, y=Proportion, color = as.character(ens)),show.legend = FALSE) +
             geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
             geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
             scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
@@ -179,8 +189,28 @@ function(input, output) {
             theme(text = element_text(size = 15))     
           
           
-         plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
-          
+         plot.row <- plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
+         title <- ggdraw() + 
+           draw_label(
+             paste0(SP, " predicted budburst date range ", as.Date((dat.budsum[dat.budsum$Species == SP,"lb"]-1), origin = paste0(lubridate::year(Sys.Date()),"-01-01")) ,
+                    " to ", as.Date((dat.budsum[dat.budsum$Species == SP,"ub"]-1), origin = paste0(lubridate::year(Sys.Date()),"-01-01"))),
+             fontface = 'bold',
+             x = 0,
+             hjust = 0, 
+             size = 20,
+           ) +
+           theme(
+             # add margin on the left of the drawing canvas,
+             # so title is aligned with left edge of first plot
+             plot.margin = margin(0, 0, 0, 7)
+           )
+         plot_grid(
+           title, plot.row,
+           ncol = 1,
+           # rel_heights values control vertical title margins
+           rel_heights = c(0.1, 1)
+         )
+         
         })
       })
     }
