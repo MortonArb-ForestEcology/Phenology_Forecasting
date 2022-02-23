@@ -58,8 +58,7 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Reading in our latest forecast
-dat.forecast <- read.csv(file.path(dir.met, paste0("Mortonarb_daily_FORECAST-READY-LONGRANGE_", Sys.Date(),".csv")))
-dat.forecast <- dat.forecast[dat.forecast$TYPE=="forecast",]
+dat.forecast <- read.csv(file.path(dir.met, paste0("MortonArb_daily_FORECAST-READY-LONGRANGE_2022-02-15.csv")))
 vars.agg <- c("TMEAN", "GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum")
 ens.forecast <- list()
 
@@ -89,8 +88,8 @@ fc.sp <- as.data.frame(do.call(rbind, ens.forecast))
 fc.sp$VAR <- gsub("\\..*","",(row.names(fc.sp)))
 rownames(fc.sp) <- NULL
 colnames(fc.sp) <- c("PRED.DATE", "YDAY", "TYPE", "mean", "min", "max", "VAR")
- 
-write.csv(fc.sp, file.path(path.temp, "meteorology", paste0("Forecast_data_", Sys.Date(),".csv")), row.names = F)
+
+write.csv(fc.sp, file.path(path.temp, "meteorology", paste0("Forecast_data_2022-02-16.csv")), row.names = F)
 
 calc.bud <- function(dat, VAR, THRESH){
   min(dat[which(dat[,VAR] >= THRESH),"YDAY"])
@@ -116,10 +115,24 @@ for(SP in unique(b.model$species)){
   for(i in 1:length(ens)){
     pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
   }
-  pred.df <- data.frame(yday=sample(as.vector(pred.array), 100))
-  pred.df$Species <- SP
-
-  pred.sp <- rbind(pred.sp, pred.df)
+  #pred.df <- data.frame(yday=as.vector(pred.array))
+  pred.df <- data.frame(yday=pred.array)
+  pred.long <- tidyr::gather(pred.df)
+  colnames(pred.long) <- c("ens.ref", "yday")
+  pred.long$Species <- SP
+  
+  for(i in 1:length(unique(pred.long$ens.ref))){
+    ref <- paste0("yday.",i)
+    pred.long[pred.long$ens.ref == ref, "ens.num"] <- ens[as.numeric(i)]
+  }
+  
+  prop.df <- aggregate(Species~yday+ens.num, data=pred.long, FUN = length)
+  colnames(prop.df) <- c("yday", "ens", "count")
+  prop.df$ens.group <- as.numeric(gsub("\\..*","", prop.df$ens))
+  prop.df$Proportion <- prop.df$count/nrow(pred.df)
+  prop.df$Species <- SP
+  
+  pred.sp <- rbind(pred.sp, prop.df)
   
   quant <- quantile(pred.array, c(0.125, 0.875))
   # Create some useful indices and labels
@@ -133,8 +146,8 @@ for(SP in unique(b.model$species)){
   count <- count +1
 }
 
-write.csv(pred.sp, file.path(path.burst, paste0("Oak_Budburst_Prediction_", Sys.Date() ,".csv")), row.names = F)
-write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_", Sys.Date() ,".csv")), row.names = F)
+write.csv(pred.sp, file.path(path.burst, paste0("Prop_Oak_Budburst_Prediction_2022-02-16.csv")), row.names = F)
+write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_2022-02-16.csv")), row.names = F)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
 ## This is a file Lucien created based on something in our Google Drive and will need to be manually updated if necessary; This is is a small, static file, so now pushed to GitHub so everybody can have the same version
