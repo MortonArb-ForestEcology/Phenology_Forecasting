@@ -105,20 +105,34 @@ colnames(lim.comb) <- c("Species", "lb", "ub", "mean", "min", "max")
 
 count <- 1
 for(SP in unique(b.model$species)){
-#Pulling out the gdd5.cum vlaues
-
+  #Pulling out the gdd5.cum vlaues
+  
   thresh <- b.model[b.model$species == SP, "THRESH"]
-
+  
   pred.array <- array(dim=c(length(thresh), length(unique(dat.forecast$ENS))))
   #We want to pull from the Budburst_Model table for out GDD predictions
   ens <- unique(dat.forecast$ENS)
   for(i in 1:length(ens)){
     pred.array[,i] <- unlist(lapply(dat=dat.forecast[dat.forecast$ENS==ens[i],], FUN=calc.bud, VAR="GDD5.cum", thresh))
   }
-  pred.df <- data.frame(yday=sample(as.vector(pred.array), 100))
-  pred.df$Species <- SP
-
-  pred.sp <- rbind(pred.sp, pred.df)
+  #pred.df <- data.frame(yday=as.vector(pred.array))
+  pred.df <- data.frame(yday=pred.array)
+  pred.long <- tidyr::gather(pred.df)
+  colnames(pred.long) <- c("ens.ref", "yday")
+  pred.long$Species <- SP
+  
+  for(i in 1:length(unique(pred.long$ens.ref))){
+    ref <- paste0("yday.",i)
+    pred.long[pred.long$ens.ref == ref, "ens.num"] <- ens[as.numeric(i)]
+  }
+  
+  prop.df <- aggregate(Species~yday+ens.num, data=pred.long, FUN = length)
+  colnames(prop.df) <- c("yday", "ens", "count")
+  prop.df$ens.group <- as.numeric(gsub("\\..*","", prop.df$ens))
+  prop.df$Proportion <- prop.df$count/nrow(pred.df)
+  prop.df$Species <- SP
+  
+  pred.sp <- rbind(pred.sp, prop.df)
   
   quant <- quantile(pred.array, c(0.125, 0.875))
   # Create some useful indices and labels
@@ -132,7 +146,7 @@ for(SP in unique(b.model$species)){
   count <- count +1
 }
 
-write.csv(pred.sp, file.path(path.burst, paste0("Oak_Budburst_Prediction_", Sys.Date() ,".csv")), row.names = F)
+write.csv(pred.sp, file.path(path.burst, paste0("Prop_Oak_Budburst_Prediction_", Sys.Date() ,".csv")), row.names = F)
 write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_", Sys.Date() ,".csv")), row.names = F)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
