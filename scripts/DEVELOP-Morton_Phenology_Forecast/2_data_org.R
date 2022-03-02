@@ -58,7 +58,7 @@ dat.ghcn <- read.csv(file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 dat.ghcn$DATE <- as.Date(dat.ghcn$DATE)
 
 #Reading in our latest forecast
-dat.forecast <- read.csv(file.path(dir.met, paste0("MortonArb_daily_FORECAST-READY-LONGRANGE_2022-02-15.csv")))
+dat.forecast <- read.csv(file.path(dir.met, paste0("MortonArb_daily_FORECAST-READY-LONGRANGE_", Sys.Date(),".csv")))
 vars.agg <- c("TMEAN", "GDD0.cum", "GDD5.cum", "CDD0.cum", "CDD2.cum")
 ens.forecast <- list()
 
@@ -89,7 +89,7 @@ fc.sp$VAR <- gsub("\\..*","",(row.names(fc.sp)))
 rownames(fc.sp) <- NULL
 colnames(fc.sp) <- c("PRED.DATE", "YDAY", "TYPE", "mean", "min", "max", "VAR")
 
-write.csv(fc.sp, file.path(path.temp, "meteorology", paste0("Forecast_data_2022-02-16.csv")), row.names = F)
+write.csv(fc.sp, file.path(path.temp, "meteorology", paste0("Forecast_data_", Sys.Date(),".csv")), row.names = F)
 
 calc.bud <- function(dat, VAR, THRESH){
   min(dat[which(dat[,VAR] >= THRESH),"YDAY"])
@@ -146,8 +146,8 @@ for(SP in unique(b.model$species)){
   count <- count +1
 }
 
-write.csv(pred.sp, file.path(path.burst, paste0("Prop_Oak_Budburst_Prediction_2022-02-16.csv")), row.names = F)
-write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_2022-02-16.csv")), row.names = F)
+write.csv(pred.sp, file.path(path.burst, paste0("Prop_Oak_Budburst_Prediction_", Sys.Date(),".csv")), row.names = F)
+write.csv(lim.comb, file.path(path.burst, paste0("Oak_Prediciton_Summary_", Sys.Date(),".csv")), row.names = F)
 
 #Creating the name indexes used for the name picker (This is for having both common and scientific names)
 ## This is a file Lucien created based on something in our Google Drive and will need to be manually updated if necessary; This is is a small, static file, so now pushed to GitHub so everybody can have the same version
