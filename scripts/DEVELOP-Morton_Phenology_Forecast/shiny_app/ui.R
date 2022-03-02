@@ -43,15 +43,10 @@ fluidPage(
   #The second row is the naming convention selection and previous forecast slider
   fluidRow(
   #Allowing the choice between scientific and common: Maybe remove given the audience and functionality quirks
-  column(width = 4, selectInput("Convention", "Choose a naming style:", list(Convention=as.list(name.type)))),
+  column(width = 4, pickerInput('Species','Choose a Species: ', choices = c(sp.list), selected= "Quercus alba", options = list('live-search' = FALSE), multiple = T)),
   
   #Allowing for a slider between the forecasts
   column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(max(fc.df$Date))))),
-  
-  #Deciding what is in the third row
-  fluidRow(
-    #Picking the species you want to see
-    column(width = 4, uiOutput("select_Species"))),
   
   #Deciding what is in the fourth row
   fluidRow(
