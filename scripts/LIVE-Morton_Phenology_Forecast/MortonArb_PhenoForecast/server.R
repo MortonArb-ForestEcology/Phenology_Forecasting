@@ -168,7 +168,7 @@ function(input, output) {
           } else {
             dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
             Prob.dist <- ggplot() + 
-              geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), adjust=3.5, alpha=0.5) +
+              geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), fill = "darkgreen", adjust=3.5, alpha=0.5) +
               geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), linetype="dashed") +
               geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), linetype="dashed") +
               scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
