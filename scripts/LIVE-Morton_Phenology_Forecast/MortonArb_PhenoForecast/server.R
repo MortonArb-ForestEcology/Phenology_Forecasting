@@ -54,22 +54,6 @@ len <- 1
 my_i <- 1
 
 function(input, output) { 
-  
-  #This is where we created the species options including the ability to pick between common and scientific names
-  output$select_Species <- renderUI({
-    if(input$Convention == "Common"){
-      spp.avail <- sp.catalogue$Scientific
-      #If people want to use the Common names, they are presented common names but under the hood we use scientific to match file names
-      #THis is sadly also why alphabetical only works one way...
-      names(spp.avail) <- sp.catalogue$Common
-    } else{
-      spp.avail <- sort(unique(paste(sp.index$Name[sp.index$Type==input$Convention])))
-    }
-    #This determines the ui output that is loaded in. 
-    #This is defined here because it requires a response from the naming convention selection (it needs an input)
-    pickerInput('Species','Choose a Species: ', choices = c(spp.avail), selected= "Quercus alba", options = list('live-search' = FALSE), multiple = T)
-  })
-
   #Observe here means it is waiting to observe something. In this case it is the click of the submit button. It prevents the page from loading things before a selection
   observe({ 
     #Req requires that it recieves and input of a species to run. This prevents crashing from an NA input
@@ -88,18 +72,20 @@ function(input, output) {
         output[[plotname]] <- renderPlot({
           SP <- input$Species[my_i]
           
-          dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+          #Reading in our forecast data for visualizations
+          #This folder contains summary stats include the lower and upper bounds of the CI
           dat.budsum <- read.csv(file.path(path.in, "budburst", paste0("Oak_Prediciton_Summary_", input$`Forecast date` ,".csv")))
+          
+          #This is the meteorological forecast ensemble information
           dat.forecast <- read.csv(file.path(path.in, "meteorology", paste0("Forecast_data_", input$`Forecast date`,".csv")))
-          
-          
+
           #Taking the mean date of each year
           Year <- unique(dat.b[dat.b$Species == SP, "Year"])
           prev.date <- as.data.frame(Year)
           for(YR in unique(dat.b[dat.b$Species == SP, "Year"])){
             prev.date[prev.date$Year == YR, "Mean.Date"] <- mean.Date(as.Date(format(as.Date(dat.b[dat.b$Species == SP & dat.b$Year == YR,"Date"]),"%m-%d"), format = "%m-%d"))
           }
-
+          
           plot.threshB <- ggplot(data=dat.ghcn) +
             stat_summary(data=dat.ghcn, aes(x=YDAY, y=threshB), fun=mean, color="black", geom="line", size=1, na.rm = T) +
             geom_line(data=dat.ghcn[dat.ghcn$YEAR==lubridate::year(Sys.Date()), ], aes(x=YDAY, y=threshB, color="observed"), size=2) +
@@ -162,22 +148,41 @@ function(input, output) {
             geom_vline(data = prev.date, aes(xintercept=lubridate::yday(Mean.Date), linetype = as.character(Year)))+
             theme(text = element_text(size = 15))     
           
-          Prob.dist <- ggplot() + 
-            geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), adjust=3.5, fill="green3", alpha=0.5) +
-            geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), color="darkgreen", linetype="dashed") +
-            geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), color="darkgreen", linetype="dashed") +
-            scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
-            scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
-            theme_bw() +
-            guides(fill="none") +
-            ggtitle(paste0(SP, ": Budburst DOY 75% C.I."))+
-            theme(legend.position = c(0.5, 0.2),
-                  legend.title=element_blank(),
-                  legend.background = element_blank(),
-                  panel.grid.minor.x = element_blank(),
-                  panel.grid.minor.y = element_blank())+
-            theme(text = element_text(size = 15))     
-          
+          if(input$`Forecast date` >= "2022-03-03"){
+            dat.newdist <- read.csv(file.path(path.in, "budburst", paste0("Prop_Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+            Prob.dist <- ggplot() + 
+              geom_density(data=dat.newdist[dat.newdist$Species == SP,], aes(x=yday), fill = "darkgreen", alpha=0.5, show.legend = FALSE) +
+              geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), linetype="dashed") +
+              geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), linetype="dashed") +
+              scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
+              scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
+              theme_bw() +
+              guides(fill="none") +
+              ggtitle(paste0(SP, ": Budburst DOY 75% C.I."))+
+              theme(legend.position = c(0.5, 0.2),
+                    legend.title=element_blank(),
+                    legend.background = element_blank(),
+                    panel.grid.minor.x = element_blank(),
+                    panel.grid.minor.y = element_blank())+
+              theme(text = element_text(size = 15))     
+          } else {
+            dat.dist <- read.csv(file.path(path.in, "budburst", paste0("Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
+            Prob.dist <- ggplot() + 
+              geom_density(data=dat.dist[dat.dist$Species == SP,], aes(x=yday), adjust=3.5, alpha=0.5) +
+              geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=lb), linetype="dashed") +
+              geom_vline(data=dat.budsum[dat.budsum$Species == SP,], aes(xintercept=ub), linetype="dashed") +
+              scale_x_continuous(name="Day of Year", expand=c(0,0), breaks=day.labels2$yday[seq(8, nrow(day.labels2), by=7)], labels=day.labels2$Text[seq(8, nrow(day.labels2), by=7)])  +
+              scale_y_continuous(name="Probability of Bud Burst" ,expand=c(0,0)) +
+              theme_bw() +
+              guides(fill="none") +
+              ggtitle(paste0(SP, ": Budburst DOY 75% C.I."))+
+              theme(legend.position = c(0.5, 0.2),
+                    legend.title=element_blank(),
+                    legend.background = element_blank(),
+                    panel.grid.minor.x = element_blank(),
+                    panel.grid.minor.y = element_blank())+
+              theme(text = element_text(size = 15))     
+          }
           
           plot.row <- plot_grid(Mean.d.temp, Cum.gdd5, Prob.dist, nrow = 1)
           title <- ggdraw() + 
@@ -215,5 +220,5 @@ function(input, output) {
     })
     do.call(tagList, plot_output_list)
   })
-
+  
 }  
