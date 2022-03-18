@@ -148,7 +148,7 @@ function(input, output) {
             geom_vline(data = prev.date, aes(xintercept=lubridate::yday(Mean.Date), linetype = as.character(Year)))+
             theme(text = element_text(size = 15))     
           
-          if(input$`Forecast date` >= "2022-03-03"){
+          if(input$`Forecast date` >= "2022-03-05"){
             dat.newdist <- read.csv(file.path(path.in, "budburst", paste0("Prop_Oak_Budburst_Prediction_", input$`Forecast date` ,".csv")))
             Prob.dist <- ggplot() + 
               geom_density(data=dat.newdist[dat.newdist$Species == SP,], aes(x=yday), fill = "darkgreen", alpha=0.5, show.legend = FALSE) +
