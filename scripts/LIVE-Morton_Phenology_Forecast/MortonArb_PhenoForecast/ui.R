@@ -29,7 +29,7 @@ fc.df <- read.csv(file.path(path.in, "Old_Forecast_List.csv"))
 #This puts everything on a single page where I can specify the organizaiton easily
 fluidPage(
   
-  titlePanel("Morton Arboretum Spring Budburst Forecast"),
+  titlePanel("The Morton Arboretum: Spring Oak Budburst Forecast"),
   
   #This defines what will be in the first row of the page
   #Currently that is our explanation of what the app is
