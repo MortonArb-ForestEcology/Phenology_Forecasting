@@ -4,7 +4,8 @@
 # -----------------------------
 library(ggplot2)
 # Setting a shared file path for where the data are
-path.goog <- "G:/.shortcut-targets-by-id/1SGuXMBpBVsqzUFeK_YsR7BD7ZqqmhJeG/ClimateChange_MortonArb/datasets"
+# path.goog <- "G:/.shortcut-targets-by-id/1SGuXMBpBVsqzUFeK_YsR7BD7ZqqmhJeG/ClimateChange_MortonArb/datasets"
+path.goog <- "/Volumes/GoogleDrive/My Drive/Misc/ClimateChange_MortonArb/datasets/"
 
 # Read in the older dataset
 met.old <- read.csv(file.path(path.goog, "MortonArb_GHCND-USC00119221_1895-2007.csv"))

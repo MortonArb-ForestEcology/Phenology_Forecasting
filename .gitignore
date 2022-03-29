@@ -7,6 +7,7 @@ data_processed/GHCN_met_all.csv
 data_processed/*
 scripts/DEVELOP-Morton_Phenology_Forecast/data_raw/
 scripts/LIVE-Morton_Phenology_Forecast/data_raw/
+scripts/Morton_Bloom_Forecast/data_raw/
 *.png
 data_processed/TracePlots_Quercus_macrocarpa.pdf
 scripts/Morton_Phenology_Forecast/shiny_app/Arb_Pheno.db
@@ -16,8 +17,11 @@ scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/figures/
 
 scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/data/
 
+scripts/Morton_Bloom_Forecast/MortonArb_BloomForecast/data/
+
 scripts/DEVELOP-Morton_Phenology_Forecast/shiny_app/figures/
 
 scripts/DEVELOP-Morton_Phenology_Forecast/shiny_app/data/
 
 scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/rsconnect/shinyapps.io/mortonarb-forestecology/mortonarb_phenoforecast.dcf
+scripts/Morton_Bloom_Forecast/MortonArb_BloomForecast/rsconnect/shinyapps.io/mortonarb-forestecology/mortonarb_bloomforecast.dcf

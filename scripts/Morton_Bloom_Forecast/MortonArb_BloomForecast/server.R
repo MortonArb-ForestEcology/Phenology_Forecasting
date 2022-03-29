@@ -56,7 +56,7 @@ my_i <- 1
 
 function(input, output) { 
   #Observe here means it is waiting to observe something. In this case it is the click of the submit button. It prevents the page from loading things before a selection
-  observe({ 
+  # observe({ 
         output$redbud <- renderPlot({
           #Reading in our forecast data for visualizations
           #This folder contains summary stats include the lower and upper bounds of the CI
@@ -180,7 +180,7 @@ function(input, output) {
             rel_heights = c(0.1, 1)
           )
         })
-  })
+   #})
   
   #THe actual final output that is dynamic based on how may species were chosen
   output$plot.thresh.ui <- renderUI({

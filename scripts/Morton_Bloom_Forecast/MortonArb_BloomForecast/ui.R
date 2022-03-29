@@ -39,15 +39,15 @@ fluidPage(
     column(width = 4, sliderTextInput("Forecast date", "Previous forecasts", choices=fc.df$Date, selected = as.character(max(fc.df$Date))))),
   
   #Deciding what is in the fourth row
-  fluidRow(
+  # fluidRow(
     
     #The submit button and warning text
-    column(width = 4, "Click submit to see and update results"),
-    column(width = 2, submitButton("Submit"))),
+    # column(width = 4, "Click submit to see and update results"),
+    # column(width = 2, submitButton("Submit"))),
   #Fifth row
   fluidRow(
     #The graphs themselves. The only show up when the submit button is pressed
-    plotOutput("redbud")),
+    plotOutput("redbud"))
   
 )
 

@@ -14,7 +14,7 @@ library(shinyWidgets)
 #This is to run the app LOCALLY
 #If you open this script and are in it's directory, all you have to do is runApp.
 #setwd("../")  #This is kept here for when I am bouncing between online and local runs
-runApp("MortonArb_BloomForecast")
+# runApp("MortonArb_BloomForecast")
 
 
 #This section is to run the app ONLINE
