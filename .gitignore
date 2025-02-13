@@ -25,3 +25,4 @@ scripts/DEVELOP-Morton_Phenology_Forecast/shiny_app/data/
 
 scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast/rsconnect/shinyapps.io/mortonarb-forestecology/mortonarb_phenoforecast.dcf
 scripts/Morton_Bloom_Forecast/MortonArb_BloomForecast/rsconnect/shinyapps.io/mortonarb-forestecology/mortonarb_bloomforecast.dcf
+*.csv

@@ -3,7 +3,7 @@
 # Full documentation to come (ask Christy in the meanwhile)
 ## NOTE: ADDED NEW FUNCTIONALITY TO GET HISTORICAL FORECASTS!  You can pass in "latest" if you want whatever's newest, but you can also pass in specific dates.  Note: Dates > "lastest" may cause issues
 library(httr)
-
+  
 download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = "latest", forecast.end = paste0(lubridate::year(Sys.Date()), "-12-31")){
   if(!dir.exists(path.save)) dir.create(path.save, recursive=T, showWarnings = F)
 
@@ -46,7 +46,7 @@ download.cfs <- function(vars.in, lat.in, lon.in, path.save, forecast.start = "l
     
     # 2. Getting the available months for the latest year
     #fname2 <- RCurl::getURL(file.path(cat.base, yr.latest, "catalog.html"))
-    connec <- httr::GET(file.path(cat.base, yr.fcst, "catalog.html"))
+    connec <- httr::GET(file.path(cat.base, yr.latest, "catalog.html"))
     fname2 <- strsplit(content(connec, "text"), "href='")[[1]]
     
     str.mo <- fname2[grep(yr.latest, fname2)[4]] # Pass thorugh all the headers to get the most recent month

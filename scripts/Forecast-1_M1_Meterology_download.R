@@ -53,7 +53,7 @@ ID="USC00115097"
 vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
 dir.raw="data_raw/meteorology/GHCN_raw/"
 
-source("../met_download_GHCN.R"); source("../met_gapfill.R")
+source("met_download_GHCN.R"); source("met_gapfill.R")
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
 # -------------------------------------
 
@@ -103,6 +103,15 @@ yr.max <- lubridate::year(Sys.Date()) #I had to do this because of a discrepancy
 met.ghcn2 <- data.frame()
 for(YR in yr.min:yr.max){
   rows.yr <- which(met.ghcn$YEAR==YR)
+  rows.yr <- met.ghcn$YEAR == yr.latest
+  
+  # Check if it results in any rows
+  if (sum(rows.yr) == 0) {
+    warning(paste("Year", yr.latest, "not found in dataset. Using latest available year instead."))
+    yr.latest <- max(met.ghcn$YEAR) 
+    rows.yr <- met.ghcn$YEAR == yr.latest
+  }
+  
   # dat.yr <- dat.ghcn[rows.yr,]
   dat.tmp <- calc.indices(dat=met.ghcn[rows.yr,])
   met.ghcn2 <- rbind(met.ghcn2, dat.tmp)
@@ -119,7 +128,7 @@ write.csv(met.ghcn2, file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 # Note: CFS is what Shawn Taylor used in his Ecol App Pub
 # -- he downloaded the 5 most recent forecasts to get uncertainty
 # ----------------
-source("../met_download_CFS.R")
+source("met_download_CFS.R")
 vars.in <- c("tmax", "tmin", "prate")
 
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))

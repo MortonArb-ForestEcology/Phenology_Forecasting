@@ -15,8 +15,9 @@
 library(ggplot2)
 
 path.hub <- "../"
-
+#path.hub <- "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting"
 path <- "../data_processed/"
+# path <- "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed"
 dir.create("../data_processed/", recursive = T, showWarnings = F)
 
 # -----------------------------
@@ -85,5 +86,4 @@ dat.leaf$Yday <- lubridate::yday((dat.leaf$Date))
 #Creating raw data output
 write.csv(dat.burst, paste0(path, "/Oak_collection_budburst_raw.csv"), row.names=F)
 write.csv(dat.leaf, paste0(path, "/Oak_collection_leaf_raw.csv"), row.names=F)
-
 

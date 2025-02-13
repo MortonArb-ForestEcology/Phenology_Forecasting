@@ -22,6 +22,7 @@
 #   5. Save met driver ensemble 
 # --------------------------------------------------------------
 library(ggplot2)
+library(neon4cast)
 # -------------------------------------------------
 # 0. Setup
 # -------------------------------------------------
@@ -55,6 +56,7 @@ vars.want <- c("TMAX", "TMIN", "PRCP", "SNOW", "SNWD")
 dir.raw="data_raw/meteorology/GHCN_raw/"
 
 source("../met_download_GHCN.R"); source("../met_gapfill.R")
+#source("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/scripts/met_download_GHCN.R"); source("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/scripts/met_gapfill.R")
 download.ghcn(ID=ID, vars.in=vars.want, path.save=path.ghcn, dir.raw=dir.raw, gapfill=T, method="https")
 # -------------------------------------
 
@@ -104,6 +106,8 @@ yr.max <- lubridate::year(Sys.Date()) #I had to do this because of a discrepancy
 met.ghcn2 <- data.frame()
 for(YR in yr.min:yr.max){
   rows.yr <- which(met.ghcn$YEAR==YR)
+  if(length(rows.yr) == 0) next  # Skip years with no data
+  
   # dat.yr <- dat.ghcn[rows.yr,]
   dat.tmp <- calc.indices(dat=met.ghcn[rows.yr,])
   met.ghcn2 <- rbind(met.ghcn2, dat.tmp)
@@ -121,6 +125,7 @@ write.csv(met.ghcn2, file.path(dir.met, "Weather_ArbCOOP_historical_latest.csv")
 # -- he downloaded the 5 most recent forecasts to get uncertainty
 # ----------------
 source("../met_download_CFS.R")
+#source("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/scripts/met_download_CFS.R")
 vars.in <- c("tmax", "tmin", "prate")
 
 cfs.dates <- as.Date(dir(file.path(out.cfs, site.name)))
@@ -191,6 +196,13 @@ if(gefs.start <= Sys.Date()){
                                                 method = "point",
                                                 overwrite = FALSE)
     
+    # Define output file name for each forecast
+    output_file <- file.path(out.gefs, paste0("forecast_", FCST, ".csv"))
+    
+    # Check if the file already exists to avoid overwriting
+    if (!file.exists(output_file)) {
+      write.csv(forecast_data, output_file, row.names = FALSE)
+    }
   }
 }
 # ----------------
@@ -204,6 +216,7 @@ if(gefs.start <= Sys.Date()){
 # Base Data: GHCN
 # ----------------
 met.ghcn <- read.csv(file.path(path.ghcn, "USC00115097_latest.csv"))
+
 met.ghcn$DATE <- as.Date(met.ghcn$DATE)
 summary(met.ghcn)
 # ----------------

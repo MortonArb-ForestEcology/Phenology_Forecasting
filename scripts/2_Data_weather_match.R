@@ -9,10 +9,12 @@
 # Notes:
 #-----------------------------------------------------------------------------------------------------------------------------------#
 path.hub <- ".."
+#path.hub <-"/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/"
 path.data <- "../data_processed/"
-
+#path.data <- "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed"
 
 path.daymet <- "../data_raw/DAYMET"
+#path.daymet <-"/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_raw/DAYMET"
 if(!dir.exists(path.daymet)) dir.create(path.daymet, recursive = T)
 
 dat.burst <- read.csv(paste0(path.data, "/Oak_collection_budburst_raw.csv"))
@@ -70,10 +72,11 @@ list.met<- lapply(list.met, weather_calc)
 lat.calc <- dplyr::bind_rows(list.met)
 
 write.csv(lat.calc, "../data_processed/Arb_Daymet_clean_data.csv", row.names=F)
+#write.csv(lat.calc, "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Arb_Daymet_clean_data.csv", row.names=F)
 
 
 met.all <- read.csv("../data_processed/Arb_Daymet_clean_data.csv")
-
+#met.all <- read.csv("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Arb_Daymet_clean_data.csv")
 
 dat.burst <- dat.burst[dat.burst$Yday < 200,]
 dat.leaf <- dat.leaf[dat.leaf$Yday < 200,]
@@ -97,4 +100,6 @@ dat.leaf$PTTGDD.cum <- met.all$PTTGDD.cum[match(dat.leaf$Date, met.all$Date)]
 # Save modified data
 
 write.csv(dat.burst, "../data_processed/Oak_collection_budburst.csv", row.names=F)
+#write.csv(dat.burst, "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Oak_collection_budburst.csv", row.names=F)
 write.csv(dat.leaf, "../data_processed/Oak_collection_leaf.csv", row.names=F)
+#write.csv(dat.leaf, "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Oak_collection_leaf.csv", row.names=F)
