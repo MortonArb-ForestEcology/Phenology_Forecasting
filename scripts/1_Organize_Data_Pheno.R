@@ -1,10 +1,10 @@
 #----------------------------------------------------------------------------------------------------------------------------------#
-# Script by : Lucien Fitzpatrick
+# Script by : Lucien Fitzpatrick & Christy Rollinson
 # Project: Spring Phenoogy Forecasting
 # Purpose: This script serves as the initial data download and organization of the arb data
-# Inputs: Quercus 2018 to present phenology monitoring data from the googlesheet "Phenology_Observations_GoogleForm" in the "LivingCollections-Phenology/Data_Observations/" folder
-#         The clean_google_form.r script which defines the clean.google function.
-#         The group_google_form.r script which defines the group.google function
+# Inputs: Organized & Cleaned phenology data from the Oak Collection; labeled 
+#         "LivingCollectionPhenology_Observation_Data_[Collection]_[Year]_Final.csv
+#         This data lives in Google Drive in LivingCollections_Phenology/Data_Observations
 # Outputs: dat.burst dataframe that can be used for the model
 #          dat.leaf dataframe that can be used for the model
 # Notes:  Since the original data is kept by the authors, most users will not need to run this script. 
@@ -25,11 +25,11 @@ dir.create("../data_processed/", recursive = T, showWarnings = F)
 # This function below takes in a vector of the genus of interest and a start and end year for the forms you want
 # -----------------------------
 
-#Calling in the clean.google function
-source(file.path(path.hub, "scripts/Clean_google_form.R"))
-
-#Calling in the group.google function. clean.google is needed for this.
-source(file.path(path.hub, "scripts/Group_google.R"))
+# #Calling in the clean.google function
+# source(file.path(path.hub, "scripts/Clean_google_form.R"))
+# 
+# #Calling in the group.google function. clean.google is needed for this.
+# source(file.path(path.hub, "scripts/Group_google.R"))
 
 #Enter the genus of interest as a vector and the final year of observations you want as a variable
 #The function will crash if you have a genus included without end years we have a form for i.e("Ulmus" with range 2018:2019)
