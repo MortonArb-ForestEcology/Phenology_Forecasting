@@ -51,7 +51,7 @@ dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
 
 #pulling out bud burst information from out phenology data
 dat.oak <- subset(dat.oak, select = c("Date.Observed", "Year", "Species", "Bud", "Leaf", "PlantNumber"))
-dat.oak <- dat.oak[dat.oak$Year != "2020",]
+dat.oak <- dat.oak[dat.oak$Year != "2020",] # Exclude 2020 because COVID disrupted spring obs
 summary(dat.oak)
 
 #Creating final frame containing the first burst for each year.
