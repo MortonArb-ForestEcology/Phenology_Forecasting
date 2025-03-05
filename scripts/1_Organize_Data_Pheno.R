@@ -16,32 +16,30 @@ library(ggplot2)
 
 path.hub <- "../"
 #path.hub <- "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting"
-path <- "../data_processed/"
+pathDatOut <- "../data_processed/"
 # path <- "/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed"
-dir.create("../data_processed/", recursive = T, showWarnings = F)
+dir.create(pathDatOut, recursive = T, showWarnings = F)
+
+pathRaw <- "~/Google Drive/My Drive/LivingCollections_Phenology/Data_Observations/"
 
 # -----------------------------
-# This section is to read in Phenology Monitoring data from our years of interest. THIS SECTION REQUIRES THE clean.google function
-# This function below takes in a vector of the genus of interest and a start and end year for the forms you want
+# Pulling from our cleaned, finalized data 
 # -----------------------------
 
-# #Calling in the clean.google function
-# source(file.path(path.hub, "scripts/Clean_google_form.R"))
-# 
-# #Calling in the group.google function. clean.google is needed for this.
-# source(file.path(path.hub, "scripts/Group_google.R"))
-
-#Enter the genus of interest as a vector and the final year of observations you want as a variable
-#The function will crash if you have a genus included without end years we have a form for i.e("Ulmus" with range 2018:2019)
-#This only matters for end years. Start years are adjusted to match the first year the genus has a form.
 Genus <- c("Quercus")
 StartYear <- 2018
-EndYear <- 2021
+EndYear <- 2024
 
-#Will produce message that look like errors that say 
-#"New names: Please choose the correct accession number for the tree you are observing.` -> `Please choose the correct accession number for the tree you are observing....5`"
-#But this is a normal sign that the function is working
-dat.oak <- group.google(Genus, StartYear, EndYear)
+# Getting a list of the data we have available to model
+fGen <- dir(pathRaw, paste("ObservationData", Genus, sep="_"))
+fGen <- fGen[grep("FINAL", fGen)]
+
+dat.oak
+for(i in 1:length(fGen)){
+  fNow <- read.csv(file.path(pathRaw, fGen[i]))
+  dat.oak <- rbind(dat.oak, fNow)
+}
+summary(dat.oak)
 
 #--------------------------------------------------------#
 # Here is where you  pull out phenometrics of interest (bud burst and leaf out)
@@ -54,6 +52,7 @@ dat.oak <- dat.oak[!is.na(dat.oak$Date.Observed),]
 #pulling out bud burst information from out phenology data
 dat.oak <- subset(dat.oak, select = c("Date.Observed", "Year", "Species", "Bud", "Leaf", "PlantNumber"))
 dat.oak <- dat.oak[dat.oak$Year != "2020",]
+summary(dat.oak)
 
 #Creating final frame containing the first burst for each year.
 dat.burst <- aggregate(dat.oak[dat.oak$Bud=="Yes", "Date.Observed"], 
@@ -84,6 +83,6 @@ colnames(dat.leaf) <- c("Species", "PlantNumber", "Year", "Date", "Latitude", "L
 dat.leaf$Yday <- lubridate::yday((dat.leaf$Date))
 
 #Creating raw data output
-write.csv(dat.burst, paste0(path, "/Oak_collection_budburst_raw.csv"), row.names=F)
-write.csv(dat.leaf, paste0(path, "/Oak_collection_leaf_raw.csv"), row.names=F)
+write.csv(dat.burst, file.path(pathDatOut, "Oak_collection_budburst_raw.csv"), row.names=F)
+write.csv(dat.leaf, file.path(pathDatOut, "Oak_collection_leaf_raw.csv"), row.names=F)
 
