@@ -103,7 +103,7 @@ yr.max <- lubridate::year(Sys.Date()) #I had to do this because of a discrepancy
 met.ghcn2 <- data.frame()
 for(YR in yr.min:yr.max){
   rows.yr <- which(met.ghcn$YEAR==YR)
-  rows.yr <- met.ghcn$YEAR == yr.latest
+  # rows.yr <- met.ghcn$YEAR == yr.latest
   
   # Check if it results in any rows
   if (sum(rows.yr) == 0) {
