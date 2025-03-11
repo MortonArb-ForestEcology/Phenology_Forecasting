@@ -12,6 +12,8 @@ dat.b <- read.csv("../data_processed/Oak_collection_budburst.csv")
 #dat.b <- read.csv("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Oak_collection_budburst.csv")
 dat.b$Accession <- unlist(lapply(strsplit(paste(dat.b$PlantNumber), "-"), function(x){x[1]}))
 dat.b$Date <- as.Date(dat.b$Date)
+dat.b$Species <- gsub("  ", " ", dat.b$Species)
+dat.b$Species <- toupper(dat.b$Species)
 
 # Read in output of previous script
 dat.l <- read.csv("../data_processed/Oak_collection_leaf.csv")
@@ -169,16 +171,16 @@ for(SP in SP.burst$Species){
   Check[l, "leaf 50%"] <- leaf.ci[2]
   Check[l, "leaf 97.5%"] <- leaf.ci[3]
   
-  #write.csv(burst.df, file.path("../data_processed/model_output", paste0(SP, "_TT_model_budburst.csv")), row.names=F)
-  write.csv(burst.df, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0(SP, "_TT_model_budburst.csv")), row.names=F)
- #write.csv(leaf.df, file.path("../data_processed/model_output", paste0(SP, "_TT_model_leaf.csv")), row.names=F)
-  write.csv(leaf.df, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0(SP, "_TT_model_leaf.csv")), row.names=F)
+  write.csv(burst.df, file.path("../data_processed/model_output", paste0(SP, "_TT_model_budburst.csv")), row.names=F)
+  # write.csv(burst.df, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0(SP, "_TT_model_budburst.csv")), row.names=F)
+ write.csv(leaf.df, file.path("../data_processed/model_output", paste0(SP, "_TT_model_leaf.csv")), row.names=F)
+ # write.csv(leaf.df, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0(SP, "_TT_model_leaf.csv")), row.names=F)
   l <- l + 1
 }
 
 #Checking convergence and confidence interval of all species
 write.csv(Check, file.path("../data_processed/model_output", paste0("Budburst_convergence.csv")), row.names=F)
-write.csv(Check, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0("Budburst_convergence.csv")), row.names=F)
+# write.csv(Check, file.path("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/model_output", paste0("Budburst_convergence.csv")), row.names=F)
 
 #If they are below 1.1 then they are consider converged (I'll get the right citation for that I've seen it in a few papers)
 Close <- Check[(Check$burst.converge > 1.05 | Check$leaf.converge > 1.05) , ]

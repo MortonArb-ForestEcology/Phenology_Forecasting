@@ -34,12 +34,36 @@ EndYear <- 2024
 fGen <- dir(pathRaw, paste("ObservationData", Genus, sep="_"))
 fGen <- fGen[grep("FINAL", fGen)]
 
-dat.oak
+dat.oak <- data.frame()
 for(i in 1:length(fGen)){
   fNow <- read.csv(file.path(pathRaw, fGen[i]))
   dat.oak <- rbind(dat.oak, fNow)
 }
 summary(dat.oak)
+length(unique(dat.oak$Species))
+
+# Cleaning up some species name stuff
+dat.oak$Species <- gsub("  ", " ", dat.oak$Species)
+summary(as.factor(dat.oak$Species[dat.oak$Year==2023]))
+summary(as.factor(dat.oak$Species[dat.oak$Year==2024]))
+
+# Check names against BRAHMS records
+quercusList2023 <- read.csv("~/Google Drive/My Drive/LivingCollections_Phenology/Observing Lists/OLD/Quercus/ObservingList_Quercus_2023.csv")
+quercusList2023$PlantNumber <- quercusList2023$PlantID
+summary(quercusList2023)
+dat.oakTest <- merge(dat.oak, quercusList2023[,c("PlantNumber", "Taxon")], all.x=T, all.y=F)
+dim(dat.oakTest)
+summary(dat.oakTest)
+
+dat.oakTest$TaxonMatch <- dat.oakTest$Species==dat.oakTest$Taxon
+summary(dat.oakTest)
+summary(as.factor(dat.oakTest$Species[!dat.oakTest$TaxonMatch & !(is.na(dat.oakTest$TaxonMatch))]))
+summary(as.factor(dat.oakTest$Species[is.na(dat.oakTest$TaxonMatch)]))
+summary(as.factor(dat.oakTest$PlantNumber[is.na(dat.oakTest$TaxonMatch)]))
+dat.oakTest[!is.na(dat.oakTest$PlantNumber) & dat.oakTest$PlantNumber=="304-92-2", ]
+
+dat.oakTest[is.na(dat.oakTest$PlantNumber), ]
+ unique(dat.oakTest$PlantNumber)
 
 #--------------------------------------------------------#
 # Here is where you  pull out phenometrics of interest (bud burst and leaf out)
