@@ -12,8 +12,6 @@ dat.b <- read.csv("../data_processed/Oak_collection_budburst.csv")
 #dat.b <- read.csv("/Users/jocelyngarcia/Documents/GitHub/Phenology_Forecasting/data_processed/Oak_collection_budburst.csv")
 dat.b$Accession <- unlist(lapply(strsplit(paste(dat.b$PlantNumber), "-"), function(x){x[1]}))
 dat.b$Date <- as.Date(dat.b$Date)
-dat.b$Species <- gsub("  ", " ", dat.b$Species)
-dat.b$Species <- toupper(dat.b$Species)
 
 # Read in output of previous script
 dat.l <- read.csv("../data_processed/Oak_collection_leaf.csv")

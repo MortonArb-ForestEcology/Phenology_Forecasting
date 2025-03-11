@@ -41,9 +41,13 @@ for(i in 1:length(fGen)){
 }
 summary(dat.oak)
 length(unique(dat.oak$Species))
+summary(as.factor(dat.oak$Species))
 
 # Cleaning up some species name stuff
 dat.oak$Species <- gsub("  ", " ", dat.oak$Species)
+dat.oak$PlantNumber <- gsub(" ", "", dat.oak$PlantNumber)
+dat.oak$PlantNumber <- gsub("2390-26 *1", "2390-26*1", dat.oak$PlantNumber)
+
 summary(as.factor(dat.oak$Species[dat.oak$Year==2023]))
 summary(as.factor(dat.oak$Species[dat.oak$Year==2024]))
 
@@ -51,19 +55,26 @@ summary(as.factor(dat.oak$Species[dat.oak$Year==2024]))
 quercusList2023 <- read.csv("~/Google Drive/My Drive/LivingCollections_Phenology/Observing Lists/OLD/Quercus/ObservingList_Quercus_2023.csv")
 quercusList2023$PlantNumber <- quercusList2023$PlantID
 summary(quercusList2023)
-dat.oakTest <- merge(dat.oak, quercusList2023[,c("PlantNumber", "Taxon")], all.x=T, all.y=F)
-dim(dat.oakTest)
-summary(dat.oakTest)
+dat.oak <- merge(dat.oak, quercusList2023[,c("PlantNumber", "Taxon")], all.x=T, all.y=F)
+dim(dat.oak)
+summary(dat.oak)
 
-dat.oakTest$TaxonMatch <- dat.oakTest$Species==dat.oakTest$Taxon
-summary(dat.oakTest)
-summary(as.factor(dat.oakTest$Species[!dat.oakTest$TaxonMatch & !(is.na(dat.oakTest$TaxonMatch))]))
-summary(as.factor(dat.oakTest$Species[is.na(dat.oakTest$TaxonMatch)]))
-summary(as.factor(dat.oakTest$PlantNumber[is.na(dat.oakTest$TaxonMatch)]))
-dat.oakTest[!is.na(dat.oakTest$PlantNumber) & dat.oakTest$PlantNumber=="304-92-2", ]
+dat.oak$TaxonMatch <- dat.oak$Species==dat.oak$Taxon
+dat.oak$Species[!dat.oak$TaxonMatch & !is.na(dat.oak$TaxonMatch)] <- dat.oak$Taxon[!dat.oak$TaxonMatch & !is.na(dat.oak$TaxonMatch)]
+summary(dat.oak)
 
-dat.oakTest[is.na(dat.oakTest$PlantNumber), ]
- unique(dat.oakTest$PlantNumber)
+# summary(as.factor(dat.oakTest$Species[!dat.oakTest$TaxonMatch & !(is.na(dat.oakTest$TaxonMatch))]))
+# summary(as.factor(dat.oakTest$Species[is.na(dat.oakTest$TaxonMatch)]))
+# summary(as.factor(dat.oakTest$PlantNumber[is.na(dat.oakTest$TaxonMatch)]))
+# dat.oakTest[!is.na(dat.oakTest$PlantNumber) & dat.oakTest$PlantNumber=="304-92-2", ]
+
+# dat.oakTest[is.na(dat.oakTest$PlantNumber), ]
+#  unique(dat.oakTest$PlantNumber)
+# 
+oak.spp <- unique(dat.oak$Species)
+oak.spp[order(oak.spp)]
+  
+
 
 #--------------------------------------------------------#
 # Here is where you  pull out phenometrics of interest (bud burst and leaf out)
